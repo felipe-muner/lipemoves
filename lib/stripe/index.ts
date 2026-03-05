@@ -2,9 +2,12 @@ import Stripe from "stripe"
 
 let _stripe: Stripe | null = null
 
-function getStripe(): Stripe {
+export function getStripe(): Stripe {
   if (!_stripe) {
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY is not set")
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       typescript: true,
     })
   }
