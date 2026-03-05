@@ -1,65 +1,141 @@
-import Image from "next/image";
+import Link from "next/link"
+import Header from "@/components/Header"
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="flex min-h-screen flex-col">
+      <Header />
+      {/* Hero */}
+      <section className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+        <div className="relative z-10 mx-auto max-w-3xl">
+          <h1 className="font-heading text-5xl leading-tight md:text-7xl">
+            Mova-se <span className="text-primary">Melhor.</span>
+            <br />
+            Respire <span className="text-primary">Mais Fundo.</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+            V&iacute;deos de yoga, mobilidade, acrobacia e respira&ccedil;&atilde;o para voc&ecirc; praticar no
+            seu ritmo &mdash; onde e quando quiser.
+          </p>
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <Link
+              href="/pricing"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Comece Agora
+            </Link>
+            <Link
+              href="#about"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-border px-8 text-sm font-medium transition-colors hover:bg-accent"
             >
-              Learning
-            </a>{" "}
-            center.
+              Saiba Mais
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* About */}
+      <section id="about" className="border-t border-border px-6 py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="font-heading text-3xl md:text-4xl">Sobre</h2>
+          <p className="mt-6 text-muted-foreground leading-relaxed">
+            Nascido no Rio de Janeiro, descobri o yoga e o movimento como forma de reconectar
+            corpo e mente. O que come&ccedil;ou como pr&aacute;tica pessoal virou miss&atilde;o: ajudar pessoas a se
+            moverem melhor, com mais consci&ecirc;ncia e liberdade.
+          </p>
+          <p className="mt-4 text-muted-foreground leading-relaxed">
+            Aqui voc&ecirc; encontra aulas de yoga, mobilidade, acrobacia e respira&ccedil;&atilde;o &mdash; tudo
+            gravado com cuidado para voc&ecirc; praticar no seu tempo.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Categories */}
+      <section className="border-t border-border px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="font-heading text-center text-3xl md:text-4xl">Categorias</h2>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { title: "Yoga", desc: "Aulas completas de vinyasa, hatha e yin yoga" },
+              { title: "Mobilidade", desc: "Rotinas para destravar articulações e ganhar amplitude" },
+              { title: "Acrobacia", desc: "Progressões de parada de mão, floreios e equilíbrio" },
+              { title: "Respiração", desc: "Protocolos de breathwork para energia e foco" },
+            ].map((cat) => (
+              <div
+                key={cat.title}
+                className="rounded-xl border border-border bg-card p-6 text-center transition-colors hover:border-primary/30"
+              >
+                <h3 className="font-heading text-xl">{cat.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{cat.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
-    </div>
-  );
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="border-t border-border px-6 py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="font-heading text-3xl md:text-4xl">Planos</h2>
+          <p className="mt-4 text-muted-foreground">
+            Acesso ilimitado a todos os v&iacute;deos. Cancele quando quiser.
+          </p>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2">
+            <div className="rounded-xl border border-border bg-card p-8">
+              <h3 className="font-heading text-2xl">Mensal</h3>
+              <p className="mt-4 text-4xl font-bold">
+                R$49<span className="text-base font-normal text-muted-foreground">/m&ecirc;s</span>
+              </p>
+              <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+                <li>Acesso a todos os v&iacute;deos</li>
+                <li>Novas aulas toda semana</li>
+                <li>Cancele quando quiser</li>
+              </ul>
+              <Link
+                href="/register"
+                className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Assinar Mensal
+              </Link>
+            </div>
+            <div className="relative rounded-xl border-2 border-primary bg-card p-8">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-medium text-primary-foreground">
+                Melhor valor
+              </span>
+              <h3 className="font-heading text-2xl">Anual</h3>
+              <p className="mt-4 text-4xl font-bold">
+                R$490<span className="text-base font-normal text-muted-foreground">/ano</span>
+              </p>
+              <p className="mt-1 text-sm text-primary">Economia de R$98</p>
+              <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+                <li>Tudo do plano mensal</li>
+                <li>2 meses gr&aacute;tis</li>
+                <li>Acesso priorit&aacute;rio</li>
+              </ul>
+              <Link
+                href="/register"
+                className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Assinar Anual
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border px-6 py-12">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="font-heading text-lg">Lipe Moves</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Mova-se melhor. Respire mais fundo. Viva plenamente.
+          </p>
+          <p className="mt-6 text-xs text-muted-foreground/60">
+            &copy; {new Date().getFullYear()} Lipe Moves. Todos os direitos reservados.
+          </p>
+        </div>
+      </footer>
+    </main>
+  )
 }

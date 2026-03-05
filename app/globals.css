@@ -1,26 +1,116 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
+/* =============================================
+   Tailwind Theme Integration
+   ============================================= */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-dm-serif);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* =============================================
+   Earthy Warm — Light
+   ============================================= */
+:root {
+  --radius: 0.625rem;
+  --background: #fdf8f0;
+  --foreground: #2e1a05;
+  --card: #ffffff;
+  --card-foreground: #2e1a05;
+  --popover: #ffffff;
+  --popover-foreground: #2e1a05;
+  --primary: #b8860b;
+  --primary-foreground: #ffffff;
+  --secondary: #fdf0d5;
+  --secondary-foreground: #2e1a05;
+  --muted: #fdf0d5;
+  --muted-foreground: #8a7040;
+  --accent: #fdf0d5;
+  --accent-foreground: #2e1a05;
+  --destructive: #dc2626;
+  --border: #e8d5a8;
+  --input: #e8d5a8;
+  --ring: #b8860b;
+}
+
+/* Earthy Warm — Dark */
+.dark {
+  --background: #1a1408;
+  --foreground: #f0dcc0;
+  --card: #241c10;
+  --card-foreground: #f0dcc0;
+  --popover: #241c10;
+  --popover-foreground: #f0dcc0;
+  --primary: #d4a020;
+  --primary-foreground: #1a1408;
+  --secondary: #2e1a05;
+  --secondary-foreground: #f0dcc0;
+  --muted: #2e1a05;
+  --muted-foreground: #8a7040;
+  --accent: #2e1a05;
+  --accent-foreground: #f0dcc0;
+  --destructive: #ef4444;
+  --border: #2e1a05;
+  --input: #2e1a05;
+  --ring: #d4a020;
+}
+
+/* =============================================
+   Base Styles
+   ============================================= */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-dm-serif);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* =============================================
+   Font Utilities
+   ============================================= */
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-dm-serif);
+    letter-spacing: -0.01em;
+  }
+  .font-body {
+    font-family: var(--font-inter);
+    font-weight: 400;
+  }
 }
