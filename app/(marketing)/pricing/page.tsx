@@ -8,7 +8,7 @@ import Link from "next/link"
 const plans = [
   {
     name: "Mensal",
-    price: "R$49",
+    price: "R$97",
     period: "/m\u00eas",
     priceEnv: "NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID",
     features: [
@@ -20,10 +20,10 @@ const plans = [
   },
   {
     name: "Anual",
-    price: "R$490",
+    price: "R$970",
     period: "/ano",
     priceEnv: "NEXT_PUBLIC_STRIPE_ANNUAL_PRICE_ID",
-    savings: "Economia de R$98",
+    savings: "Economia de R$194",
     features: [
       "Tudo do plano mensal",
       "2 meses gr\u00e1tis",

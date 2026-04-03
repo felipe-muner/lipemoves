@@ -85,7 +85,7 @@ export default function HomePage() {
             <div className="rounded-xl border border-border bg-card p-8">
               <h3 className="font-heading text-2xl">Mensal</h3>
               <p className="mt-4 text-4xl font-bold">
-                R$49<span className="text-base font-normal text-muted-foreground">/m&ecirc;s</span>
+                R$97<span className="text-base font-normal text-muted-foreground">/m&ecirc;s</span>
               </p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>Acesso a todos os v&iacute;deos</li>
@@ -105,9 +105,9 @@ export default function HomePage() {
               </span>
               <h3 className="font-heading text-2xl">Anual</h3>
               <p className="mt-4 text-4xl font-bold">
-                R$490<span className="text-base font-normal text-muted-foreground">/ano</span>
+                R$970<span className="text-base font-normal text-muted-foreground">/ano</span>
               </p>
-              <p className="mt-1 text-sm text-primary">Economia de R$98</p>
+              <p className="mt-1 text-sm text-primary">Economia de R$194</p>
               <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                 <li>Tudo do plano mensal</li>
                 <li>2 meses gr&aacute;tis</li>
