@@ -214,29 +214,38 @@ One hour of filming in month 1 = 3 months of repurposable content.
 
 ---
 
-## Today at Sunset — Checklist
+## Today — Shoulder Opening Launch Video
 
-Since you're filming today, here's your exact checklist:
+This is your first video. Film it today.
 
-**Before you go out:**
-- [ ] Phone charged
-- [ ] Tripod set up
-- [ ] Your one filming outfit on
-- [ ] Kettlebell at the location
-- [ ] Mat at the location
-- [ ] Re-read Reel 1, 2, 3 scripts in VIDEO_PRODUCTION_GUIDE.md
+**Before you film:**
+- [ ] Phone charged to 100%
+- [ ] Tripod set up, portrait (9:16), 1080p 60fps
+- [ ] Fitted top so shoulders are visible
+- [ ] Mat on floor, clean background, good natural light
+- [ ] Re-read the shoulder opening reel in VIDEO_PRODUCTION_GUIDE.md
 
-**At the location:**
-- [ ] Face the sun (golden light on your face)
-- [ ] Film Reel 3 first (talking head — needs brightest light)
-- [ ] Film Reel 1 second (flow — beautiful in warm light)
-- [ ] Film Reel 2 third (kettlebell — slightly dimmer is fine)
-- [ ] B-roll pass last (10 min, close-ups, tools, environment)
+**Film (in this order):**
+- [ ] Take 1 — full 5-pose flow (warm-up take)
+- [ ] Take 2 — full 5-pose flow (this is your reel)
+- [ ] Take 3 — backup
+- [ ] B-roll: close-up of arms in Eagle, hands in Cow Face, wide shot of Puppy Pose
 
-**After:**
-- [ ] Review takes, pick best
-- [ ] Edit tonight or tomorrow morning in CapCut
-- [ ] Schedule for the week in Later
+**Edit in CapCut:**
+- [ ] Trim dead air — first frame = already in Thread the Needle
+- [ ] Add pose name as text overlay when entering each pose
+- [ ] Slow-mo (50%) on the deepest moment of each stretch
+- [ ] Hook text first 2s: *"5 poses. 5 minutes. Open shoulders for life."*
+- [ ] Last frame: *"Full program → lipemoves.com"*
+- [ ] Light lo-fi music or ambient sound only
+- [ ] Export 1080p
+
+**Post everywhere:**
+- [ ] @lipemoves Instagram Reel
+- [ ] @felipeenjoylife Instagram Reel (same video)
+- [ ] TikTok @lipemoves
+- [ ] YouTube — full 8–12 min tutorial version (talk through each pose)
+- [ ] @felipeenjoylife stories: tag @lipemoves, say "first video is live — go follow"
 
 ---
 

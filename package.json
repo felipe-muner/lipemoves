@@ -6,11 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "remotion": "remotion studio remotion/src/index.ts",
+    "render:intro": "remotion render remotion/src/index.ts ShoulderIntro out/intro.mp4 --config remotion/remotion.config.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
     "@neondatabase/serverless": "^1.0.2",
+    "@remotion/cli": "^4.0.443",
+    "@remotion/player": "^4.0.443",
     "@stripe/stripe-js": "^8.9.0",
     "@vercel/analytics": "^1.6.1",
     "bcryptjs": "^3.0.3",
@@ -28,8 +32,10 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "remotion": "^4.0.443",
     "stripe": "^20.4.0",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

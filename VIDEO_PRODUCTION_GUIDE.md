@@ -4,6 +4,118 @@
 
 ---
 
+## TODAY — Shoulder Opening (Launch Video)
+
+**Status: FILM TODAY**
+
+---
+
+### REEL — Shoulder Opening Flow
+**Title:** 5 poses to open your shoulders  
+**Pillar:** Move + Longevity  
+**Duration:** 45–60s (Reel) / 8–12 min (YouTube full version)  
+**Vibe:** Calm, educational, slow and intentional
+
+---
+
+### The 10 Poses
+
+Your own poses — no names needed. Film them in whatever order feels natural as a flow.
+
+- 10 poses total
+- Hold each long enough to feel it — at least 20–30s per side
+- Let the movement speak for itself — no labels, no text overlays for names
+
+---
+
+### Reel Version — Pick the 5 Most Visual
+After filming all 10, watch them back and pick the 5 that look the best on camera. Trust your eye.
+
+---
+
+### Hook (first 2 seconds)
+Start already in Thread the Needle position. Text overlay:
+
+> *"5 poses. 5 minutes. Open shoulders for life."*
+
+---
+
+### How to Film It
+
+**Reel (45–60s for Instagram + TikTok) — 5 best poses:**
+- Show poses 2, 3, 5, 6, 10 — 5–8 seconds each
+- Text overlay naming each pose as you enter it
+- Slow-mo on the deepest moment of each stretch
+- Film from the side so the shoulder position is clearly visible
+- No music OR light lo-fi ambient (let the breath be heard)
+- Last frame: text overlay — *"Full 10-pose flow → lipemoves.com"*
+
+**YouTube (10–15 min full tutorial) — all 10 poses:**
+- Film each pose for real time (30–45s each side)
+- Talk through each one: what it targets, the common mistake, how to modify
+- Start with 60s intro: *"Today I'm taking you through my full shoulder opening routine — 10 poses I do every week. If you sit at a desk, train upper body, or just feel tight and locked up here — this is for you."*
+- Between each pose: name it, show it, explain it in 2–3 sentences
+- End with CTA: *"If you want the full movement program, link in the description — LipeMoves"*
+
+---
+
+### Caption (Instagram + TikTok)
+
+```
+Tight shoulders? This is my full opening routine.
+
+10 movements. Do them slow. Hold each one and actually breathe.
+
+Save this for after your next workout or when you wake up stiff.
+
+Full movement program → lipemoves.com (link in bio)
+
+#yoga #shoulderopening #mobilidade #yogaflow #lipemoves #movement #flexibility #shouldermobility
+```
+
+### YouTube Title + Description
+
+**Title:** 10 Shoulder Opening Movements — My Full Routine (Do This Daily)
+
+**Description:**
+```
+My complete shoulder opening routine — 10 movements I do every week to stay mobile, pain-free, and strong.
+
+Perfect for: desk workers, gym goers, climbers, anyone with tight or stiff shoulders.
+
+Do it slow. Hold each position. Breathe into the stretch.
+
+Full movement program → https://lipemoves.com
+
+#yoga #shouldermobility #movement
+```
+
+---
+
+### Today's Filming Checklist
+
+**Before you film:**
+- [ ] Mat on the floor, clean background
+- [ ] Phone on tripod, portrait (9:16), 1080p 60fps
+- [ ] Natural light — face a window or film outside
+- [ ] Wear fitted top so shoulder movement is visible
+
+**Film this:**
+- [ ] Take 1: full flow (warm-up take)
+- [ ] Take 2: full flow (this is usually the best)
+- [ ] Take 3: backup
+- [ ] B-roll: close-up of shoulder/arm, hands in Eagle Arms, wide shot of Puppy Pose
+
+**After filming:**
+- [ ] Edit in CapCut — add pose names as text overlays, slow-mo on deepest moments
+- [ ] Export and post on @lipemoves
+- [ ] Post same video on @felipeenjoylife
+- [ ] Post on TikTok
+- [ ] Upload full version to YouTube with title: *"5 Shoulder Opening Poses — Feel the Difference in 5 Minutes"*
+- [ ] On @felipeenjoylife stories: tag @lipemoves, say "first video is live"
+
+---
+
 ## WEEK 1 — "Why I train this way"
 ### 3 Reels to record
 
