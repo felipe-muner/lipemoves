@@ -1,15 +1,16 @@
 # LipeMoves — 1-Month Content Launch Strategy
-### Calisthenics · Yoga · Kettlebell · Longevity
+### Calisthenics · Yoga · Kettlebell · Longevity · Island Life
 
 ---
 
 ## Brand Identity
 
-**Niche:** Functional movement for a longer, better life — not aesthetics, not ego lifting.  
-**Tone:** Calm, grounded, educational. Real human, not a fitness robot.  
-**Hook:** *"Move well. Live long."*  
-**Target audience:** 25–45 yo professionals who feel stiff, stressed, and want sustainable fitness.  
-**Differentiator:** The blend. Not pure yoga (too soft for some), not pure calisthenics (too hard for others). The intersection of all three — mobility + strength + breathwork — framed through longevity science.
+**Niche:** Functional movement + the lifestyle that makes it sustainable — filmed on a Thai island.
+**Tone:** Calm, grounded, real. Not a fitness robot. A person people want to follow.
+**Hook:** *"I train every day, fast until 5pm, and live on a Thai island. This is what that actually looks like."*
+**Location:** Koh Phangan, Thailand — the wellness capital of Southeast Asia. Use it.
+**Target audience:** 25–45 yo professionals who feel stiff, stuck, and secretly want to live differently.
+**Differentiator:** Not just a fitness account. Movement + fasting + island living + nomad reality. Nobody else is doing this exact combination. The training IS the lifestyle.
 
 ---
 
@@ -17,11 +18,13 @@
 
 | Pillar | Theme | Example |
 |---|---|---|
-| **Move** | Skill / drill tutorials | "5 min morning spine flow" |
-| **Build** | Strength progressions | "Kettlebell flow for shoulder health" |
-| **Breathe** | Breathwork + nervous system | "Box breathing before training" |
-| **Longevity** | Drill + short explanation of why it matters | "Hip 90/90 flow — why this drill protects your lower back for life" |
-| **BTS** | Behind the scenes / personal | Your real training, failures, progress |
+| **Move** | Skill / drill tutorials | "5 min morning spine flow on the beach" |
+| **Build** | Strength progressions | "Kettlebell flow for shoulder health — filmed at sunset" |
+| **Breathe** | Breathwork + nervous system | "Box breathing before training — why I do it fasted" |
+| **Longevity** | Drill + why it matters | "Hip 90/90 — why this protects your lower back for life" |
+| **Live** | Island lifestyle, day-in-the-life | "What my day in Koh Phangan actually looks like" |
+| **Nomad** | Cost of living, where to stay, reality | "How much I spend per month living on a Thai island" |
+| **BTS** | Real training, failures, progress | Raw clips, honest takes, unfiltered moments |
 
 ---
 
@@ -48,54 +51,54 @@ Then during the week: **stories daily (5 min)** + **engagement daily (20 min)**.
 
 ### WEEK 1 — Launch & Establish
 
-Goal: 4 feed posts + stories every day  
-**Theme: "Why I train this way"**  
+Goal: 4 feed posts + stories every day
+**Theme: "Who I am and where I am"**
 **Record this weekend:** Reel 1 + Reel 2 + Reel 3 + Carousel 1 + Carousel 2
 
 | Day | Format | Content |
 |---|---|---|
-| Mon | Reel (30s) | Morning mobility routine — ambient sound, no music |
+| Mon | Reel (30s) | Morning mobility on the beach — ambient waves, no talking |
 | Tue | Carousel (6 slides) | "3 reasons yoga + kettlebell is the ultimate combo" |
-| Wed | Reel (45s) | Kettlebell halos — wrong vs right form |
-| Thu | — (stories only) | Show your training setup, a poll, a tip |
-| Fri | Reel (40s) | Your "why" — talking head + training B-roll cuts |
+| Wed | Reel (45s) | Kettlebell halos — wrong vs right form (film outdoors) |
+| Thu | — (stories only) | Show your training spot, a poll, a view from your place |
+| Fri | Reel (50s) | "I train every day, fast until 5pm, live on a Thai island" — talking head intro reel |
 | Sat | Carousel (5 slides) | "5 things I stopped doing that changed my movement" |
 | Sun | — (plan + rest) | Prep next week's content |
 
 ---
 
-### WEEK 2 — Education Mode
+### WEEK 2 — Education + Location Mode
 
-Goal: 4–5 feed posts + stories every day  
-**Theme: "Teach something every day"**  
+Goal: 4–5 feed posts + stories every day
+**Theme: "Teach something every day — show where you are"**
 **Record this weekend:** Reel 4 + Reel 5 + Reel 6 + Carousel 3 + Carousel 4
 
 | Day | Format | Content |
 |---|---|---|
-| Mon | Reel (50s) | Hip 90/90 — the drill your lower back needs |
+| Mon | Reel (50s) | Hip 90/90 — the drill your lower back needs (jungle or beach backdrop) |
 | Tue | Carousel (6 slides) | "5 calisthenics moves that fix your posture" |
-| Wed | Reel (40s) | Kettlebell armbar — the most underrated shoulder drill |
-| Thu | — (stories only) | Q&A box — answer 3 questions the next day |
-| Fri | Reel (30s) | 3-minute wrist prep before any session |
-| Sat | Carousel (5 slides) | "What I eat on training days" |
+| Wed | Reel (40s) | Kettlebell armbar — most underrated shoulder drill |
+| Thu | — (stories only) | Q&A box — answer 3 questions next day |
+| Fri | Reel (45s) | "What I eat in a day — fasting until 5pm on a Thai island" |
+| Sat | Carousel (5 slides) | "How much it costs to live in Koh Phangan per month" |
 | Sun | — (plan + rest) | Prep week 3 content |
 
 ---
 
 ### WEEK 3 — Community Build
 
-Goal: 4–5 feed posts + stories every day  
-**Theme: "Invite people in"**  
+Goal: 4–5 feed posts + stories every day
+**Theme: "Invite people in — into the training AND the island"**
 **Record this weekend:** Reel 7 + Reel 8 + Reel 9 + Carousel 5 + Carousel 6
 
 | Day | Format | Content |
 |---|---|---|
 | Mon | Reel (50s) | Launch 7-day spine challenge — Day 1 drill |
 | Tue | Carousel (6 slides) | "How to know if your mobility is limiting your gains" |
-| Wed | Reel (45s) | Cossack squat — 3 progressions |
+| Wed | Reel (45s) | Cossack squat — 3 progressions (film at a cool outdoor spot) |
 | Thu | — (stories only) | Share challenge submissions, repost followers |
-| Fri | Reel (45s) | Challenge Day 5 — hip flexor release |
-| Sat | Static post | Personal reflection — your journey, your why |
+| Fri | Reel (50s) | "A week in Koh Phangan — training, fasting, the real life" (day-in-the-life format) |
+| Sat | Static post | Personal reflection — why you left and came here |
 | Sun | — (plan + rest) | Prep week 4 content |
 
 ---
@@ -176,22 +179,27 @@ Brand: Create your own — e.g. #lipemoves
 ## Platform Strategy
 
 ### Instagram — PRIMARY (start here)
-- Best for visual movement content
+- Best for visual movement + lifestyle content
 - Reels algorithm still rewards new creators
 - Best monetization path: paid programs, brand deals, digital products
+- Koh Phangan backdrop = higher save rate on travel/lifestyle posts
 - **Goal month 1:** 500 real followers, 100 saves per carousel
 
 ### TikTok — SECONDARY (repurpose from IG)
 - Upload same reels (remove watermark — use CapCut or Canva)
 - TikTok pushes new accounts harder than IG
-- Can blow up a single video to 100k views
+- "Living in Thailand" content goes viral here regularly
 - **Start week 2** once you have 3-4 Instagram reels already made
 
 ### YouTube Shorts — TERTIARY (repurpose same content)
 - Slowest growth but best for long-term SEO
-- When you have 10+ Shorts, start doing 10-15 min long-form tutorials
-- YouTube pays the best per 1000 views once monetized
 - **Start week 3**
+
+### YouTube Long-form — GROWTH ENGINE (month 2+)
+- "Living in Koh Phangan" gets serious search traffic
+- Format: "My week in KPG — training, fasting, cost of living" (10–15 min)
+- One long-form video per month to start
+- SEO titles: "Living in Koh Phangan 2025", "Cost of living Koh Phangan", "Training on a Thai island"
 
 ### Priority order: Instagram → TikTok → YouTube Shorts → YouTube Long-form
 
@@ -241,6 +249,7 @@ Brand: Create your own — e.g. #lipemoves
 
 ## Accounts to Study (your reference set)
 
+**Movement:**
 - **@zubalenok** — aesthetic movement, strong visual identity
 - **@trevorsinstinct** — primal movement, raw and authentic
 - **@coach.bluee** — coaching positioning, carousel education
@@ -249,6 +258,15 @@ Brand: Create your own — e.g. #lipemoves
 - **@kestyoga** — yoga for modern life framing
 - **@netty.upyourrom** — ROM (range of motion) focus, niche authority
 - **@yona_shavin** — movement quality, mindful approach
+- **@maximilianmoves** — aesthetic movement + lifestyle blend
+- **@whatkaidoes** — movement + travel, strong visual identity
+- **@michaelsurgex** — calisthenics + real life
+- **@jaunas7** — functional movement style
+- **@aidenramos___** — movement content that travels well
+- **@danielpalicuk** — movement + lifestyle
+
+**Lifestyle / nomad:**
+- Study any creator doing "living in Thailand/Bali" content — see how they frame cost of living, day-in-the-life, and travel hooks. Your movement angle is the differentiator they don't have.
 
 Study their: hook style, caption length, posting frequency, what gets the most saves/comments.
 
@@ -278,4 +296,23 @@ Study their: hook style, caption length, posting frequency, what gets the most s
 
 ---
 
-*Last updated: April 2026*
+---
+
+## Koh Phangan Content Angles (always available)
+
+These are evergreen hooks your location gives you for free:
+
+| Angle | Hook |
+|---|---|
+| Training spots | "The best outdoor training spots in Koh Phangan" |
+| Morning routine | "5:30am fasted training on the beach — my morning" |
+| Food | "What I eat breaking my fast on a Thai island" |
+| Cost of living | "How much I spend per month living here — full breakdown" |
+| Why you came | "Why I left Brazil and moved to Koh Phangan" |
+| Full moon | "Training the day after Full Moon Party (yes I still trained)" |
+| Wellness scene | "The yoga/wellness scene here is insane — here's why" |
+| Nomad reality | "The real side of living in paradise no one shows" |
+
+---
+
+*Last updated: April 2026 — Koh Phangan, Thailand*
