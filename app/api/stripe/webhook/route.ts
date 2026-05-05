@@ -3,10 +3,85 @@ export const dynamic = "force-dynamic"
 import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { db } from "@/lib/db"
-import { subscriptions } from "@/lib/db/schema"
+import {
+  subscriptions,
+  digitalProducts,
+  digitalPurchases,
+} from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
-import { formatISO } from "date-fns"
+import { addHours, formatISO } from "date-fns"
+import { render } from "@react-email/components"
 import type Stripe from "stripe"
+import { getResend, EMAIL_FROM, EMAIL_REPLY_TO } from "@/lib/email/resend"
+import { DeliveryEmail } from "@/lib/email/templates/DeliveryEmail"
+
+const DOWNLOAD_TTL_HOURS = 48
+
+async function handlePdfPurchase(session: Stripe.Checkout.Session) {
+  const productId = session.metadata?.productId
+  const email = session.customer_details?.email ?? session.customer_email
+  if (!productId || !email) return
+
+  const [existing] = await db
+    .select()
+    .from(digitalPurchases)
+    .where(eq(digitalPurchases.stripeSessionId, session.id))
+    .limit(1)
+  if (existing) return
+
+  const [product] = await db
+    .select()
+    .from(digitalProducts)
+    .where(eq(digitalProducts.id, productId))
+    .limit(1)
+  if (!product) return
+
+  const expiresAt = formatISO(addHours(new Date(), DOWNLOAD_TTL_HOURS))
+  const name = session.customer_details?.name ?? null
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null
+
+  const [purchase] = await db
+    .insert(digitalPurchases)
+    .values({
+      productId: product.id,
+      email: email.toLowerCase().trim(),
+      name,
+      stripeSessionId: session.id,
+      stripePaymentIntentId: paymentIntentId,
+      amountPaidCents: session.amount_total ?? product.priceCents,
+      currency: session.currency ?? product.currency,
+      expiresAt,
+    })
+    .returning()
+
+  const baseUrl = process.env.AUTH_URL ?? "http://localhost:3000"
+  const downloadUrl = `${baseUrl}/api/download/${purchase.downloadToken}`
+
+  const html = await render(
+    DeliveryEmail({
+      productName: product.name,
+      downloadUrl,
+      expiresInHours: DOWNLOAD_TTL_HOURS,
+      unsubscribeUrl: `${baseUrl}/api/unsubscribe?token=${purchase.downloadToken}`,
+    }),
+  )
+
+  await getResend().emails.send({
+    from: EMAIL_FROM,
+    to: email,
+    replyTo: EMAIL_REPLY_TO,
+    subject: `Seu ${product.name} está aqui`,
+    html,
+  })
+
+  await db
+    .update(digitalPurchases)
+    .set({ deliveredAt: formatISO(new Date()) })
+    .where(eq(digitalPurchases.id, purchase.id))
+}
 
 export async function POST(request: Request) {
   const body = await request.text()
@@ -31,6 +106,12 @@ export async function POST(request: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session
+
+      if (session.metadata?.productType === "pdf") {
+        await handlePdfPurchase(session)
+        break
+      }
+
       const userId = session.metadata?.userId
 
       if (!userId || !session.subscription || !session.customer) break

@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# private PDFs and digital assets (served via API only)
+/private/**/*
+!/private/**/.gitkeep
+
+# large video assets — host on CDN instead
+/public/poses/

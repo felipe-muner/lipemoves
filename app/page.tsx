@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Header from "@/components/Header"
+import NewsletterForm from "@/components/NewsletterForm"
 
 export default function HomePage() {
   return (
@@ -120,6 +121,22 @@ export default function HomePage() {
                 Assinar Anual
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter */}
+      <section className="border-t border-border px-6 py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="font-heading text-3xl md:text-4xl">
+            Receba o Guia de Fundamentos
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            5 movimentos base que destravam quadril, ombro e coluna em 10 minutos por dia.
+            Gr&aacute;tis, direto no seu email.
+          </p>
+          <div className="mt-8">
+            <NewsletterForm source="homepage" />
           </div>
         </div>
       </section>

@@ -123,3 +123,113 @@ export const watchProgress = pgTable("watch_progress", {
   completed: boolean("completed").default(false),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
+
+// ─── Email Marketing ─────────────────────────────────────
+export const subscriberStatusEnum = pgEnum("subscriber_status", [
+  "active",
+  "unsubscribed",
+  "bounced",
+  "complained",
+])
+
+export const emailSendStatusEnum = pgEnum("email_send_status", [
+  "queued",
+  "sent",
+  "failed",
+])
+
+export const emailSubscribers = pgTable("email_subscribers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }),
+  status: subscriberStatusEnum("status").notNull().default("active"),
+  source: varchar("source", { length: 100 }),
+  unsubscribeToken: uuid("unsubscribe_token").defaultRandom().notNull().unique(),
+  subscribedAt: timestamp("subscribed_at", { mode: "string" }).defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at", { mode: "string" }),
+})
+
+export const emailSequences = pgTable("email_sequences", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const emailSequenceSteps = pgTable("email_sequence_steps", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sequenceId: uuid("sequence_id")
+    .notNull()
+    .references(() => emailSequences.id, { onDelete: "cascade" }),
+  stepOrder: integer("step_order").notNull(),
+  delayHours: integer("delay_hours").notNull().default(24),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  preheader: varchar("preheader", { length: 255 }),
+  bodyMarkdown: text("body_markdown").notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const emailSequenceEnrollments = pgTable("email_sequence_enrollments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  subscriberId: uuid("subscriber_id")
+    .notNull()
+    .references(() => emailSubscribers.id, { onDelete: "cascade" }),
+  sequenceId: uuid("sequence_id")
+    .notNull()
+    .references(() => emailSequences.id, { onDelete: "cascade" }),
+  currentStep: integer("current_step").notNull().default(0),
+  nextSendAt: timestamp("next_send_at", { mode: "string" }).notNull(),
+  completedAt: timestamp("completed_at", { mode: "string" }),
+  enrolledAt: timestamp("enrolled_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// ─── Digital Products (one-time PDFs, etc.) ──────────────
+export const digitalProducts = pgTable("digital_products", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  stripePriceId: varchar("stripe_price_id", { length: 255 }).notNull(),
+  filePath: varchar("file_path", { length: 500 }).notNull(),
+  priceCents: integer("price_cents").notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default("brl"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const digitalPurchases = pgTable("digital_purchases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => digitalProducts.id, { onDelete: "restrict" }),
+  email: varchar("email", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }),
+  downloadToken: uuid("download_token").defaultRandom().notNull().unique(),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }).unique(),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  amountPaidCents: integer("amount_paid_cents").notNull(),
+  currency: varchar("currency", { length: 10 }).notNull(),
+  downloadCount: integer("download_count").notNull().default(0),
+  maxDownloads: integer("max_downloads").notNull().default(10),
+  expiresAt: timestamp("expires_at", { mode: "string" }).notNull(),
+  deliveredAt: timestamp("delivered_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const emailSends = pgTable("email_sends", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  subscriberId: uuid("subscriber_id")
+    .notNull()
+    .references(() => emailSubscribers.id, { onDelete: "cascade" }),
+  sequenceStepId: uuid("sequence_step_id").references(() => emailSequenceSteps.id, {
+    onDelete: "set null",
+  }),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  status: emailSendStatusEnum("status").notNull().default("queued"),
+  resendId: varchar("resend_id", { length: 255 }),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})

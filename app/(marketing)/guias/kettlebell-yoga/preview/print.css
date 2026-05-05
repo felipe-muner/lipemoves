@@ -1,0 +1,340 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+
+.pdf-root {
+  font-family: "Georgia", "Iowan Old Style", "Times New Roman", serif;
+  color: #1a1a1a;
+  background: #e7e5e4;
+  line-height: 1.55;
+}
+
+.pdf-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: #111;
+  color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pdf-toolbar-button {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: #fff;
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pdf-page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 16px auto;
+  padding: 22mm 20mm;
+  background: #fff;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  page-break-after: always;
+  break-after: page;
+}
+
+.pdf-page h2 {
+  font-size: 32px;
+  margin: 0 0 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border-bottom: 2px solid #111;
+  padding-bottom: 12px;
+}
+
+.pdf-page h3 {
+  font-size: 20px;
+  margin: 28px 0 10px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pdf-page p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+.pdf-page ul,
+.pdf-page ol {
+  font-size: 14px;
+  line-height: 1.7;
+  padding-left: 22px;
+  margin: 0 0 14px;
+}
+
+.pdf-page li {
+  margin: 0 0 8px;
+}
+
+.pdf-lede {
+  font-size: 18px !important;
+  font-style: italic;
+  color: #333;
+  margin-bottom: 20px !important;
+}
+
+.pdf-sign {
+  margin-top: 32px !important;
+  font-style: italic;
+  font-size: 15px !important;
+}
+
+.pdf-callout {
+  margin: 24px 0;
+  padding: 18px 22px;
+  background: #f5f5f4;
+  border-left: 4px solid #111;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pdf-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0;
+  border: 1px dashed #bbb;
+  background: #fafaf9;
+  color: #888;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.pdf-photo-landscape {
+  height: 180px;
+}
+
+.pdf-photo-portrait {
+  height: 280px;
+}
+
+.pdf-photo-square {
+  height: 220px;
+}
+
+.pdf-photo-figure {
+  margin: 16px 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #111;
+}
+
+.pdf-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pdf-cover .pdf-photo-figure {
+  flex: 1;
+  min-height: 340px;
+  margin: 24px 0;
+  border-radius: 0;
+}
+
+.pdf-movement {
+  margin: 0 0 32px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.pdf-movement:last-child {
+  border-bottom: none;
+}
+
+.pdf-flow {
+  margin: 0 0 24px;
+}
+
+.pdf-assessment h3 {
+  margin-top: 20px;
+  font-size: 17px;
+}
+
+.pdf-steps li {
+  margin: 0 0 12px;
+}
+
+.pdf-checklist {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 12px;
+}
+
+.pdf-checklist th,
+.pdf-checklist td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.pdf-checklist th {
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pdf-checklist td:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+/* ── COVER ─────────────────────────────────────────────────── */
+.pdf-cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #111;
+  color: #fff;
+  padding: 30mm 24mm;
+}
+
+.pdf-cover-eyebrow {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #e7e5e4;
+}
+
+.pdf-cover .pdf-photo {
+  flex: 1;
+  margin: 24px 0;
+  border-color: #555;
+  background: #1a1a1a;
+  color: #999;
+  min-height: 260px;
+}
+
+.pdf-cover-title h1 {
+  font-size: 64px;
+  line-height: 1.02;
+  margin: 0 0 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.pdf-cover-subtitle {
+  font-size: 17px !important;
+  line-height: 1.5 !important;
+  color: #d6d3d1 !important;
+  font-style: italic;
+  margin: 0 0 40px !important;
+  max-width: 90%;
+}
+
+.pdf-cover-author {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  color: #e7e5e4 !important;
+  letter-spacing: 0.05em;
+}
+
+/* ── CLOSING ───────────────────────────────────────────────── */
+.pdf-closing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.pdf-closing h2 {
+  border-bottom: none;
+  font-size: 48px;
+  padding-bottom: 0;
+}
+
+.pdf-closing p {
+  font-size: 16px !important;
+  line-height: 1.7 !important;
+}
+
+.pdf-closing hr {
+  margin: 32px 0 20px;
+  border: none;
+  border-top: 1px solid #ddd;
+}
+
+.pdf-footer-contact {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px !important;
+  color: #666;
+  letter-spacing: 0.05em;
+}
+
+/* ── PRINT ─────────────────────────────────────────────────── */
+@media print {
+  .pdf-toolbar {
+    display: none !important;
+  }
+
+  .pdf-root {
+    background: #fff;
+  }
+
+  .pdf-page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .pdf-page:last-of-type {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .pdf-photo,
+  .pdf-photo-figure {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .pdf-photo-img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .pdf-movement {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .pdf-callout {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .pdf-checklist {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
