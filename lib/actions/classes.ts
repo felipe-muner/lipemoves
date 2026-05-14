@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { yogaClasses, teachers } from "@/lib/db/schema"
+import { yogaClasses, employees } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireDashboardSession } from "@/lib/auth/dashboard"
@@ -41,7 +41,7 @@ function readFields(formData: FormData) {
     priceThb: Math.max(0, Math.round(priceThb)),
     teacherSharePercent: Math.round(teacherSharePercent),
     capacity,
-    teacherId,
+    employeeId: teacherId,
     locationId,
   }
 }
@@ -104,8 +104,8 @@ export async function importClasses(
   await requireManageScope()
 
   const teacherList = await db
-    .select({ id: teachers.id, email: teachers.email })
-    .from(teachers)
+    .select({ id: employees.id, email: employees.email })
+    .from(employees)
   const emailToId = new Map(
     teacherList.map((t) => [t.email.toLowerCase(), t.id]),
   )
@@ -204,7 +204,7 @@ export async function importClasses(
     }
 
     toInsert.push({
-      teacherId,
+      employeeId: teacherId,
       name,
       description: row.description?.trim() || null,
       scheduledAt: formatISO(parsed),

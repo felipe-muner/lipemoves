@@ -1,11 +1,11 @@
 import { db } from "@/lib/db"
-import { teachers, students, studentMemberships, classAttendance, yogaClasses } from "@/lib/db/schema"
+import { employees, students, studentMemberships, classAttendance, yogaClasses } from "@/lib/db/schema"
 import { and, eq, gte, inArray, isNotNull } from "drizzle-orm"
 import { formatISO } from "date-fns"
 
 /** Source flags — recipients are the union of every selected source. */
 export interface AudienceFilter {
-  teachers?: boolean
+  employees?: boolean
   allStudents?: boolean
   activeMembershipsOnly?: boolean
   /** UUIDs of classes — recipients are the attendees of those classes. */
@@ -29,11 +29,11 @@ export async function resolveAudience(
   const map = new Map<string, Recipient>()
   const parts: string[] = []
 
-  if (filter.teachers) {
+  if (filter.employees) {
     const rows = await db
-      .select({ email: teachers.email, name: teachers.name })
-      .from(teachers)
-      .where(eq(teachers.isActive, true))
+      .select({ email: employees.email, name: employees.name })
+      .from(employees)
+      .where(eq(employees.isActive, true))
     rows.forEach((r) => map.set(r.email.toLowerCase(), { ...r, source: "teacher" }))
     parts.push(`Teachers (${rows.length})`)
   }

@@ -55,7 +55,7 @@ interface BaseProps {
   mode: "create" | "edit"
   values?: ClassDialogValues
   action: (formData: FormData) => Promise<void>
-  teachers: { id: string; name: string }[]
+  employees: { id: string; name: string }[]
   locations: LocationOption[]
 }
 
@@ -72,7 +72,7 @@ interface UncontrolledProps extends BaseProps {
 }
 
 export function ClassDialog(props: ControlledProps | UncontrolledProps) {
-  const { mode, values, action, teachers, locations } = props
+  const { mode, values, action, employees, locations } = props
   const defaultLocationId =
     locations.find((l) => l.isDefault)?.id ?? locations[0]?.id ?? ""
   const isControlled = "open" in props && props.open !== undefined
@@ -154,7 +154,7 @@ export function ClassDialog(props: ControlledProps | UncontrolledProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— no teacher —</SelectItem>
-                    {teachers.map((t) => (
+                    {employees.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         {t.name}
                       </SelectItem>

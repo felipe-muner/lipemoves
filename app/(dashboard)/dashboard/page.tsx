@@ -1,7 +1,7 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
 import {
-  teachers,
+  employees,
   yogaClasses,
   students,
   studentMemberships,
@@ -63,7 +63,7 @@ export default async function DashboardHome() {
   const monthStart = formatISO(startOfMonth(now))
 
   if (session.role === "admin" || session.role === "manager") {
-    const [teachersCount] = await db.select({ v: count() }).from(teachers)
+    const [teachersCount] = await db.select({ v: count() }).from(employees)
     const [studentsCount] = await db.select({ v: count() }).from(students)
     const [activeMembershipsCount] = await db
       .select({ v: count() })
@@ -133,7 +133,7 @@ export default async function DashboardHome() {
       .from(yogaClasses)
       .where(
         and(
-          eq(yogaClasses.teacherId, teacherId),
+          eq(yogaClasses.employeeId, teacherId),
           gte(yogaClasses.scheduledAt, monthStart),
           lte(yogaClasses.scheduledAt, monthEnd),
         ),
@@ -147,7 +147,7 @@ export default async function DashboardHome() {
       .from(yogaClasses)
       .where(
         and(
-          eq(yogaClasses.teacherId, teacherId),
+          eq(yogaClasses.employeeId, teacherId),
           gte(yogaClasses.scheduledAt, monthStart),
           lte(yogaClasses.scheduledAt, monthEnd),
         ),

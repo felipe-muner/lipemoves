@@ -73,12 +73,12 @@ export interface LocationOption {
 export function CalendarGrid({
   weekStartIso,
   classes,
-  teachers,
+  employees,
   locations,
 }: {
   weekStartIso: string
   classes: CalendarClass[]
-  teachers: { id: string; name: string }[]
+  employees: { id: string; name: string }[]
   locations: LocationOption[]
 }) {
   const weekStart = parseISO(weekStartIso)
@@ -309,7 +309,7 @@ export function CalendarGrid({
       <ClassDialog
         mode={mode}
         action={action}
-        teachers={teachers}
+        employees={employees}
         locations={locations}
         values={values}
         open={open}

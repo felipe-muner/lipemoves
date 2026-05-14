@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { teachers } from "@/lib/db/schema"
+import { employees } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 
 export type DashboardRole = "admin" | "manager" | "teacher"
@@ -30,9 +30,9 @@ export async function requireDashboardSession(): Promise<DashboardSession> {
   let teacherId: string | null = null
   if (role === "teacher") {
     const [t] = await db
-      .select({ id: teachers.id })
-      .from(teachers)
-      .where(eq(teachers.userId, session.user.id))
+      .select({ id: employees.id })
+      .from(employees)
+      .where(eq(employees.userId, session.user.id))
       .limit(1)
     teacherId = t?.id ?? null
   }

@@ -57,7 +57,7 @@ export async function copyWeek(
   const targetEnd = endOfWeek(targetStart, { weekStartsOn: 1 })
   const existing = await db
     .select({
-      teacherId: yogaClasses.teacherId,
+      employeeId: yogaClasses.employeeId,
       scheduledAt: yogaClasses.scheduledAt,
     })
     .from(yogaClasses)
@@ -68,17 +68,17 @@ export async function copyWeek(
       ),
     )
   const existingKeys = new Set(
-    existing.map((e) => `${e.teacherId ?? ""}|${e.scheduledAt}`),
+    existing.map((e) => `${e.employeeId ?? ""}|${e.scheduledAt}`),
   )
 
   const toInsert = sourceClasses
     .map((c) => {
       const newDate = new Date(new Date(c.scheduledAt).getTime() + offsetMs)
       const newScheduledAt = formatISO(newDate)
-      const key = `${c.teacherId ?? ""}|${newScheduledAt}`
+      const key = `${c.employeeId ?? ""}|${newScheduledAt}`
       if (existingKeys.has(key)) return null
       return {
-        teacherId: c.teacherId,
+        employeeId: c.employeeId,
         name: c.name,
         description: c.description,
         scheduledAt: newScheduledAt,

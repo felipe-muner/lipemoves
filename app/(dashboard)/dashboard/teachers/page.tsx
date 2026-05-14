@@ -1,6 +1,7 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
-import { teachers } from "@/lib/db/schema"
+import { employees, roles, employeeRoles } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -28,10 +29,23 @@ export default async function TeachersPage() {
   const session = await requireDashboardSession()
   if (session.role === "teacher") notFound()
 
+  // Employees who hold the "teacher" role
   const rows = await db
-    .select()
-    .from(teachers)
-    .orderBy(teachers.createdAt)
+    .select({
+      id: employees.id,
+      name: employees.name,
+      email: employees.email,
+      phone: employees.phone,
+      passport: employees.passport,
+      bio: employees.bio,
+      isActive: employees.isActive,
+      createdAt: employees.createdAt,
+    })
+    .from(employees)
+    .innerJoin(employeeRoles, eq(employeeRoles.employeeId, employees.id))
+    .innerJoin(roles, eq(roles.id, employeeRoles.roleId))
+    .where(eq(roles.slug, "teacher"))
+    .orderBy(employees.createdAt)
 
   return (
     <div className="space-y-6">

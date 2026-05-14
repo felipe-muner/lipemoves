@@ -1,6 +1,6 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
-import { yogaClasses, teachers, locations } from "@/lib/db/schema"
+import { yogaClasses, employees, locations } from "@/lib/db/schema"
 import { ensureDefaultLocation } from "@/lib/actions/locations"
 import { and, eq, gte, lt } from "drizzle-orm"
 import {
@@ -68,14 +68,14 @@ export default async function ClassesPage({
       priceThb: yogaClasses.priceThb,
       teacherSharePercent: yogaClasses.teacherSharePercent,
       capacity: yogaClasses.capacity,
-      teacherId: yogaClasses.teacherId,
-      teacherName: teachers.name,
+      teacherId: yogaClasses.employeeId,
+      teacherName: employees.name,
       locationId: yogaClasses.locationId,
       locationName: locations.name,
       locationColor: locations.color,
     })
     .from(yogaClasses)
-    .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .leftJoin(employees, eq(employees.id, yogaClasses.employeeId))
     .leftJoin(locations, eq(locations.id, yogaClasses.locationId))
     .where(
       and(
@@ -96,22 +96,22 @@ export default async function ClassesPage({
       priceThb: yogaClasses.priceThb,
       teacherSharePercent: yogaClasses.teacherSharePercent,
       capacity: yogaClasses.capacity,
-      teacherId: yogaClasses.teacherId,
-      teacherName: teachers.name,
+      teacherId: yogaClasses.employeeId,
+      teacherName: employees.name,
       locationId: yogaClasses.locationId,
       locationName: locations.name,
       locationColor: locations.color,
     })
     .from(yogaClasses)
-    .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .leftJoin(employees, eq(employees.id, yogaClasses.employeeId))
     .leftJoin(locations, eq(locations.id, yogaClasses.locationId))
     .orderBy(yogaClasses.scheduledAt)
 
   const teacherOptions = await db
-    .select({ id: teachers.id, name: teachers.name })
-    .from(teachers)
-    .where(eq(teachers.isActive, true))
-    .orderBy(teachers.name)
+    .select({ id: employees.id, name: employees.name })
+    .from(employees)
+    .where(eq(employees.isActive, true))
+    .orderBy(employees.name)
 
   // Ensure at least one location exists then load
   await ensureDefaultLocation()
@@ -142,7 +142,7 @@ export default async function ClassesPage({
           <ClassDialog
             mode="create"
             action={createClass}
-            teachers={teacherOptions}
+            employees={teacherOptions}
             locations={locationOptions}
           />
         </div>
@@ -162,7 +162,7 @@ export default async function ClassesPage({
           <CalendarGrid
             weekStartIso={formatISO(weekStart)}
             classes={weekClasses}
-            teachers={teacherOptions}
+            employees={teacherOptions}
             locations={locationOptions}
           />
         </TabsContent>
@@ -234,7 +234,7 @@ export default async function ClassesPage({
                                   teacherId: c.teacherId,
                                   locationId: c.locationId,
                                 }}
-                                teachers={teacherOptions}
+                                employees={teacherOptions}
                                 locations={locationOptions}
                                 action={updateClass.bind(null, c.id)}
                                 trigger={

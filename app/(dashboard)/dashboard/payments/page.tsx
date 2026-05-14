@@ -1,6 +1,6 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
-import { yogaClasses, teachers } from "@/lib/db/schema"
+import { yogaClasses, employees } from "@/lib/db/schema"
 import { and, eq, gte, lte, isNotNull } from "drizzle-orm"
 import { format, startOfMonth, endOfMonth, parseISO, formatISO } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,11 +36,11 @@ export default async function PaymentsPage({
   const baseFilters = [
     gte(yogaClasses.scheduledAt, fromIso),
     lte(yogaClasses.scheduledAt, toIso),
-    isNotNull(yogaClasses.teacherId),
+    isNotNull(yogaClasses.employeeId),
   ]
   const whereClause =
     session.role === "teacher" && session.teacherId
-      ? and(...baseFilters, eq(yogaClasses.teacherId, session.teacherId))
+      ? and(...baseFilters, eq(yogaClasses.employeeId, session.teacherId))
       : and(...baseFilters)
 
   const classes = await db
@@ -50,11 +50,11 @@ export default async function PaymentsPage({
       scheduledAt: yogaClasses.scheduledAt,
       priceThb: yogaClasses.priceThb,
       teacherSharePercent: yogaClasses.teacherSharePercent,
-      teacherId: yogaClasses.teacherId,
-      teacherName: teachers.name,
+      teacherId: yogaClasses.employeeId,
+      teacherName: employees.name,
     })
     .from(yogaClasses)
-    .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .leftJoin(employees, eq(employees.id, yogaClasses.employeeId))
     .where(whereClause)
     .orderBy(yogaClasses.scheduledAt)
 
@@ -159,7 +159,7 @@ export default async function PaymentsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total payout to teachers
+              Total payout to employees
             </CardTitle>
           </CardHeader>
           <CardContent>
