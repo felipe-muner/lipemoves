@@ -46,3 +46,6 @@ next-env.d.ts
 
 # large video assets — host on CDN instead
 /public/poses/
+
+scripts/fill-recent.sh
+scripts/paint-contributions.sh
