@@ -30,7 +30,8 @@ export interface ClassDialogValues {
   description?: string | null
   scheduledAt?: string
   durationMinutes?: number | null
-  dropInPriceCents?: number | null
+  priceThb?: number | null
+  teacherSharePercent?: number | null
   capacity?: number | null
   teacherId?: string | null
 }
@@ -42,40 +43,55 @@ function toLocalDatetimeInput(iso?: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export function ClassDialog({
-  mode,
-  values,
-  action,
-  teachers,
-  trigger,
-}: {
+interface BaseProps {
   mode: "create" | "edit"
   values?: ClassDialogValues
   action: (formData: FormData) => Promise<void>
   teachers: { id: string; name: string }[]
+}
+
+interface ControlledProps extends BaseProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  trigger?: never
+}
+
+interface UncontrolledProps extends BaseProps {
   trigger?: React.ReactNode
-}) {
-  const [open, setOpen] = React.useState(false)
+  open?: never
+  onOpenChange?: never
+}
+
+export function ClassDialog(props: ControlledProps | UncontrolledProps) {
+  const { mode, values, action, teachers } = props
+  const isControlled = "open" in props && props.open !== undefined
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const open = isControlled ? (props as ControlledProps).open : internalOpen
+  const setOpen = isControlled
+    ? (props as ControlledProps).onOpenChange
+    : setInternalOpen
+
   const [pending, startTransition] = React.useTransition()
   const [teacherId, setTeacherId] = React.useState(values?.teacherId ?? "")
   const router = useRouter()
 
+  // Reset teacherId when values change (e.g. controlled dialog opened with new prefill)
+  React.useEffect(() => {
+    setTeacherId(values?.teacherId ?? "")
+  }, [values?.teacherId, open])
+
+  const trigger = !isControlled
+    ? (props as UncontrolledProps).trigger ?? (
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          New class
+        </Button>
+      )
+    : null
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o)
-        if (o) setTeacherId(values?.teacherId ?? "")
-      }}
-    >
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New class
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-[520px]">
         <form
           action={(formData) => {
@@ -112,7 +128,7 @@ export function ClassDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label>Teacher</Label>
+              <Label>Teacher / host</Label>
               <input type="hidden" name="teacherId" value={teacherId} />
               <Select
                 value={teacherId || "none"}
@@ -141,6 +157,7 @@ export function ClassDialog({
                   type="datetime-local"
                   required
                   defaultValue={toLocalDatetimeInput(values?.scheduledAt)}
+                  key={values?.scheduledAt ?? ""}
                 />
               </div>
               <div className="grid gap-2">
@@ -152,20 +169,35 @@ export function ClassDialog({
                   min="15"
                   step="15"
                   defaultValue={values?.durationMinutes ?? 60}
+                  key={`d-${values?.durationMinutes ?? ""}`}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="dropInPriceThb">Drop-in (THB)</Label>
+                <Label htmlFor="priceThb">Price</Label>
                 <Input
-                  id="dropInPriceThb"
-                  name="dropInPriceThb"
+                  id="priceThb"
+                  name="priceThb"
                   type="number"
                   min="0"
                   step="10"
-                  defaultValue={Math.round((values?.dropInPriceCents ?? 0) / 100)}
+                  defaultValue={values?.priceThb ?? 0}
+                  key={`p-${values?.priceThb ?? ""}`}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="teacherSharePercent">Teacher share</Label>
+                <Input
+                  id="teacherSharePercent"
+                  name="teacherSharePercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  defaultValue={values?.teacherSharePercent ?? 0}
+                  key={`sh-${values?.teacherSharePercent ?? ""}`}
                 />
               </div>
               <div className="grid gap-2">
@@ -176,6 +208,7 @@ export function ClassDialog({
                   type="number"
                   min="1"
                   defaultValue={values?.capacity ?? ""}
+                  key={`c-${values?.capacity ?? ""}`}
                 />
               </div>
             </div>
@@ -187,6 +220,7 @@ export function ClassDialog({
                 name="description"
                 rows={3}
                 defaultValue={values?.description ?? ""}
+                key={`desc-${values?.description ?? ""}`}
               />
             </div>
           </div>

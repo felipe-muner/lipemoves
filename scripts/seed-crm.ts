@@ -6,7 +6,6 @@ import {
   students,
   studentMemberships,
   classAttendance,
-  teacherPayments,
 } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
@@ -18,9 +17,11 @@ import {
   endOfMonth,
   setHours,
   setMinutes,
+  subDays,
 } from "date-fns"
 
 const ADMIN_EMAIL = "felipe.muner@gmail.com"
+const MANAGER_EMAIL = "kohphanganguide@gmail.com"
 
 async function upsertUser(opts: {
   email: string
@@ -63,29 +64,27 @@ async function upsertUser(opts: {
 
 async function main() {
   console.log("→ Cleaning previous CRM data...")
-  await db.delete(teacherPayments)
   await db.delete(classAttendance)
   await db.delete(studentMemberships)
   await db.delete(yogaClasses)
   await db.delete(teachers)
   await db.delete(students)
 
-  console.log("→ Promoting felipe to admin...")
+  console.log("→ Promoting admin...")
   await upsertUser({
     email: ADMIN_EMAIL,
     name: "Felipe Muner",
     role: "admin",
   })
 
-  console.log("→ Creating manager (head of center)...")
+  console.log("→ Manager...")
   await upsertUser({
-    email: "maria@phanganyoga.com",
-    name: "Maria Silva",
-    password: "test123",
+    email: MANAGER_EMAIL,
+    name: "Manager Koh Phangan",
     role: "manager",
   })
 
-  console.log("→ Creating teacher users (Gmail login auto-links)...")
+  console.log("→ Teacher users (auto-link on Google login)...")
   const teacherUsers = await Promise.all([
     upsertUser({
       email: "anna@phanganyoga.com",
@@ -107,7 +106,7 @@ async function main() {
     }),
   ])
 
-  console.log("→ Creating teacher records...")
+  console.log("→ Teacher records...")
   const [tAnna, tLuca, tPutu] = await db
     .insert(teachers)
     .values([
@@ -116,29 +115,29 @@ async function main() {
         name: "Anna Beck",
         email: "anna@phanganyoga.com",
         phone: "+66 80 123 4567",
+        passport: "C01X11122",
         bio: "Vinyasa & Yin",
-        payPerClassCents: 80000,
       },
       {
         userId: teacherUsers[1].id,
         name: "Luca Rossi",
         email: "luca@phanganyoga.com",
         phone: "+66 81 222 3333",
+        passport: "YA8800123",
         bio: "Ashtanga",
-        payPerClassCents: 100000,
       },
       {
         userId: teacherUsers[2].id,
         name: "Putu Surya",
         email: "putu@phanganyoga.com",
         phone: "+66 90 444 5555",
+        passport: "P9988776",
         bio: "Hatha & Pranayama",
-        payPerClassCents: 90000,
       },
     ])
     .returning()
 
-  console.log("→ Creating classes (past + upcoming)...")
+  console.log("→ Classes (past + upcoming)...")
   const now = new Date()
   const monthStart = startOfMonth(now)
 
@@ -156,7 +155,8 @@ async function main() {
         name: "Vinyasa Flow",
         scheduledAt: classAt(2, 8),
         durationMinutes: 75,
-        dropInPriceCents: 35000,
+        priceThb: 350,
+        teacherSharePercent: 70,
         capacity: 20,
       },
       {
@@ -164,7 +164,8 @@ async function main() {
         name: "Yin Restorative",
         scheduledAt: classAt(4, 17),
         durationMinutes: 90,
-        dropInPriceCents: 35000,
+        priceThb: 350,
+        teacherSharePercent: 70,
         capacity: 18,
       },
       {
@@ -172,7 +173,8 @@ async function main() {
         name: "Ashtanga Mysore",
         scheduledAt: classAt(3, 7),
         durationMinutes: 90,
-        dropInPriceCents: 40000,
+        priceThb: 400,
+        teacherSharePercent: 75,
         capacity: 15,
       },
       {
@@ -180,7 +182,8 @@ async function main() {
         name: "Hatha Morning",
         scheduledAt: classAt(2, 7),
         durationMinutes: 75,
-        dropInPriceCents: 30000,
+        priceThb: 300,
+        teacherSharePercent: 65,
         capacity: 25,
       },
       {
@@ -188,7 +191,8 @@ async function main() {
         name: "Pranayama & Meditation",
         scheduledAt: classAt(5, 18),
         durationMinutes: 60,
-        dropInPriceCents: 25000,
+        priceThb: 250,
+        teacherSharePercent: 65,
         capacity: 20,
       },
       // Upcoming
@@ -197,7 +201,8 @@ async function main() {
         name: "Vinyasa Flow",
         scheduledAt: formatISO(addDays(now, 1)),
         durationMinutes: 75,
-        dropInPriceCents: 35000,
+        priceThb: 350,
+        teacherSharePercent: 70,
         capacity: 20,
       },
       {
@@ -205,7 +210,8 @@ async function main() {
         name: "Ashtanga Led",
         scheduledAt: formatISO(addDays(now, 3)),
         durationMinutes: 90,
-        dropInPriceCents: 40000,
+        priceThb: 400,
+        teacherSharePercent: 75,
         capacity: 15,
       },
       {
@@ -213,13 +219,14 @@ async function main() {
         name: "Hatha Morning",
         scheduledAt: formatISO(addDays(now, 2)),
         durationMinutes: 75,
-        dropInPriceCents: 30000,
+        priceThb: 300,
+        teacherSharePercent: 65,
         capacity: 25,
       },
     ])
     .returning()
 
-  console.log("→ Creating students...")
+  console.log("→ Students...")
   await db.insert(students).values([
     {
       email: "lena.mueller@example.com",
@@ -265,7 +272,7 @@ async function main() {
     },
   ])
 
-  console.log("→ Creating memberships...")
+  console.log("→ Memberships...")
   const monthEndIso = formatISO(endOfMonth(now))
   await db.insert(studentMemberships).values([
     {
@@ -273,49 +280,43 @@ async function main() {
       type: "monthly",
       startsOn: formatISO(monthStart),
       endsOn: monthEndIso,
-      pricePaidCents: 350000,
-      currency: "thb",
+      pricePaidThb: 3500,
     },
     {
       studentEmail: "sophie.dubois@example.com",
       type: "monthly",
       startsOn: formatISO(addDays(monthStart, 1)),
       endsOn: monthEndIso,
-      pricePaidCents: 350000,
-      currency: "thb",
+      pricePaidThb: 3500,
     },
     {
       studentEmail: "james.oconnor@example.com",
       type: "drop_in",
       startsOn: formatISO(addDays(monthStart, 2)),
-      pricePaidCents: 35000,
-      currency: "thb",
+      pricePaidThb: 350,
     },
     {
       studentEmail: "tom.harris@example.com",
       type: "drop_in",
       startsOn: formatISO(addDays(monthStart, 3)),
-      pricePaidCents: 40000,
-      currency: "thb",
+      pricePaidThb: 400,
     },
     {
       studentEmail: "yuki.tanaka@example.com",
       type: "monthly",
       startsOn: formatISO(monthStart),
       endsOn: monthEndIso,
-      pricePaidCents: 350000,
-      currency: "thb",
+      pricePaidThb: 3500,
     },
     {
       studentEmail: "ana.costa@example.com",
       type: "drop_in",
       startsOn: formatISO(addDays(monthStart, 4)),
-      pricePaidCents: 30000,
-      currency: "thb",
+      pricePaidThb: 300,
     },
   ])
 
-  console.log("→ Creating class attendance...")
+  console.log("→ Class attendance...")
   await db.insert(classAttendance).values([
     {
       classId: classRows[0].id,
@@ -349,63 +350,14 @@ async function main() {
     },
   ])
 
-  console.log("→ Creating teacher payments...")
-  const periodStart = formatISO(monthStart)
-  const periodEnd = formatISO(endOfMonth(now))
-  const lastMonthStart = formatISO(addDays(monthStart, -30))
-  const lastMonthEnd = formatISO(addDays(monthStart, -1))
-  await db.insert(teacherPayments).values([
-    {
-      teacherId: tAnna.id,
-      periodStart,
-      periodEnd,
-      amountCents: 160000,
-      currency: "thb",
-      status: "pending",
-      notes: "Vinyasa + Yin",
-    },
-    {
-      teacherId: tAnna.id,
-      periodStart: lastMonthStart,
-      periodEnd: lastMonthEnd,
-      amountCents: 240000,
-      currency: "thb",
-      status: "paid",
-      paidAt: formatISO(addDays(monthStart, 1)),
-    },
-    {
-      teacherId: tLuca.id,
-      periodStart,
-      periodEnd,
-      amountCents: 100000,
-      currency: "thb",
-      status: "paid",
-      paidAt: formatISO(addDays(now, -1)),
-    },
-    {
-      teacherId: tLuca.id,
-      periodStart: lastMonthStart,
-      periodEnd: lastMonthEnd,
-      amountCents: 200000,
-      currency: "thb",
-      status: "paid",
-      paidAt: formatISO(addDays(monthStart, 2)),
-    },
-    {
-      teacherId: tPutu.id,
-      periodStart,
-      periodEnd,
-      amountCents: 180000,
-      currency: "thb",
-      status: "pending",
-    },
-  ])
+  // Suppress unused warning
+  void subDays
 
   console.log("✅ Seed complete")
   console.log("")
-  console.log("Logins (senha test123, ou Google com mesmo e-mail):")
-  console.log(`  Admin:   ${ADMIN_EMAIL}     (Google)`)
-  console.log(`  Manager: maria@phanganyoga.com`)
+  console.log("Logins (password test123, or Google with same email):")
+  console.log(`  Admin:   ${ADMIN_EMAIL}   (Google)`)
+  console.log(`  Manager: ${MANAGER_EMAIL}   (Google)`)
   console.log(`  Teacher: anna@phanganyoga.com`)
   console.log(`  Teacher: luca@phanganyoga.com`)
   console.log(`  Teacher: putu@phanganyoga.com`)

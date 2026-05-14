@@ -10,70 +10,65 @@ import { parseISO, formatISO } from "date-fns"
 async function requireManageScope() {
   const session = await requireDashboardSession()
   if (session.role !== "admin" && session.role !== "manager") {
-    throw new Error("Sem permissão")
+    throw new Error("No permission")
   }
   return session
 }
 
-export async function createClass(formData: FormData) {
-  await requireManageScope()
+function readFields(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim()
   const description = String(formData.get("description") ?? "").trim() || null
   const scheduledAtRaw = String(formData.get("scheduledAt") ?? "").trim()
   const durationMinutes = Number(formData.get("durationMinutes") ?? 60)
-  const dropInPriceThb = Number(formData.get("dropInPriceThb") ?? 0)
+  const priceThb = Number(formData.get("priceThb") ?? 0)
+  const teacherSharePercent = Number(formData.get("teacherSharePercent") ?? 0)
   const capacityRaw = String(formData.get("capacity") ?? "").trim()
   const capacity = capacityRaw ? Number(capacityRaw) : null
   const teacherId = String(formData.get("teacherId") ?? "").trim() || null
 
-  if (!name) throw new Error("Nome é obrigatório")
-  if (!scheduledAtRaw) throw new Error("Data/hora é obrigatória")
+  if (!name) throw new Error("Name is required")
+  if (!scheduledAtRaw) throw new Error("Date / time is required")
+  if (teacherSharePercent < 0 || teacherSharePercent > 100) {
+    throw new Error("Teacher share must be between 0 and 100")
+  }
 
-  await db.insert(yogaClasses).values({
-    teacherId,
+  return {
     name,
     description,
     scheduledAt: formatISO(parseISO(scheduledAtRaw)),
     durationMinutes,
-    dropInPriceCents: Math.round(dropInPriceThb * 100),
+    priceThb: Math.max(0, Math.round(priceThb)),
+    teacherSharePercent: Math.round(teacherSharePercent),
     capacity,
-  })
+    teacherId,
+  }
+}
 
+export async function createClass(formData: FormData) {
+  await requireManageScope()
+  await db.insert(yogaClasses).values(readFields(formData))
   revalidatePath("/dashboard/classes")
-  revalidatePath("/dashboard/bookings")
+  revalidatePath("/dashboard/payments")
 }
 
 export async function updateClass(id: string, formData: FormData) {
   await requireManageScope()
-  const name = String(formData.get("name") ?? "").trim()
-  const description = String(formData.get("description") ?? "").trim() || null
-  const scheduledAtRaw = String(formData.get("scheduledAt") ?? "").trim()
-  const durationMinutes = Number(formData.get("durationMinutes") ?? 60)
-  const dropInPriceThb = Number(formData.get("dropInPriceThb") ?? 0)
-  const capacityRaw = String(formData.get("capacity") ?? "").trim()
-  const capacity = capacityRaw ? Number(capacityRaw) : null
-  const teacherId = String(formData.get("teacherId") ?? "").trim() || null
-
-  if (!name) throw new Error("Nome é obrigatório")
-  if (!scheduledAtRaw) throw new Error("Data/hora é obrigatória")
-
   await db
     .update(yogaClasses)
-    .set({
-      name,
-      description,
-      scheduledAt: formatISO(parseISO(scheduledAtRaw)),
-      durationMinutes,
-      dropInPriceCents: Math.round(dropInPriceThb * 100),
-      capacity,
-      teacherId,
-      updatedAt: new Date().toISOString(),
-    })
+    .set({ ...readFields(formData), updatedAt: new Date().toISOString() })
     .where(eq(yogaClasses.id, id))
-
   revalidatePath("/dashboard/classes")
-  revalidatePath("/dashboard/bookings")
+  revalidatePath("/dashboard/payments")
 }
+
+export async function deleteClass(id: string) {
+  await requireManageScope()
+  await db.delete(yogaClasses).where(eq(yogaClasses.id, id))
+  revalidatePath("/dashboard/classes")
+  revalidatePath("/dashboard/payments")
+}
+
+// ─── Import ──────────────────────────────────────────────
 
 export interface ImportClassRow {
   line: number
@@ -82,7 +77,8 @@ export interface ImportClassRow {
   date?: string // YYYY-MM-DD
   time?: string // HH:MM
   durationMinutes?: number | string
-  dropInPriceThb?: number | string
+  priceThb?: number | string
+  teacherSharePercent?: number | string
   capacity?: number | string
   description?: string
 }
@@ -105,7 +101,6 @@ export async function importClasses(
 ): Promise<ImportClassesResult> {
   await requireManageScope()
 
-  // Pre-fetch teachers for email lookup
   const teacherList = await db
     .select({ id: teachers.id, email: teachers.email })
     .from(teachers)
@@ -171,12 +166,22 @@ export async function importClasses(
       continue
     }
 
-    const priceThb = Number(row.dropInPriceThb ?? 0)
+    const priceThb = Number(row.priceThb ?? 0)
     if (!Number.isFinite(priceThb) || priceThb < 0) {
       results.push({
         line,
         ok: false,
-        message: `Invalid price "${row.dropInPriceThb}"`,
+        message: `Invalid price "${row.priceThb}"`,
+      })
+      continue
+    }
+
+    const sharePct = Number(row.teacherSharePercent ?? 0)
+    if (!Number.isFinite(sharePct) || sharePct < 0 || sharePct > 100) {
+      results.push({
+        line,
+        ok: false,
+        message: `Invalid teacher share % "${row.teacherSharePercent}"`,
       })
       continue
     }
@@ -202,14 +207,15 @@ export async function importClasses(
       description: row.description?.trim() || null,
       scheduledAt: formatISO(parsed),
       durationMinutes: duration,
-      dropInPriceCents: Math.round(priceThb * 100),
+      priceThb: Math.round(priceThb),
+      teacherSharePercent: Math.round(sharePct),
       capacity,
     })
 
     results.push({
       line,
       ok: true,
-      preview: `${name} · ${date} ${time} · ${tEmail || "no teacher"}`,
+      preview: `${name} · ${date} ${time} · ${priceThb} ฿ · ${sharePct}% to ${tEmail || "—"}`,
     })
   }
 
@@ -218,18 +224,11 @@ export async function importClasses(
   }
 
   revalidatePath("/dashboard/classes")
-  revalidatePath("/dashboard/bookings")
+  revalidatePath("/dashboard/payments")
 
   return {
     imported: toInsert.length,
     failed: results.filter((r) => !r.ok).length,
     results,
   }
-}
-
-export async function deleteClass(id: string) {
-  await requireManageScope()
-  await db.delete(yogaClasses).where(eq(yogaClasses.id, id))
-  revalidatePath("/dashboard/classes")
-  revalidatePath("/dashboard/bookings")
 }

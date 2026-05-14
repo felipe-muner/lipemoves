@@ -39,7 +39,7 @@ export default async function TeachersPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Teachers</h1>
           <p className="text-sm text-muted-foreground">
-            Manage teachers and their per-class rates.
+            Manage teachers. Each class has its own per-teacher pay.
           </p>
         </div>
         <TeacherDialog mode="create" action={createTeacher} />
@@ -56,7 +56,7 @@ export default async function TeachersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead className="text-right">Pay/class (THB)</TableHead>
+                <TableHead>Passport</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -77,9 +77,7 @@ export default async function TeachersPage() {
                     <TableCell className="font-medium">{r.name}</TableCell>
                     <TableCell>{r.email}</TableCell>
                     <TableCell>{r.phone ?? "—"}</TableCell>
-                    <TableCell className="text-right">
-                      {Math.round((r.payPerClassCents ?? 0) / 100)}
-                    </TableCell>
+                    <TableCell>{r.passport ?? "—"}</TableCell>
                     <TableCell>
                       {r.isActive ? (
                         <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600">
@@ -98,8 +96,8 @@ export default async function TeachersPage() {
                             name: r.name,
                             email: r.email,
                             phone: r.phone,
+                            passport: r.passport,
                             bio: r.bio,
-                            payPerClassCents: r.payPerClassCents,
                             isActive: r.isActive,
                           }}
                           action={updateTeacher.bind(null, r.id)}
