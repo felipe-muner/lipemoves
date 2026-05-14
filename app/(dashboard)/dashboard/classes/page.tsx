@@ -1,8 +1,22 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
 import { yogaClasses, teachers } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
-import { format } from "date-fns"
+import { and, eq, gte, lt } from "drizzle-orm"
+import {
+  endOfWeek,
+  format,
+  formatISO,
+  parseISO,
+  startOfWeek,
+  addMinutes,
+} from "date-fns"
+import { notFound } from "next/navigation"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
@@ -14,9 +28,13 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
+import { CalendarGrid } from "@/components/crm/calendar-grid"
 import { ClassDialog } from "@/components/crm/class-dialog"
 import { ImportClassesDialog } from "@/components/crm/import-classes-dialog"
+import { CopyWeekDialog } from "@/components/crm/copy-week-dialog"
+import { WeekNav } from "@/components/crm/week-nav"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { Money } from "@/components/crm/money"
 import {
   createClass,
   updateClass,
@@ -25,140 +43,196 @@ import {
 
 export const dynamic = "force-dynamic"
 
-export default async function ClassesPage() {
+export default async function ClassesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ week?: string; view?: string }>
+}) {
   const session = await requireDashboardSession()
+  if (session.role === "teacher") notFound()
 
-  const baseSelect = db
+  const params = await searchParams
+  const weekStart = params.week
+    ? startOfWeek(parseISO(params.week), { weekStartsOn: 1 })
+    : startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
+
+  const weekClasses = await db
     .select({
       id: yogaClasses.id,
       name: yogaClasses.name,
       description: yogaClasses.description,
       scheduledAt: yogaClasses.scheduledAt,
       durationMinutes: yogaClasses.durationMinutes,
-      dropInPriceCents: yogaClasses.dropInPriceCents,
+      priceThb: yogaClasses.priceThb,
+      teacherSharePercent: yogaClasses.teacherSharePercent,
       capacity: yogaClasses.capacity,
       teacherId: yogaClasses.teacherId,
       teacherName: teachers.name,
     })
     .from(yogaClasses)
     .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .where(
+      and(
+        gte(yogaClasses.scheduledAt, formatISO(weekStart)),
+        lt(yogaClasses.scheduledAt, formatISO(weekEnd)),
+      ),
+    )
+    .orderBy(yogaClasses.scheduledAt)
 
-  const rows =
-    session.role === "teacher" && session.teacherId
-      ? await baseSelect
-          .where(eq(yogaClasses.teacherId, session.teacherId))
-          .orderBy(yogaClasses.scheduledAt)
-      : await baseSelect.orderBy(yogaClasses.scheduledAt)
+  // For list view we show all classes (not just current week)
+  const allClasses = await db
+    .select({
+      id: yogaClasses.id,
+      name: yogaClasses.name,
+      description: yogaClasses.description,
+      scheduledAt: yogaClasses.scheduledAt,
+      durationMinutes: yogaClasses.durationMinutes,
+      priceThb: yogaClasses.priceThb,
+      teacherSharePercent: yogaClasses.teacherSharePercent,
+      capacity: yogaClasses.capacity,
+      teacherId: yogaClasses.teacherId,
+      teacherName: teachers.name,
+    })
+    .from(yogaClasses)
+    .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .orderBy(yogaClasses.scheduledAt)
 
-  const canManage = session.role === "admin" || session.role === "manager"
+  const teacherOptions = await db
+    .select({ id: teachers.id, name: teachers.name })
+    .from(teachers)
+    .where(eq(teachers.isActive, true))
+    .orderBy(teachers.name)
 
-  const teacherOptions = canManage
-    ? await db
-        .select({ id: teachers.id, name: teachers.name })
-        .from(teachers)
-        .where(eq(teachers.isActive, true))
-        .orderBy(teachers.name)
-    : []
+  const defaultView = params.view === "list" ? "list" : "calendar"
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Classes</h1>
           <p className="text-sm text-muted-foreground">
-            {canManage ? "Schedule and manage classes." : "Your scheduled classes."}
+            Schedule, edit and import classes. Set price and assign a teacher.
           </p>
         </div>
-        {canManage && (
-          <div className="flex items-center gap-2">
-            <ImportClassesDialog />
-            <ClassDialog
-              mode="create"
-              action={createClass}
-              teachers={teacherOptions}
-            />
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <ImportClassesDialog />
+          <ClassDialog
+            mode="create"
+            action={createClass}
+            teachers={teacherOptions}
+          />
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{rows.length} classes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Class</TableHead>
-                {session.role !== "teacher" && <TableHead>Teacher</TableHead>}
-                <TableHead className="text-right">Duration</TableHead>
-                <TableHead className="text-right">Drop-in (THB)</TableHead>
-                {canManage && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={canManage ? 6 : 4}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No classes scheduled.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {format(new Date(r.scheduledAt), "MMM dd, yyyy HH:mm")}
-                    </TableCell>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    {session.role !== "teacher" && (
-                      <TableCell>{r.teacherName ?? "—"}</TableCell>
-                    )}
-                    <TableCell className="text-right">
-                      {r.durationMinutes} min
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {Math.round((r.dropInPriceCents ?? 0) / 100)}
-                    </TableCell>
-                    {canManage && (
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <ClassDialog
-                            mode="edit"
-                            values={{
-                              name: r.name,
-                              description: r.description,
-                              scheduledAt: r.scheduledAt,
-                              durationMinutes: r.durationMinutes,
-                              dropInPriceCents: r.dropInPriceCents,
-                              capacity: r.capacity,
-                              teacherId: r.teacherId,
-                            }}
-                            teachers={teacherOptions}
-                            action={updateClass.bind(null, r.id)}
-                            trigger={
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                            }
-                          />
-                          <DeleteRowButton
-                            action={deleteClass.bind(null, r.id)}
-                            confirmText={`Delete class "${r.name}"?`}
-                          />
-                        </div>
-                      </TableCell>
-                    )}
+      <Tabs defaultValue={defaultView}>
+        <TabsList>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="list">List</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendar" className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <WeekNav weekStartIso={formatISO(weekStart)} />
+            <CopyWeekDialog weekStartIso={formatISO(weekStart)} />
+          </div>
+          <CalendarGrid
+            weekStartIso={formatISO(weekStart)}
+            classes={weekClasses}
+            teachers={teacherOptions}
+          />
+        </TabsContent>
+
+        <TabsContent value="list">
+          <Card>
+            <CardHeader>
+              <CardTitle>{allClasses.length} classes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Teacher</TableHead>
+                    <TableHead className="text-right">Duration</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Teacher %</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {allClasses.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        No classes yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    allClasses.map((c) => {
+                      const start = new Date(c.scheduledAt)
+                      const end = addMinutes(start, c.durationMinutes)
+                      return (
+                        <TableRow key={c.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {format(start, "EEE, MMM dd")}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-muted-foreground">
+                            {format(start, "HH:mm")} → {format(end, "HH:mm")}
+                          </TableCell>
+                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell>{c.teacherName ?? "—"}</TableCell>
+                          <TableCell className="text-right">
+                            {c.durationMinutes} min
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Money thb={c.priceThb} />
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {c.teacherSharePercent}%
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
+                              <ClassDialog
+                                mode="edit"
+                                values={{
+                                  name: c.name,
+                                  description: c.description,
+                                  scheduledAt: c.scheduledAt,
+                                  durationMinutes: c.durationMinutes,
+                                  priceThb: c.priceThb,
+                                  teacherSharePercent: c.teacherSharePercent,
+                                  capacity: c.capacity,
+                                  teacherId: c.teacherId,
+                                }}
+                                teachers={teacherOptions}
+                                action={updateClass.bind(null, c.id)}
+                                trigger={
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                }
+                              />
+                              <DeleteRowButton
+                                action={deleteClass.bind(null, c.id)}
+                                confirmText={`Delete class "${c.name}"?`}
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Copy } from "lucide-react"
-import { addWeeks, format, parseISO } from "date-fns"
+import { addDays, addWeeks, format, parseISO } from "date-fns"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -55,7 +55,7 @@ export function CopyWeekDialog({
             </Label>
             <div className="text-sm font-medium">
               {format(sourceStart, "MMM dd")} →{" "}
-              {format(addWeeks(sourceStart, 1), "MMM dd, yyyy")}
+              {format(addDays(sourceStart, 6), "MMM dd, yyyy")}
             </div>
           </div>
 
@@ -78,7 +78,7 @@ export function CopyWeekDialog({
             </div>
             <div className="text-sm text-muted-foreground">
               Target: {format(targetStart, "MMM dd")} →{" "}
-              {format(addWeeks(targetStart, 1), "MMM dd, yyyy")}
+              {format(addDays(targetStart, 6), "MMM dd, yyyy")}
             </div>
           </div>
         </div>

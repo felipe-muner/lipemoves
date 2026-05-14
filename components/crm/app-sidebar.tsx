@@ -7,7 +7,6 @@ import {
   GraduationCap,
   CalendarDays,
   Wallet,
-  CalendarRange,
   Command,
 } from "lucide-react"
 import Link from "next/link"
@@ -41,7 +40,6 @@ type Role = "admin" | "manager" | "teacher"
 const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }[]> = {
   admin: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/bookings", label: "Bookings", icon: CalendarRange },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/students", label: "Students", icon: Users },
@@ -49,7 +47,6 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
   ],
   manager: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/bookings", label: "Bookings", icon: CalendarRange },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/students", label: "Students", icon: Users },
@@ -158,7 +155,7 @@ export function AppSidebar({
                 className="w-(--radix-popper-anchor-width) min-w-56"
               >
                 <DropdownMenuItem asChild>
-                  <Link href="/account">Account</Link>
+                  <Link href="/dashboard/account">Account</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
