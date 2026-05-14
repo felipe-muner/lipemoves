@@ -25,6 +25,7 @@ function readFields(formData: FormData) {
   const capacityRaw = String(formData.get("capacity") ?? "").trim()
   const capacity = capacityRaw ? Number(capacityRaw) : null
   const teacherId = String(formData.get("teacherId") ?? "").trim() || null
+  const locationId = String(formData.get("locationId") ?? "").trim() || null
 
   if (!name) throw new Error("Name is required")
   if (!scheduledAtRaw) throw new Error("Date / time is required")
@@ -41,6 +42,7 @@ function readFields(formData: FormData) {
     teacherSharePercent: Math.round(teacherSharePercent),
     capacity,
     teacherId,
+    locationId,
   }
 }
 

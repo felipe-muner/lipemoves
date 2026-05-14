@@ -1,6 +1,7 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
-import { yogaClasses, teachers } from "@/lib/db/schema"
+import { yogaClasses, teachers, locations } from "@/lib/db/schema"
+import { ensureDefaultLocation } from "@/lib/actions/locations"
 import { and, eq, gte, lt } from "drizzle-orm"
 import {
   endOfWeek,
@@ -69,9 +70,13 @@ export default async function ClassesPage({
       capacity: yogaClasses.capacity,
       teacherId: yogaClasses.teacherId,
       teacherName: teachers.name,
+      locationId: yogaClasses.locationId,
+      locationName: locations.name,
+      locationColor: locations.color,
     })
     .from(yogaClasses)
     .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .leftJoin(locations, eq(locations.id, yogaClasses.locationId))
     .where(
       and(
         gte(yogaClasses.scheduledAt, formatISO(weekStart)),
@@ -93,9 +98,13 @@ export default async function ClassesPage({
       capacity: yogaClasses.capacity,
       teacherId: yogaClasses.teacherId,
       teacherName: teachers.name,
+      locationId: yogaClasses.locationId,
+      locationName: locations.name,
+      locationColor: locations.color,
     })
     .from(yogaClasses)
     .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .leftJoin(locations, eq(locations.id, yogaClasses.locationId))
     .orderBy(yogaClasses.scheduledAt)
 
   const teacherOptions = await db
@@ -103,6 +112,19 @@ export default async function ClassesPage({
     .from(teachers)
     .where(eq(teachers.isActive, true))
     .orderBy(teachers.name)
+
+  // Ensure at least one location exists then load
+  await ensureDefaultLocation()
+  const locationOptions = await db
+    .select({
+      id: locations.id,
+      name: locations.name,
+      color: locations.color,
+      isDefault: locations.isDefault,
+    })
+    .from(locations)
+    .where(eq(locations.isActive, true))
+    .orderBy(locations.name)
 
   const defaultView = params.view === "list" ? "list" : "calendar"
 
@@ -121,6 +143,7 @@ export default async function ClassesPage({
             mode="create"
             action={createClass}
             teachers={teacherOptions}
+            locations={locationOptions}
           />
         </div>
       </div>
@@ -140,6 +163,7 @@ export default async function ClassesPage({
             weekStartIso={formatISO(weekStart)}
             classes={weekClasses}
             teachers={teacherOptions}
+            locations={locationOptions}
           />
         </TabsContent>
 
@@ -208,8 +232,10 @@ export default async function ClassesPage({
                                   teacherSharePercent: c.teacherSharePercent,
                                   capacity: c.capacity,
                                   teacherId: c.teacherId,
+                                  locationId: c.locationId,
                                 }}
                                 teachers={teacherOptions}
+                                locations={locationOptions}
                                 action={updateClass.bind(null, c.id)}
                                 trigger={
                                   <Button variant="ghost" size="icon" className="h-8 w-8">

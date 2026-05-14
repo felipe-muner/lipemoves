@@ -58,16 +58,28 @@ export interface CalendarClass {
   capacity: number | null
   teacherId: string | null
   teacherName: string | null
+  locationId: string | null
+  locationName: string | null
+  locationColor: string | null
+}
+
+export interface LocationOption {
+  id: string
+  name: string
+  color: string
+  isDefault: boolean
 }
 
 export function CalendarGrid({
   weekStartIso,
   classes,
   teachers,
+  locations,
 }: {
   weekStartIso: string
   classes: CalendarClass[]
   teachers: { id: string; name: string }[]
+  locations: LocationOption[]
 }) {
   const weekStart = parseISO(weekStartIso)
 
@@ -88,6 +100,9 @@ export function CalendarGrid({
     [mode, activeId],
   )
 
+  const defaultLocationId =
+    locations.find((l) => l.isDefault)?.id ?? locations[0]?.id ?? null
+
   function openCreate(date: Date) {
     setMode("create")
     setActiveId(null)
@@ -96,6 +111,7 @@ export function CalendarGrid({
       durationMinutes: 60,
       priceThb: 0,
       teacherSharePercent: 0,
+      locationId: defaultLocationId,
     })
     setOpen(true)
   }
@@ -112,17 +128,28 @@ export function CalendarGrid({
       teacherSharePercent: c.teacherSharePercent,
       capacity: c.capacity,
       teacherId: c.teacherId,
+      locationId: c.locationId,
     })
     setOpen(true)
   }
 
-  // Assign a tone per teacher
+  // Fallback teacher tone if class has no location color
   const teacherTone = React.useMemo(() => {
     const map = new Map<string, (typeof TEACHER_TONES)[number]>()
     Array.from(new Set(classes.map((c) => c.teacherId).filter(Boolean) as string[]))
       .forEach((id, i) => map.set(id, TEACHER_TONES[i % TEACHER_TONES.length]))
     return map
   }, [classes])
+
+  /** Convert a hex color to an rgba tint string for backgrounds. */
+  function hexToRgba(hex: string, alpha: number) {
+    const h = hex.replace("#", "")
+    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h
+    const r = parseInt(full.slice(0, 2), 16)
+    const g = parseInt(full.slice(2, 4), 16)
+    const b = parseInt(full.slice(4, 6), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
 
   // Group classes by hour-of-day × day-index (Mon=0..Sun=6)
   const grid = React.useMemo(() => {
@@ -190,11 +217,23 @@ export function CalendarGrid({
                     )}
                     <div className="space-y-1">
                       {items.map((c) => {
-                        const tone = c.teacherId
-                          ? teacherTone.get(c.teacherId)
-                          : null
                         const start = new Date(c.scheduledAt)
                         const end = addMinutes(start, c.durationMinutes)
+                        const locColor = c.locationColor
+                        const teacherFallback = c.teacherId
+                          ? teacherTone.get(c.teacherId)
+                          : null
+                        const blockStyle: React.CSSProperties = locColor
+                          ? {
+                              borderLeftColor: locColor,
+                              backgroundColor: hexToRgba(locColor, 0.12),
+                            }
+                          : {}
+                        const fallbackClass = !locColor
+                          ? teacherFallback
+                            ? `${teacherFallback.border} ${teacherFallback.bg}`
+                            : "border-l-gray-300 bg-gray-50 dark:bg-gray-900/40"
+                          : ""
                         return (
                           <span
                             key={c.id}
@@ -211,11 +250,8 @@ export function CalendarGrid({
                                 openEdit(c)
                               }
                             }}
-                            className={`block w-full cursor-pointer rounded-md border-l-4 px-2 py-1.5 text-left text-xs transition hover:shadow-sm ${
-                              tone
-                                ? `${tone.border} ${tone.bg}`
-                                : "border-l-gray-300 bg-gray-50 dark:bg-gray-900/40"
-                            }`}
+                            style={blockStyle}
+                            className={`block w-full cursor-pointer rounded-md border-l-4 px-2 py-1.5 text-left text-xs transition hover:shadow-sm ${fallbackClass}`}
                           >
                             <div className="font-medium leading-tight">
                               {c.name}
@@ -248,19 +284,24 @@ export function CalendarGrid({
       </Card>
 
       <Card className="flex flex-wrap items-center gap-3 p-4">
-        <span className="text-xs uppercase text-muted-foreground">Teachers</span>
-        {Array.from(teacherTone.entries()).map(([teacherId, tone]) => {
-          const teacher = classes.find((c) => c.teacherId === teacherId)
-          return (
-            <Badge key={teacherId} variant="outline" className="gap-2">
-              <span className={`inline-block h-2 w-2 rounded-full ${tone.dot}`} />
-              {teacher?.teacherName ?? "—"}
-            </Badge>
-          )
-        })}
-        {teacherTone.size === 0 && (
+        <span className="text-xs uppercase text-muted-foreground">Locations</span>
+        {locations.map((l) => (
+          <Badge key={l.id} variant="outline" className="gap-2">
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ background: l.color }}
+            />
+            {l.name}
+          </Badge>
+        ))}
+        {locations.length === 0 && (
           <span className="text-sm text-muted-foreground">
-            No classes scheduled this week. Click any cell to add one.
+            No locations yet.
+          </span>
+        )}
+        {classes.length === 0 && (
+          <span className="text-sm text-muted-foreground">
+            · Click any cell to add a class.
           </span>
         )}
       </Card>
@@ -269,6 +310,7 @@ export function CalendarGrid({
         mode={mode}
         action={action}
         teachers={teachers}
+        locations={locations}
         values={values}
         open={open}
         onOpenChange={setOpen}
