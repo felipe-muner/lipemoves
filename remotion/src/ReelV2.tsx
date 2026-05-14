@@ -25,6 +25,9 @@ type Layout =
   | "class-form"
   | "delete-confirm"
   | "import-results"
+  | "import-dropzone"
+  | "email-compose"
+  | "currency-compare"
 
 interface Scene {
   image: string | null
@@ -57,11 +60,11 @@ const SCENES: Scene[] = [
     layout: "class-form",
   },
   {
-    image: "05-import-dialog.png",
+    image: null,
     headline: "Excel in.",
     sub: "Drag and drop.",
-    durationSec: 2,
-    layout: "text-bottom-img-top",
+    durationSec: 3.6,
+    layout: "import-dropzone",
   },
   {
     image: null,
@@ -104,11 +107,18 @@ const SCENES: Scene[] = [
     layout: "text-bottom-img-top",
   },
   {
-    image: "12-account.png",
-    headline: "THB or USD.",
-    sub: "Live rate.",
-    durationSec: 2,
-    layout: "left-text",
+    image: null,
+    headline: "Email your studio.",
+    sub: "Pick an audience, send.",
+    durationSec: 5,
+    layout: "email-compose",
+  },
+  {
+    image: null,
+    headline: "Show prices in\nany currency.",
+    sub: "Live exchange rate.",
+    durationSec: 4.2,
+    layout: "currency-compare",
   },
   {
     image: null,
@@ -955,6 +965,767 @@ function SummaryChip({
   )
 }
 
+// ─── Multi-currency price comparison ────────────────────────
+function CurrencyCompareScene({
+  headline,
+  sub,
+}: {
+  headline: string
+  sub?: string
+}) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+
+  const enter = spring({ frame, fps, config: { damping: 14, stiffness: 220 } })
+
+  // Live-ish reference rates (approx as of mid-2026)
+  // 1 THB ≈ value in target currency
+  const PRICES = [
+    { flag: "🇹🇭", code: "THB", symbol: "฿", amount: 3500, format: "no-decimal" },
+    { flag: "🇺🇸", code: "USD", symbol: "$", amount: 108.2, format: "decimal" },
+    { flag: "🇪🇺", code: "EUR", symbol: "€", amount: 98.5, format: "decimal" },
+    { flag: "🇬🇧", code: "GBP", symbol: "£", amount: 85.3, format: "decimal" },
+  ] as const
+
+  return (
+    <AbsoluteFill
+      style={{
+        background: BG,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 80,
+      }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          opacity: enter,
+          transform: `translateY(${interpolate(enter, [0, 1], [-20, 0])}px)`,
+          marginBottom: 36,
+        }}
+      >
+        <Headline text={headline} fontSize={72} />
+        {sub && <SubLine text={sub} fontSize={28} />}
+      </div>
+
+      <div
+        style={{
+          background: "white",
+          border: "1px solid rgba(0,0,0,0.06)",
+          borderRadius: 18,
+          boxShadow: "0 30px 80px rgba(0,0,0,0.15)",
+          padding: 30,
+          width: 620,
+          opacity: enter,
+          transform: `scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            color: ACCENT,
+            letterSpacing: 1.6,
+            textTransform: "uppercase",
+            marginBottom: 6,
+          }}
+        >
+          Monthly membership
+        </div>
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 600,
+            color: INK,
+            marginBottom: 20,
+          }}
+        >
+          Unlimited classes · 30 days
+        </div>
+
+        {PRICES.map((p, i) => {
+          const start = (0.4 + i * 0.18) * fps
+          const e = spring({
+            frame: Math.max(0, frame - start),
+            fps,
+            config: { damping: 12, stiffness: 260 },
+          })
+          const isPrimary = i === 0
+          return (
+            <div
+              key={p.code}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 0",
+                borderTop: i === 0 ? "1px solid #eee" : "1px dashed #f0f0ef",
+                opacity: e,
+                transform: `translateX(${interpolate(e, [0, 1], [-30, 0])}px)`,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <span style={{ fontSize: 28, lineHeight: 1 }}>{p.flag}</span>
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: ACCENT,
+                    letterSpacing: 1.2,
+                  }}
+                >
+                  {p.code}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: isPrimary ? 36 : 30,
+                  fontWeight: 700,
+                  color: INK,
+                  letterSpacing: -1,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {p.format === "no-decimal"
+                  ? `${p.symbol}${p.amount.toLocaleString()}`
+                  : `${p.symbol}${p.amount.toFixed(2)}`}
+              </div>
+            </div>
+          )
+        })}
+
+        <div
+          style={{
+            marginTop: 14,
+            fontSize: 11,
+            color: ACCENT,
+            textAlign: "right",
+          }}
+        >
+          Auto-updated daily from a public exchange-rate API.
+        </div>
+      </div>
+    </AbsoluteFill>
+  )
+}
+
+// ─── Animated mouse cursor (macOS arrow) ────────────────────
+function MouseCursor({
+  x,
+  y,
+  scale = 1,
+}: {
+  x: number
+  y: number
+  scale?: number
+}) {
+  return (
+    <svg
+      width={28}
+      height={28}
+      viewBox="0 0 32 32"
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        transform: `scale(${scale})`,
+        transformOrigin: "4px 4px",
+        pointerEvents: "none",
+        filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+      }}
+    >
+      <path
+        d="M4 2 L4 24 L10 18 L13 26 L17 25 L14 17 L22 17 Z"
+        fill="white"
+        stroke="black"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+// ─── Import dropzone scene with animated cursor ─────────────
+function ImportDropzoneScene({ headline, sub }: { headline: string; sub?: string }) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+
+  const enter = spring({ frame, fps, config: { damping: 14, stiffness: 220 } })
+
+  // Cursor animation:
+  //   0.0  off-screen bottom-right
+  //   0.4  cursor enters
+  //   0.4-1.5  cursor glides to dropzone center
+  //   1.5-1.8  click (cursor scales down, ripple starts)
+  //   1.8-2.4  ripple expands, dropzone highlights
+  //   2.4-3.6  hold + soft fade to set up next scene
+  const CURSOR_START = 0.4 * fps
+  const CURSOR_END = 1.5 * fps
+  const PRESS_F = 1.5 * fps
+  const RIPPLE_END = 2.4 * fps
+
+  // Cursor start position (off-screen lower-right of the dropzone)
+  // Target: center of the dropzone (roughly center of the screen vertically, near bottom of dialog)
+  const startX = 1500
+  const startY = 950
+  const targetX = 960 - 14 // center of 1920 minus half cursor
+  const targetY = 620
+
+  const t = interpolate(frame, [CURSOR_START, CURSOR_END], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  })
+  // Ease out cubic
+  const ease = 1 - Math.pow(1 - t, 3)
+  const cursorX = startX + (targetX - startX) * ease
+  const cursorY = startY + (targetY - startY) * ease
+
+  const pressed = frame >= PRESS_F && frame < PRESS_F + fps * 0.18
+  const cursorScale = pressed ? 0.85 : 1
+
+  // Ripple effect
+  const ripple = interpolate(frame, [PRESS_F, RIPPLE_END], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  })
+  const rippleSize = ripple * 280
+  const rippleOpacity = (1 - ripple) * 0.5
+
+  // Click sound at press
+  const clickFrames: number[] = [Math.floor(PRESS_F)]
+
+  // Dropzone highlights after press
+  const dropzoneHighlight = frame >= PRESS_F
+
+  return (
+    <AbsoluteFill style={{ background: BG, padding: 60, overflow: "hidden" }}>
+      {clickFrames.map((f, i) => (
+        <Sequence key={i} from={f} durationInFrames={2} layout="none">
+          <Audio src={staticFile("presentation/music/click.mp3")} volume={0.6} />
+        </Sequence>
+      ))}
+
+      {/* Faint calendar background hint */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: BG,
+          opacity: 1,
+        }}
+      />
+
+      {/* Headline */}
+      <div
+        style={{
+          textAlign: "center",
+          opacity: enter,
+          transform: `translateY(${interpolate(enter, [0, 1], [-20, 0])}px)`,
+          marginBottom: 24,
+          position: "relative",
+        }}
+      >
+        <Headline text={headline} fontSize={64} />
+        {sub && <SubLine text={sub} fontSize={28} />}
+      </div>
+
+      {/* Dialog mockup */}
+      <div
+        style={{
+          width: 900,
+          margin: "0 auto",
+          background: "white",
+          border: "1px solid rgba(0,0,0,0.06)",
+          borderRadius: 18,
+          boxShadow: "0 30px 80px rgba(0,0,0,0.15)",
+          padding: 36,
+          transform: `scale(${interpolate(enter, [0, 1], [0.94, 1])}) translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+          opacity: enter,
+          position: "relative",
+        }}
+      >
+        <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
+          Import classes from Excel / CSV
+        </div>
+        <div style={{ fontSize: 14, color: ACCENT, lineHeight: 1.5 }}>
+          Upload a spreadsheet with one class per row. Required:{" "}
+          <Mono>name</Mono>, <Mono>date</Mono> (YYYY-MM-DD),{" "}
+          <Mono>time</Mono> (HH:MM).
+        </div>
+
+        {/* Template card */}
+        <div
+          style={{
+            marginTop: 22,
+            border: "1px solid #ececec",
+            borderRadius: 12,
+            padding: "16px 20px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: 14,
+          }}
+        >
+          <div>📄&nbsp;&nbsp;Need a starting point?</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: INK }}>
+            ⬇ Download template
+          </div>
+        </div>
+
+        {/* Dropzone */}
+        <div
+          style={{
+            marginTop: 18,
+            border: dropzoneHighlight
+              ? "2px dashed #0a0a0a"
+              : "2px dashed #d4d4d4",
+            background: dropzoneHighlight ? "rgba(0,0,0,0.03)" : "transparent",
+            borderRadius: 12,
+            padding: "50px 0",
+            textAlign: "center",
+            position: "relative",
+            transition: "all 0.2s ease",
+          }}
+        >
+          {/* Ripple on click */}
+          {ripple > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                width: rippleSize,
+                height: rippleSize,
+                marginLeft: -rippleSize / 2,
+                marginTop: -rippleSize / 2,
+                borderRadius: "50%",
+                background: "rgba(0,0,0,0.12)",
+                opacity: rippleOpacity,
+                pointerEvents: "none",
+              }}
+            />
+          )}
+          <div style={{ fontSize: 28, color: "#888" }}>⤴</div>
+          <div style={{ marginTop: 10, fontSize: 16, fontWeight: 600, color: INK }}>
+            Choose .xlsx or .csv file
+          </div>
+          <div style={{ marginTop: 6, fontSize: 12, color: ACCENT }}>
+            We&apos;ll show a preview before anything is imported.
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 22,
+            display: "flex",
+            justifyContent: "flex-end",
+          }}
+        >
+          <div
+            style={{
+              border: "1px solid rgba(0,0,0,0.12)",
+              borderRadius: 10,
+              padding: "10px 18px",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            Cancel
+          </div>
+        </div>
+      </div>
+
+      {/* Animated cursor */}
+      {frame >= CURSOR_START && (
+        <MouseCursor x={cursorX} y={cursorY} scale={cursorScale} />
+      )}
+    </AbsoluteFill>
+  )
+}
+
+function Mono({ children }: { children: React.ReactNode }) {
+  return (
+    <code
+      style={{
+        background: "#f3f3f2",
+        borderRadius: 4,
+        padding: "1px 6px",
+        fontSize: 12,
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+        color: INK,
+      }}
+    >
+      {children}
+    </code>
+  )
+}
+
+// ─── Email compose scene ────────────────────────────────────
+function EmailComposeScene({ headline, sub }: { headline: string; sub?: string }) {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+
+  const enter = spring({ frame, fps, config: { damping: 14, stiffness: 220 } })
+
+  // Timeline (seconds):
+  //   0.3  subject types "August schedule update"
+  //   1.5  teachers toggle on  → +3
+  //   1.85 students toggle on → +44 → 47
+  //   2.4  active-only toggle on → 47 → 12
+  //   3.2  Send button hover
+  //   3.7  Send button press + confirm dialog
+  const SUBJECT = "August schedule update"
+  const SUB_START = Math.floor(0.3 * fps)
+  const SUB_PER_CHAR = Math.floor(0.05 * fps)
+  const subjectChars = Math.max(
+    0,
+    Math.min(
+      SUBJECT.length,
+      Math.floor((frame - SUB_START) / Math.max(1, SUB_PER_CHAR)) + 1,
+    ),
+  )
+  const subject = SUBJECT.slice(0, subjectChars)
+
+  const T_TEACHERS = Math.floor(1.5 * fps)
+  const T_STUDENTS = Math.floor(1.85 * fps)
+  const T_ACTIVE = Math.floor(2.4 * fps)
+  const teachersOn = frame >= T_TEACHERS
+  const studentsOn = frame >= T_STUDENTS
+  const activeOnly = frame >= T_ACTIVE
+
+  // Audience count animation
+  let count = 0
+  if (teachersOn) count = 3
+  if (studentsOn) count = 47
+  if (activeOnly) count = 12
+
+  // Smooth lerp into the new count for the displayed number
+  const displayedCount = (() => {
+    if (!teachersOn) return 0
+    if (frame < T_STUDENTS)
+      return Math.round(interpolate(frame, [T_TEACHERS, T_TEACHERS + fps * 0.3], [0, 3], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }))
+    if (frame < T_ACTIVE)
+      return Math.round(interpolate(frame, [T_STUDENTS, T_STUDENTS + fps * 0.4], [3, 47], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }))
+    return Math.round(interpolate(frame, [T_ACTIVE, T_ACTIVE + fps * 0.4], [47, 12], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }))
+  })()
+
+  const HOVER_F = Math.floor(3.2 * fps)
+  const PRESS_F = Math.floor(3.7 * fps)
+  const buttonHover = frame >= HOVER_F && frame < PRESS_F
+  const buttonPress = frame >= PRESS_F
+  const buttonScale = buttonPress ? 0.96 : buttonHover ? 1.05 : 1
+
+  // Cursor blink for subject
+  const cursorOn = Math.floor(frame / 12) % 2 === 0
+  const subjectFocused = frame < T_TEACHERS
+
+  // Click sounds: per typed char + each toggle + send press
+  const clickFrames: number[] = []
+  for (let i = 0; i < SUBJECT.length; i++) clickFrames.push(SUB_START + i * SUB_PER_CHAR)
+  clickFrames.push(T_TEACHERS, T_STUDENTS, T_ACTIVE, PRESS_F)
+
+  // Confirm dialog
+  const confirmEnter = spring({
+    frame: Math.max(0, frame - PRESS_F),
+    fps,
+    config: { damping: 14, stiffness: 240 },
+  })
+
+  return (
+    <AbsoluteFill style={{ background: BG, padding: 60 }}>
+      {clickFrames.map((f, i) => (
+        <Sequence key={i} from={f} durationInFrames={2} layout="none">
+          <Audio src={staticFile("presentation/music/click.mp3")} volume={0.5} />
+        </Sequence>
+      ))}
+
+      {/* Headline */}
+      <div
+        style={{
+          textAlign: "center",
+          opacity: enter,
+          transform: `translateY(${interpolate(enter, [0, 1], [-20, 0])}px)`,
+          marginBottom: 26,
+        }}
+      >
+        <Headline text={headline} fontSize={58} />
+        {sub && <SubLine text={sub} fontSize={26} />}
+      </div>
+
+      {/* Two-column mockup */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 360px",
+          gap: 20,
+          opacity: enter,
+          transform: `scale(${interpolate(enter, [0, 1], [0.96, 1])})`,
+          width: "min(1400px, 92%)",
+          margin: "0 auto",
+        }}
+      >
+        {/* Composer */}
+        <div
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,0,0,0.06)",
+            borderRadius: 16,
+            boxShadow: "0 18px 50px rgba(0,0,0,0.10)",
+            padding: 26,
+          }}
+        >
+          <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 14 }}>Message</div>
+
+          <div style={{ marginBottom: 14 }}>
+            <FieldLabel>Subject *</FieldLabel>
+            <FieldInput
+              value={subject}
+              focused={subjectFocused}
+              showCursor={subjectFocused && cursorOn}
+            />
+          </div>
+
+          <FieldLabel>Body *</FieldLabel>
+          <div
+            style={{
+              border: "1px solid rgba(0,0,0,0.12)",
+              borderRadius: 10,
+              padding: 16,
+              minHeight: 200,
+              fontSize: 15,
+              color: INK,
+              lineHeight: 1.6,
+              background: "#fcfcfc",
+            }}
+          >
+            Hi Lena,
+            <br />
+            <br />
+            The August schedule is here. We added <strong>Yin on Tuesdays</strong>{" "}
+            and a new <strong>sunset Vinyasa</strong> on Fridays at 6&nbsp;PM.
+            <br />
+            <br />
+            Drop in for 350 ฿ or use your monthly pass — you still have{" "}
+            <strong>14 days</strong> on your plan.
+            <br />
+            <br />
+            See you in the studio 🙏
+            <br />— Anna
+          </div>
+        </div>
+
+        {/* Audience sidebar */}
+        <div
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,0,0,0.06)",
+            borderRadius: 16,
+            boxShadow: "0 18px 50px rgba(0,0,0,0.10)",
+            padding: 22,
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          <div style={{ fontSize: 16, fontWeight: 700 }}>Audience</div>
+
+          <AudienceToggle label="Teachers" sub="All active" checked={teachersOn} />
+          <AudienceToggle
+            label="Students"
+            sub="Everyone in the studio"
+            checked={studentsOn}
+          />
+          <div style={{ paddingLeft: 28 }}>
+            <AudienceToggle
+              label="Active members only"
+              sub="Monthly plan still valid"
+              small
+              checked={activeOnly}
+            />
+          </div>
+
+          {/* Count */}
+          <div
+            style={{
+              borderTop: "1px solid #eee",
+              paddingTop: 14,
+              marginTop: 4,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: ACCENT,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Recipients
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                fontSize: 44,
+                fontWeight: 700,
+                letterSpacing: -1.5,
+                color: INK,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {displayedCount}
+            </div>
+            <div style={{ fontSize: 11, color: ACCENT }}>
+              {activeOnly
+                ? "Teachers (3) + Active members (9)"
+                : studentsOn
+                  ? "Teachers (3) + All students (44)"
+                  : teachersOn
+                    ? "Teachers (3)"
+                    : "Nothing selected"}
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: INK,
+              color: "white",
+              borderRadius: 10,
+              padding: "12px 0",
+              fontSize: 14,
+              fontWeight: 600,
+              textAlign: "center",
+              transform: `scale(${buttonScale})`,
+              boxShadow: buttonHover
+                ? "0 8px 22px rgba(0,0,0,0.3)"
+                : "0 2px 6px rgba(0,0,0,0.18)",
+              transition: "all 0.1s ease",
+            }}
+          >
+            ✉ Send to {displayedCount}
+          </div>
+        </div>
+      </div>
+
+      {/* Confirm dialog */}
+      {frame >= PRESS_F && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: `translate(-50%, -50%) scale(${interpolate(confirmEnter, [0, 1], [0.92, 1])}) translateY(${interpolate(confirmEnter, [0, 1], [30, 0])}px)`,
+            opacity: confirmEnter,
+            width: 460,
+            background: "white",
+            border: "1px solid rgba(0,0,0,0.08)",
+            borderRadius: 16,
+            boxShadow: "0 40px 100px rgba(0,0,0,0.35)",
+            padding: 26,
+          }}
+        >
+          <div style={{ fontSize: 20, fontWeight: 700, color: INK }}>
+            Confirm send
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              color: ACCENT,
+              marginTop: 8,
+              lineHeight: 1.5,
+            }}
+          >
+            About to send <strong style={{ color: INK }}>August schedule update</strong>{" "}
+            to <strong style={{ color: INK }}>{count} people</strong>. Real and
+            unmissable — make sure you&apos;re ready.
+          </div>
+          <div
+            style={{
+              marginTop: 22,
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: 10,
+                padding: "10px 16px",
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+            >
+              Cancel
+            </div>
+            <div
+              style={{
+                background: INK,
+                color: "white",
+                borderRadius: 10,
+                padding: "10px 18px",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Yes, send {count}
+            </div>
+          </div>
+        </div>
+      )}
+    </AbsoluteFill>
+  )
+}
+
+function AudienceToggle({
+  label,
+  sub,
+  checked,
+  small = false,
+}: {
+  label: string
+  sub: string
+  checked: boolean
+  small?: boolean
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        padding: "8px 10px",
+        borderRadius: 8,
+        background: checked ? "rgba(0,0,0,0.04)" : "transparent",
+        transition: "background 0.15s ease",
+      }}
+    >
+      <div
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 4,
+          border: checked ? "2px solid #0a0a0a" : "1.5px solid rgba(0,0,0,0.25)",
+          background: checked ? INK : "white",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "white",
+          fontSize: 12,
+          fontWeight: 700,
+          marginTop: 2,
+        }}
+      >
+        {checked ? "✓" : ""}
+      </div>
+      <div>
+        <div style={{ fontSize: small ? 12 : 14, fontWeight: 500, color: INK }}>
+          {label}
+        </div>
+        <div style={{ fontSize: small ? 10 : 11, color: ACCENT }}>{sub}</div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Generic scene ───────────────────────────────────────────
 function SceneView({ scene }: { scene: Scene }) {
   const frame = useCurrentFrame()
@@ -979,6 +1750,18 @@ function SceneView({ scene }: { scene: Scene }) {
 
   if (scene.layout === "import-results") {
     return <ImportResultsScene headline={scene.headline} sub={scene.sub} />
+  }
+
+  if (scene.layout === "email-compose") {
+    return <EmailComposeScene headline={scene.headline} sub={scene.sub} />
+  }
+
+  if (scene.layout === "import-dropzone") {
+    return <ImportDropzoneScene headline={scene.headline} sub={scene.sub} />
+  }
+
+  if (scene.layout === "currency-compare") {
+    return <CurrencyCompareScene headline={scene.headline} sub={scene.sub} />
   }
 
   const enter = spring({
@@ -1189,12 +1972,12 @@ function SubLine({ text, fontSize }: { text: string; fontSize: number }) {
 
 interface ReelV2Props {
   /** Path under public/ — e.g. "presentation/music/library/02-inspired-cinematic.mp3" */
-  musicSrc: string
+  musicSrc?: string
   musicVolume?: number
 }
 
 export const ReelV2: React.FC<ReelV2Props> = ({
-  musicSrc,
+  musicSrc = "presentation/music/track-energetic.mp3",
   musicVolume = 0.55,
 }) => {
   let cursor = 0

@@ -140,11 +140,11 @@ export const Slide: React.FC<Props> = ({ id, title, imageFile, audioDir }) => {
 }
 
 interface SeqProps {
-  slides: Array<{ id: string; title: string; imageFile: string | null; durationInFrames: number }>
-  audioDir: string
+  slides?: Array<{ id: string; title: string; imageFile: string | null; durationInFrames: number }>
+  audioDir?: string
 }
 
-export const Presentation: React.FC<SeqProps> = ({ slides, audioDir }) => {
+export const Presentation: React.FC<SeqProps> = ({ slides = [], audioDir = "audio" }) => {
   return (
     <AbsoluteFill style={{ background: "#0a0a0a" }}>
       <RemotionSequence slides={slides} audioDir={audioDir} />
@@ -154,7 +154,7 @@ export const Presentation: React.FC<SeqProps> = ({ slides, audioDir }) => {
 
 import { Sequence } from "remotion"
 
-const RemotionSequence: React.FC<SeqProps> = ({ slides, audioDir }) => {
+const RemotionSequence: React.FC<SeqProps> = ({ slides = [], audioDir = "audio" }) => {
   let cursor = 0
   return (
     <>
