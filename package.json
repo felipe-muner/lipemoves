@@ -14,6 +14,7 @@
     "db:push": "drizzle-kit push",
     "email:preview": "email dev --dir lib/email/templates",
     "email:seed": "tsx --env-file=.env.local scripts/seed-email-sequence.ts",
+    "crm:seed": "tsx --env-file=.env.local scripts/seed-crm.ts",
     "product:create": "tsx --env-file=.env.local scripts/create-digital-product.ts"
   },
   "dependencies": {
@@ -40,10 +41,13 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-email": "^6.0.0",
+    "recharts": "^3.8.1",
     "remotion": "^4.0.443",
     "resend": "^6.12.2",
+    "sonner": "^2.0.7",
     "stripe": "^20.4.0",
     "tailwind-merge": "^3.5.0",
+    "xlsx": "^0.18.5",
     "zod": "4.3.6"
   },
   "devDependencies": {

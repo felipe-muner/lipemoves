@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter, DM_Serif_Display } from "next/font/google"
+import { Inter, DM_Serif_Display, Outfit } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
@@ -14,6 +14,12 @@ const dmSerif = DM_Serif_Display({
   subsets: ["latin"],
   variable: "--font-dm-serif",
   weight: "400",
+  display: "swap",
+})
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
   display: "swap",
 })
 
@@ -40,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${dmSerif.variable}`}>
+    <html lang="pt-BR" suppressHydrationWarning className={`${inter.variable} ${dmSerif.variable} ${outfit.variable}`}>
       <body className="antialiased">
         <Providers>
           {children}
