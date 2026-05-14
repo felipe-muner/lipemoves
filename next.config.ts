@@ -12,9 +12,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  experimental: {
-    staticGenerationRetryCount: 0,
-  },
 };
 
 export default nextConfig;
