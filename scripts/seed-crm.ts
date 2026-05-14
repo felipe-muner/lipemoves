@@ -192,7 +192,7 @@ const WORKSHOPS: WorkshopSpec[] = [
   { teacherSlug: "elena", locationSlug: "open", name: "Full Moon Yin Practice",           daysFromNow: 25, hour: 20, duration: 120, priceThb: 700,  sharePercent: 60 },
 ]
 
-async function main() {
+export async function seedCrm() {
   console.log("→ Cleaning previous CRM data...")
   await db.delete(saleItems)
   await db.delete(sales)
@@ -427,9 +427,11 @@ async function main() {
   console.log(`  Teachers: ${TEACHER_SPECS.map((t) => `${t.slug}@phanganyoga.com`).join(", ")}`)
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error(err)
-    process.exit(1)
-  })
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seedCrm()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error(err)
+      process.exit(1)
+    })
+}
