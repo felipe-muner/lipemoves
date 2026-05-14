@@ -26,6 +26,7 @@ function readFields(formData: FormData) {
   const servingSize = Math.max(1, Number(formData.get("servingSize") ?? 1))
   const priceThb = Math.max(0, Number(formData.get("priceThb") ?? 0))
   const stockQty = Math.max(0, Number(formData.get("stockQty") ?? 0))
+  const imageUrl = String(formData.get("imageUrl") ?? "").trim() || null
   const isActive = formData.get("isActive") === "on"
   if (!name) throw new Error("Name is required")
   return {
@@ -37,6 +38,7 @@ function readFields(formData: FormData) {
     servingSize: Math.round(servingSize),
     priceThb: Math.round(priceThb),
     stockQty: Math.round(stockQty),
+    imageUrl,
     isActive,
   }
 }

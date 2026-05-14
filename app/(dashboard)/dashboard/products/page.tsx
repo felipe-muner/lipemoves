@@ -18,6 +18,7 @@ import { ProductDialog } from "@/components/crm/product-dialog"
 import { StockAdjustDialog } from "@/components/crm/stock-adjust-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { Money } from "@/components/crm/money"
+import { ProductAvatar } from "@/components/crm/product-avatar"
 import {
   createProduct,
   updateProduct,
@@ -78,12 +79,21 @@ export default async function ProductsPage() {
                   return (
                     <TableRow key={p.id}>
                       <TableCell>
-                        <div className="font-medium">{p.name}</div>
-                        {p.sku && (
-                          <div className="text-xs text-muted-foreground">
-                            <code>{p.sku}</code>
+                        <div className="flex items-center gap-3">
+                          <ProductAvatar
+                            name={p.name}
+                            imageUrl={p.imageUrl}
+                            size={36}
+                          />
+                          <div>
+                            <div className="font-medium">{p.name}</div>
+                            {p.sku && (
+                              <div className="text-xs text-muted-foreground">
+                                <code>{p.sku}</code>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
@@ -143,6 +153,7 @@ export default async function ProductsPage() {
                               baseUnit: p.baseUnit,
                               servingSize: p.servingSize,
                               priceThb: p.priceThb,
+                              imageUrl: p.imageUrl,
                               isActive: p.isActive,
                               stockQty: p.stockQty,
                             }}
