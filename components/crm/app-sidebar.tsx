@@ -14,6 +14,8 @@ import {
   Package,
   UserCog,
   Armchair,
+  ChevronRight,
+  ChevronUp,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -30,7 +32,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,11 +49,39 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ChevronUp } from "lucide-react"
 
 type Role = "admin" | "manager" | "teacher"
 
-const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }[]> = {
+interface NavLeaf {
+  href: string
+  label: string
+  icon: React.ElementType
+}
+interface NavGroup {
+  label: string
+  icon: React.ElementType
+  /** Path used to detect "active" state for the parent (any descendant match). */
+  basePath: string
+  children: NavLeaf[]
+}
+type NavItem = NavLeaf | NavGroup
+
+function isGroup(item: NavItem): item is NavGroup {
+  return "children" in item
+}
+
+const RESTAURANT_GROUP: NavGroup = {
+  label: "Restaurant",
+  icon: Utensils,
+  basePath: "/dashboard/restaurant",
+  children: [
+    { href: "/dashboard/restaurant", label: "POS", icon: Utensils },
+    { href: "/dashboard/restaurant-tables", label: "Tables", icon: Armchair },
+    { href: "/dashboard/products", label: "Products", icon: Package },
+  ],
+}
+
+const NAV: Record<Role, NavItem[]> = {
   admin: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
@@ -53,9 +91,7 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/payments", label: "Payments", icon: Wallet },
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
-    { href: "/dashboard/products", label: "Products", icon: Package },
-    { href: "/dashboard/restaurant-tables", label: "Tables", icon: Armchair },
-    { href: "/dashboard/restaurant", label: "Restaurant", icon: Utensils },
+    RESTAURANT_GROUP,
   ],
   manager: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -66,15 +102,25 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/payments", label: "Payments", icon: Wallet },
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
-    { href: "/dashboard/products", label: "Products", icon: Package },
-    { href: "/dashboard/restaurant-tables", label: "Tables", icon: Armchair },
-    { href: "/dashboard/restaurant", label: "Restaurant", icon: Utensils },
+    RESTAURANT_GROUP,
   ],
   teacher: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/classes", label: "My classes", icon: CalendarDays },
     { href: "/dashboard/payments", label: "My payments", icon: Wallet },
   ],
+}
+
+function isActiveLeaf(pathname: string, href: string): boolean {
+  if (href === "/dashboard") return pathname === "/dashboard"
+  // Exact match OR child path. For /restaurant we want exact match,
+  // since /restaurant-tables shouldn't activate /restaurant.
+  if (href === "/dashboard/restaurant") return pathname === href
+  return pathname === href || pathname.startsWith(href + "/")
+}
+
+function isActiveGroup(pathname: string, group: NavGroup): boolean {
+  return group.children.some((c) => isActiveLeaf(pathname, c.href))
 }
 
 export function AppSidebar({
@@ -120,15 +166,18 @@ export function AppSidebar({
           <SidebarGroupLabel>Manage</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {links.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard" && pathname.startsWith(item.href))
-                return (
+              {links.map((item) =>
+                isGroup(item) ? (
+                  <NavCollapsibleGroup
+                    key={item.label}
+                    group={item}
+                    pathname={pathname}
+                  />
+                ) : (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
-                      isActive={isActive}
+                      isActive={isActiveLeaf(pathname, item.href)}
                       tooltip={item.label}
                     >
                       <Link href={item.href}>
@@ -137,8 +186,8 @@ export function AppSidebar({
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
-              })}
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -188,5 +237,52 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+  )
+}
+
+function NavCollapsibleGroup({
+  group,
+  pathname,
+}: {
+  group: NavGroup
+  pathname: string
+}) {
+  const parentActive = isActiveGroup(pathname, group)
+  return (
+    <Collapsible
+      asChild
+      defaultOpen={parentActive}
+      className="group/collapsible"
+    >
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton
+            tooltip={group.label}
+            isActive={parentActive}
+          >
+            <group.icon />
+            <span>{group.label}</span>
+            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {group.children.map((c) => {
+              const active = isActiveLeaf(pathname, c.href)
+              return (
+                <SidebarMenuSubItem key={c.href}>
+                  <SidebarMenuSubButton asChild isActive={active}>
+                    <Link href={c.href}>
+                      <c.icon />
+                      <span>{c.label}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              )
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
   )
 }
