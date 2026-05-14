@@ -12,6 +12,8 @@
     "render:reel": "remotion render remotion/src/index.ts ShoulderReel out/shoulder-reel.mp4 --config remotion/remotion.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "db:wait": "tsx --env-file=.env.local scripts/db-wait.ts",
+    "db:reset": "docker compose down -v && docker compose up -d && pnpm db:wait && pnpm db:push --force && pnpm crm:seed",
     "email:preview": "email dev --dir lib/email/templates",
     "email:seed": "tsx --env-file=.env.local scripts/seed-email-sequence.ts",
     "crm:seed": "tsx --env-file=.env.local scripts/seed-crm.ts",
