@@ -10,6 +10,10 @@ import {
   Mail,
   MapPin,
   Command,
+  Utensils,
+  Package,
+  UserCog,
+  Armchair,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -45,18 +49,26 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/locations", label: "Locations", icon: MapPin },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
+    { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/payments", label: "Payments", icon: Wallet },
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
+    { href: "/dashboard/products", label: "Products", icon: Package },
+    { href: "/dashboard/restaurant-tables", label: "Tables", icon: Armchair },
+    { href: "/dashboard/restaurant", label: "Restaurant", icon: Utensils },
   ],
   manager: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/locations", label: "Locations", icon: MapPin },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
+    { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/payments", label: "Payments", icon: Wallet },
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
+    { href: "/dashboard/products", label: "Products", icon: Package },
+    { href: "/dashboard/restaurant-tables", label: "Tables", icon: Armchair },
+    { href: "/dashboard/restaurant", label: "Restaurant", icon: Utensils },
   ],
   teacher: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
