@@ -1,0 +1,16 @@
+{
+  "00-intro": 6.2955,
+  "01-login": 8.90775,
+  "02-overview": 8.2285,
+  "03-classes-calendar": 9.404,
+  "04-new-class-dialog": 12.53875,
+  "05-import-dialog": 12.72175,
+  "06-copy-week-dialog": 10.52725,
+  "07-classes-list": 9.35175,
+  "08-teachers": 8.725,
+  "09-teacher-dialog": 9.56075,
+  "10-students": 9.404,
+  "11-payments": 12.74775,
+  "12-account": 11.1805,
+  "13-outro": 9.32575
+}
