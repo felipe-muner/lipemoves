@@ -38,6 +38,7 @@ export interface ProductDialogValues {
   stockQty?: number
   servingSize?: number
   priceThb?: number
+  imageUrl?: string | null
   isActive?: boolean
 }
 
@@ -181,6 +182,21 @@ export function ProductDialog({
                 </p>
               </div>
             )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input
+                id="imageUrl"
+                name="imageUrl"
+                type="url"
+                placeholder="https://… (leave blank to use initials)"
+                defaultValue={values?.imageUrl ?? ""}
+              />
+              <p className="text-xs text-muted-foreground">
+                Any public image URL. Without one, the POS shows a colored
+                initials badge.
+              </p>
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
