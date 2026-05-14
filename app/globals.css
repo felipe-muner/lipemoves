@@ -26,60 +26,84 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-dm-serif);
+  --font-sans: var(--font-outfit);
+  --font-heading: var(--font-outfit);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
 }
 
 /* =============================================
-   Earthy Warm — Light
+   Monochrome — Light (default)
    ============================================= */
 :root {
   --radius: 0.625rem;
-  --background: #fdf8f0;
-  --foreground: #2e1a05;
-  --card: #ffffff;
-  --card-foreground: #2e1a05;
-  --popover: #ffffff;
-  --popover-foreground: #2e1a05;
-  --primary: #b8860b;
-  --primary-foreground: #ffffff;
-  --secondary: #fdf0d5;
-  --secondary-foreground: #2e1a05;
-  --muted: #fdf0d5;
-  --muted-foreground: #8a7040;
-  --accent: #fdf0d5;
-  --accent-foreground: #2e1a05;
-  --destructive: #dc2626;
-  --border: #e8d5a8;
-  --input: #e8d5a8;
-  --ring: #b8860b;
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 7%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 7%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 7%);
+  --primary: hsl(0 0% 9%);
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 96%);
+  --secondary-foreground: hsl(0 0% 9%);
+  --muted: hsl(0 0% 96%);
+  --muted-foreground: hsl(0 0% 45%);
+  --accent: hsl(0 0% 96%);
+  --accent-foreground: hsl(0 0% 9%);
+  --destructive: hsl(0 75% 50%);
+  --border: hsl(0 0% 92%);
+  --input: hsl(0 0% 92%);
+  --ring: hsl(0 0% 60%);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(0 0% 25%);
+  --sidebar-primary: hsl(0 0% 9%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(0 0% 94%);
+  --sidebar-accent-foreground: hsl(0 0% 9%);
+  --sidebar-border: hsl(0 0% 90%);
+  --sidebar-ring: hsl(0 0% 60%);
 }
 
-/* Earthy Warm — Dark */
+/* Monochrome — Dark */
 .dark {
-  --background: #1a1408;
-  --foreground: #f0dcc0;
-  --card: #241c10;
-  --card-foreground: #f0dcc0;
-  --popover: #241c10;
-  --popover-foreground: #f0dcc0;
-  --primary: #d4a020;
-  --primary-foreground: #1a1408;
-  --secondary: #2e1a05;
-  --secondary-foreground: #f0dcc0;
-  --muted: #2e1a05;
-  --muted-foreground: #8a7040;
-  --accent: #2e1a05;
-  --accent-foreground: #f0dcc0;
-  --destructive: #ef4444;
-  --border: #2e1a05;
-  --input: #2e1a05;
-  --ring: #d4a020;
+  --background: hsl(0 0% 7%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(0 0% 9%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(0 0% 9%);
+  --popover-foreground: hsl(0 0% 98%);
+  --primary: hsl(0 0% 98%);
+  --primary-foreground: hsl(0 0% 9%);
+  --secondary: hsl(0 0% 14%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(0 0% 14%);
+  --muted-foreground: hsl(0 0% 64%);
+  --accent: hsl(0 0% 14%);
+  --accent-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 70% 55%);
+  --border: hsl(0 0% 18%);
+  --input: hsl(0 0% 18%);
+  --ring: hsl(0 0% 40%);
+  --sidebar: hsl(0 0% 9%);
+  --sidebar-foreground: hsl(0 0% 90%);
+  --sidebar-primary: hsl(0 0% 98%);
+  --sidebar-primary-foreground: hsl(0 0% 9%);
+  --sidebar-accent: hsl(0 0% 14%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(0 0% 18%);
+  --sidebar-ring: hsl(0 0% 50%);
 }
 
 /* =============================================
@@ -94,10 +118,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-inter);
+    font-family: var(--font-outfit);
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-dm-serif);
+    font-family: var(--font-outfit);
+    letter-spacing: -0.02em;
   }
 }
 
