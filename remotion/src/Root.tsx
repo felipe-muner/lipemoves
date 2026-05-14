@@ -62,11 +62,11 @@ export const RemotionRoot = () => {
         defaultProps={{ musicSrc: "presentation/music/track-energetic.mp3", musicVolume: 0.55 }}
       />
       {[
-        { id: "ReelV2-01-Calm", file: "01-calm-uplifting.mp3" },
-        { id: "ReelV2-02-Inspired", file: "02-inspired-cinematic.mp3" },
-        { id: "ReelV2-03-Carefree", file: "03-carefree-bouncy.mp3" },
-        { id: "ReelV2-04-Pixelland", file: "04-pixelland-chiptune.mp3" },
-        { id: "ReelV2-05-Wholesome", file: "05-wholesome-mellow.mp3" },
+        { id: "ReelV3-01-Calm", file: "01-calm-uplifting.mp3" },
+        { id: "ReelV3-02-Inspired", file: "02-inspired-cinematic.mp3" },
+        { id: "ReelV3-03-Carefree", file: "03-carefree-bouncy.mp3" },
+        { id: "ReelV3-04-Pixelland", file: "04-pixelland-chiptune.mp3" },
+        { id: "ReelV3-05-Wholesome", file: "05-wholesome-mellow.mp3" },
       ].map((variant) => (
         <Composition
           key={variant.id}

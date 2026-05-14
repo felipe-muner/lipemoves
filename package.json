@@ -20,6 +20,7 @@
     "presentation:render": "remotion render remotion/src/index.ts Presentation out/presentation.mp4",
     "reel:render": "remotion render remotion/src/index.ts Reel out/reel.mp4",
     "reel2:render": "remotion render remotion/src/index.ts ReelV2 out/reel-v2.mp4",
+    "reel3:render": "remotion render remotion/src/index.ts ReelV3-02-Inspired out/reel-v3.mp4",
     "presentation:studio": "remotion studio remotion/src/index.ts",
     "product:create": "tsx --env-file=.env.local scripts/create-digital-product.ts"
   },
