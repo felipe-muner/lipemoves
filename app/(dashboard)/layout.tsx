@@ -4,6 +4,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator"
 import { AppSidebar } from "@/components/crm/app-sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { CurrencySwitch } from "@/components/crm/currency-switch"
 import { HeaderUserMenu } from "@/components/crm/header-user-menu"
 
 export default async function DashboardLayout({
@@ -47,6 +48,7 @@ export default async function DashboardLayout({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex-1" />
+          <CurrencySwitch />
           <ThemeToggle />
           <Separator orientation="vertical" className="mx-1 h-6" />
           <HeaderUserMenu
