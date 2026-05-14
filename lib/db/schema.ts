@@ -18,6 +18,22 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "incomplete",
 ])
 
+export const userRoleEnum = pgEnum("user_role", [
+  "admin",
+  "manager",
+  "teacher",
+])
+
+export const membershipTypeEnum = pgEnum("membership_type", [
+  "drop_in",
+  "monthly",
+])
+
+export const teacherPaymentStatusEnum = pgEnum("teacher_payment_status", [
+  "pending",
+  "paid",
+])
+
 // ─── Users ───────────────────────────────────────────────
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -26,6 +42,7 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified"),
   hashedPassword: text("hashed_password"),
   image: text("image"),
+  role: userRoleEnum("role"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
@@ -215,6 +232,94 @@ export const digitalPurchases = pgTable("digital_purchases", {
   maxDownloads: integer("max_downloads").notNull().default(10),
   expiresAt: timestamp("expires_at", { mode: "string" }).notNull(),
   deliveredAt: timestamp("delivered_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// ─── Yoga CRM (single-center) ────────────────────────────
+export const teachers = pgTable("teachers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  phone: varchar("phone", { length: 50 }),
+  bio: text("bio"),
+  payPerClassCents: integer("pay_per_class_cents").default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const yogaClasses = pgTable("yoga_classes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  teacherId: uuid("teacher_id").references(() => teachers.id, {
+    onDelete: "set null",
+  }),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  scheduledAt: timestamp("scheduled_at", { mode: "string" }).notNull(),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  dropInPriceCents: integer("drop_in_price_cents").notNull().default(0),
+  capacity: integer("capacity"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// Yoga students — keyed by email.
+export const students = pgTable("students", {
+  email: varchar("email", { length: 255 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  passport: varchar("passport", { length: 100 }),
+  phone: varchar("phone", { length: 50 }),
+  nationality: varchar("nationality", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const studentMemberships = pgTable("student_memberships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  studentEmail: varchar("student_email", { length: 255 })
+    .notNull()
+    .references(() => students.email, { onDelete: "cascade" }),
+  type: membershipTypeEnum("type").notNull(),
+  startsOn: timestamp("starts_on", { mode: "string" }).notNull(),
+  endsOn: timestamp("ends_on", { mode: "string" }),
+  classesRemaining: integer("classes_remaining"),
+  pricePaidCents: integer("price_paid_cents").notNull().default(0),
+  currency: varchar("currency", { length: 10 }).notNull().default("thb"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const classAttendance = pgTable("class_attendance", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  classId: uuid("class_id")
+    .notNull()
+    .references(() => yogaClasses.id, { onDelete: "cascade" }),
+  studentEmail: varchar("student_email", { length: 255 })
+    .notNull()
+    .references(() => students.email, { onDelete: "cascade" }),
+  membershipId: uuid("membership_id").references(() => studentMemberships.id, {
+    onDelete: "set null",
+  }),
+  checkedInAt: timestamp("checked_in_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const teacherPayments = pgTable("teacher_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  teacherId: uuid("teacher_id")
+    .notNull()
+    .references(() => teachers.id, { onDelete: "cascade" }),
+  classId: uuid("class_id").references(() => yogaClasses.id, {
+    onDelete: "set null",
+  }),
+  periodStart: timestamp("period_start", { mode: "string" }).notNull(),
+  periodEnd: timestamp("period_end", { mode: "string" }).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default("thb"),
+  status: teacherPaymentStatusEnum("status").notNull().default("pending"),
+  paidAt: timestamp("paid_at", { mode: "string" }),
+  notes: text("notes"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 })
 
