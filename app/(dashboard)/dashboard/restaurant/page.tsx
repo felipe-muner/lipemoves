@@ -15,9 +15,11 @@ import { and, eq, inArray, desc } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Minus, Trash2, ArrowLeft } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { PosPayDialog } from "@/components/crm/pos-pay-dialog"
 import { CloseTabButton } from "@/components/crm/close-tab-button"
+import { PosProductGrid } from "@/components/crm/pos-product-grid"
+import { PosCartItem } from "@/components/crm/pos-cart-item"
 import {
   openOrCreateTab,
   addItemToSale,
@@ -150,13 +152,41 @@ export default async function RestaurantPage({
       .where(eq(products.isActive, true))
       .orderBy(products.category, products.name)
 
-    // Group products by category
-    const grouped = new Map<string, typeof productRows>()
-    for (const p of productRows) {
-      const arr = grouped.get(p.category) ?? []
-      arr.push(p)
-      grouped.set(p.category, arr)
+    // How many of each product are already on the open tab — used to
+    // compute "can still add" so we can't oversell.
+    const onTabByProduct = new Map<string, number>()
+    for (const it of items) {
+      if (!it.productId) continue
+      onTabByProduct.set(
+        it.productId,
+        (onTabByProduct.get(it.productId) ?? 0) + it.quantity,
+      )
     }
+
+    function servingsLeft(p: { stockQty: number; servingSize: number }) {
+      return p.servingSize > 0
+        ? Math.floor(p.stockQty / p.servingSize)
+        : p.stockQty
+    }
+    function canAddMoreFor(productId: string, baseProduct: typeof productRows[number] | undefined) {
+      const p = baseProduct ?? productRows.find((x) => x.id === productId)
+      if (!p) return 0
+      return Math.max(0, servingsLeft(p) - (onTabByProduct.get(productId) ?? 0))
+    }
+
+    const canAddMoreById: Record<string, number> = {}
+    for (const p of productRows) {
+      canAddMoreById[p.id] = canAddMoreFor(p.id, p)
+    }
+
+    // Defense-in-depth: detect if any cart line already exceeds stock
+    // (could happen if stock got adjusted lower elsewhere). Block Pay if so.
+    const anyOverstock = items.some((it) => {
+      if (!it.productId) return false
+      const p = productRows.find((x) => x.id === it.productId)
+      if (!p) return false
+      return it.quantity > servingsLeft(p)
+    })
 
     return (
       <div className="space-y-6">
@@ -191,58 +221,8 @@ export default async function RestaurantPage({
 
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
           {/* Product grid */}
-          <div className="space-y-4">
-            {Array.from(grouped.entries()).map(([cat, list]) => (
-              <Card key={cat}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base capitalize">{cat}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
-                    {list.map((p) => {
-                      const servingsLeft = p.servingSize > 0
-                        ? Math.floor(p.stockQty / p.servingSize)
-                        : p.stockQty
-                      const oos = servingsLeft <= 0
-                      return (
-                        <form
-                          key={p.id}
-                          action={async () => {
-                            "use server"
-                            await addItemToSale(tab.id, p.id, 1)
-                          }}
-                        >
-                          <button
-                            type="submit"
-                            disabled={oos}
-                            className="group flex w-full flex-col items-start gap-1 rounded-lg border bg-card p-3 text-left transition hover:shadow-sm disabled:opacity-50 disabled:hover:shadow-none"
-                          >
-                            <div className="text-sm font-medium leading-tight">
-                              {p.name}
-                            </div>
-                            <div className="flex w-full items-center justify-between text-xs">
-                              <span className="text-muted-foreground">
-                                {oos ? (
-                                  <span className="text-red-600 font-medium">Out</span>
-                                ) : (
-                                  <>
-                                    {servingsLeft} left
-                                  </>
-                                )}
-                              </span>
-                              <span className="font-semibold">
-                                {p.priceThb.toLocaleString()} ฿
-                              </span>
-                            </div>
-                          </button>
-                        </form>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {grouped.size === 0 && (
+          <div>
+            {productRows.length === 0 ? (
               <Card>
                 <CardContent className="py-10 text-center text-muted-foreground">
                   No products yet. Go to{" "}
@@ -252,6 +232,23 @@ export default async function RestaurantPage({
                   to add some.
                 </CardContent>
               </Card>
+            ) : (
+              <PosProductGrid
+                saleId={tab.id}
+                products={productRows.map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                  sku: p.sku,
+                  description: p.description,
+                  category: p.category,
+                  baseUnit: p.baseUnit,
+                  servingSize: p.servingSize,
+                  stockQty: p.stockQty,
+                  priceThb: p.priceThb,
+                  imageUrl: p.imageUrl,
+                }))}
+                canAddMoreById={canAddMoreById}
+              />
             )}
           </div>
 
@@ -268,56 +265,27 @@ export default async function RestaurantPage({
               ) : (
                 <div className="space-y-2">
                   {items.map((it) => (
-                    <div
+                    <PosCartItem
                       key={it.id}
-                      className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{it.productName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {it.unitPriceThb.toLocaleString()} ฿ ea
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <form
-                          action={async () => {
-                            "use server"
-                            await updateSaleItemQuantity(it.id, it.quantity - 1)
-                          }}
-                        >
-                          <Button type="submit" variant="ghost" size="icon" className="h-7 w-7">
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                        </form>
-                        <span className="w-6 text-center text-sm font-medium tabular-nums">
-                          {it.quantity}
-                        </span>
-                        <form
-                          action={async () => {
-                            "use server"
-                            await updateSaleItemQuantity(it.id, it.quantity + 1)
-                          }}
-                        >
-                          <Button type="submit" variant="ghost" size="icon" className="h-7 w-7">
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </form>
-                        <form action={removeSaleItem.bind(null, it.id)}>
-                          <Button
-                            type="submit"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-red-600"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </form>
-                      </div>
-                      <div className="w-20 text-right text-sm font-semibold">
-                        {it.totalThb.toLocaleString()} ฿
-                      </div>
-                    </div>
+                      item={{
+                        id: it.id,
+                        productName: it.productName,
+                        unitPriceThb: it.unitPriceThb,
+                        quantity: it.quantity,
+                        totalThb: it.totalThb,
+                      }}
+                      canAddMore={
+                        it.productId ? canAddMoreFor(it.productId, undefined) : 0
+                      }
+                    />
                   ))}
+                </div>
+              )}
+
+              {anyOverstock && (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700">
+                  Some items exceed available stock. Reduce quantities before
+                  taking payment.
                 </div>
               )}
 
@@ -353,6 +321,8 @@ export default async function RestaurantPage({
                   initialDiscount={tab.discountThb}
                   initialTip={tab.tipThb}
                   action={paySale.bind(null, tab.id)}
+                  disabled={anyOverstock}
+                  disabledReason="Reduce overstock items first"
                 />
               )}
             </CardContent>
