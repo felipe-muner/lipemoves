@@ -1,12 +1,21 @@
 import { db } from "@/lib/db"
 import {
   users,
-  teachers,
+  employees,
+  employeeRoles,
+  employeeTeams,
+  roles,
+  teams,
   yogaClasses,
   students,
   studentMemberships,
   classAttendance,
   locations,
+  products,
+  restaurantTables,
+  stockMovements,
+  sales,
+  saleItems,
 } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
@@ -65,10 +74,15 @@ async function upsertUser(opts: {
 
 async function main() {
   console.log("→ Cleaning previous CRM data...")
+  await db.delete(saleItems)
+  await db.delete(sales)
+  await db.delete(stockMovements)
+  await db.delete(products)
+  await db.delete(restaurantTables)
   await db.delete(classAttendance)
   await db.delete(studentMemberships)
   await db.delete(yogaClasses)
-  await db.delete(teachers)
+  await db.delete(employees)
   await db.delete(students)
   await db.delete(locations)
 
@@ -122,7 +136,7 @@ async function main() {
 
   console.log("→ Teacher records...")
   const [tAnna, tLuca, tPutu] = await db
-    .insert(teachers)
+    .insert(employees)
     .values([
       {
         userId: teacherUsers[0].id,
@@ -151,6 +165,30 @@ async function main() {
     ])
     .returning()
 
+  // Attach teacher role + yoga team to each
+  const [teacherRole] = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.slug, "teacher"))
+  const [yogaTeam] = await db
+    .select({ id: teams.id })
+    .from(teams)
+    .where(eq(teams.slug, "yoga"))
+  if (teacherRole && yogaTeam) {
+    await db.insert(employeeRoles).values(
+      [tAnna, tLuca, tPutu].map((e) => ({
+        employeeId: e.id,
+        roleId: teacherRole.id,
+      })),
+    )
+    await db.insert(employeeTeams).values(
+      [tAnna, tLuca, tPutu].map((e) => ({
+        employeeId: e.id,
+        teamId: yogaTeam.id,
+      })),
+    )
+  }
+
   console.log("→ Classes (past + upcoming)...")
   const now = new Date()
   const monthStart = startOfMonth(now)
@@ -165,7 +203,7 @@ async function main() {
     .insert(yogaClasses)
     .values([
       {
-        teacherId: tAnna.id,
+        employeeId: tAnna.id,
         locationId: shalaMain.id,
         name: "Vinyasa Flow",
         scheduledAt: classAt(2, 8),
@@ -175,7 +213,7 @@ async function main() {
         capacity: 20,
       },
       {
-        teacherId: tAnna.id,
+        employeeId: tAnna.id,
         locationId: shalaOpen.id,
         name: "Yin Restorative",
         scheduledAt: classAt(4, 17),
@@ -185,7 +223,7 @@ async function main() {
         capacity: 18,
       },
       {
-        teacherId: tLuca.id,
+        employeeId: tLuca.id,
         locationId: shalaMain.id,
         name: "Ashtanga Mysore",
         scheduledAt: classAt(3, 7),
@@ -195,7 +233,7 @@ async function main() {
         capacity: 15,
       },
       {
-        teacherId: tPutu.id,
+        employeeId: tPutu.id,
         locationId: shalaOpen.id,
         name: "Hatha Morning",
         scheduledAt: classAt(2, 7),
@@ -205,7 +243,7 @@ async function main() {
         capacity: 25,
       },
       {
-        teacherId: tPutu.id,
+        employeeId: tPutu.id,
         locationId: shalaSunset.id,
         name: "Pranayama & Meditation",
         scheduledAt: classAt(5, 18),
@@ -216,7 +254,7 @@ async function main() {
       },
       // Upcoming — same time, different shalas (the killer use case)
       {
-        teacherId: tAnna.id,
+        employeeId: tAnna.id,
         locationId: shalaMain.id,
         name: "Vinyasa Flow",
         scheduledAt: formatISO(addDays(now, 1)),
@@ -226,7 +264,7 @@ async function main() {
         capacity: 20,
       },
       {
-        teacherId: tLuca.id,
+        employeeId: tLuca.id,
         locationId: shalaMain.id,
         name: "Ashtanga Led",
         scheduledAt: formatISO(addDays(now, 3)),
@@ -236,7 +274,7 @@ async function main() {
         capacity: 15,
       },
       {
-        teacherId: tPutu.id,
+        employeeId: tPutu.id,
         locationId: shalaSunset.id,
         name: "Hatha Morning",
         scheduledAt: formatISO(addDays(now, 2)),
@@ -374,6 +412,123 @@ async function main() {
 
   // Suppress unused warning
   void subDays
+
+  console.log("→ Restaurant tables...")
+  await db.insert(restaurantTables).values([
+    { tableNumber: "T1", room: "Terrace", seats: 4 },
+    { tableNumber: "T2", room: "Terrace", seats: 4 },
+    { tableNumber: "T3", room: "Terrace", seats: 2 },
+    { tableNumber: "B1", room: "Bar", seats: 1 },
+    { tableNumber: "B2", room: "Bar", seats: 1 },
+    { tableNumber: "R1", room: "Room", seats: 8 },
+  ])
+
+  console.log("→ Products (drinks + supplements with split stock)...")
+  await db.insert(products).values([
+    {
+      name: "Whey Protein Shake",
+      sku: "SHK-WHEY",
+      category: "supplement",
+      baseUnit: "g",
+      stockQty: 1000, // 1 kg
+      servingSize: 30, // 30g per shake → 33 servings available
+      priceThb: 180,
+      isActive: true,
+    },
+    {
+      name: "Fresh Coconut",
+      sku: "DRK-COCO",
+      category: "drink",
+      baseUnit: "piece",
+      stockQty: 24,
+      servingSize: 1,
+      priceThb: 90,
+      isActive: true,
+    },
+    {
+      name: "Açaí Bowl",
+      sku: "FD-ACAI",
+      category: "food",
+      baseUnit: "piece",
+      stockQty: 12,
+      servingSize: 1,
+      priceThb: 220,
+      isActive: true,
+    },
+    {
+      name: "Kombucha 330ml",
+      sku: "DRK-KMB",
+      category: "drink",
+      baseUnit: "ml",
+      stockQty: 9900, // 30 bottles × 330ml
+      servingSize: 330,
+      priceThb: 120,
+      isActive: true,
+    },
+    {
+      name: "Avocado Toast",
+      sku: "FD-AVO",
+      category: "food",
+      baseUnit: "piece",
+      stockQty: 15,
+      servingSize: 1,
+      priceThb: 180,
+      isActive: true,
+    },
+    {
+      name: "Yoga Mat",
+      sku: "RT-MAT",
+      category: "retail",
+      baseUnit: "piece",
+      stockQty: 8,
+      servingSize: 1,
+      priceThb: 1500,
+      isActive: true,
+    },
+  ])
+
+  console.log("→ Sample waiter employee (with waiter role)...")
+  const [waiterRole] = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.slug, "waiter"))
+  const [restaurantTeam] = await db
+    .select({ id: teams.id })
+    .from(teams)
+    .where(eq(teams.slug, "restaurant"))
+
+  const [waiterUser] = await db
+    .insert(users)
+    .values({
+      email: "som@phanganyoga.com",
+      name: "Som",
+      hashedPassword: await bcrypt.hash("test123", 10),
+      emailVerified: new Date(),
+      role: "manager",
+    })
+    .returning()
+
+  const [waiterEmp] = await db
+    .insert(employees)
+    .values({
+      userId: waiterUser.id,
+      name: "Som",
+      email: "som@phanganyoga.com",
+      phone: "+66 81 555 1234",
+      bio: "Front-of-house lead",
+    })
+    .returning()
+
+  if (waiterRole && restaurantTeam) {
+    await db.insert(employeeRoles).values({
+      employeeId: waiterEmp.id,
+      roleId: waiterRole.id,
+    })
+    await db.insert(employeeTeams).values({
+      employeeId: waiterEmp.id,
+      teamId: restaurantTeam.id,
+    })
+  }
 
   console.log("✅ Seed complete")
   console.log("")
