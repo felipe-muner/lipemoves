@@ -10,7 +10,7 @@ export function StatCard({
   trend,
 }: {
   label: string
-  value: string | number
+  value: React.ReactNode
   hint?: string
   icon: React.ElementType
   trend?: { value: number; positive: boolean }

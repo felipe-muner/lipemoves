@@ -19,19 +19,19 @@ export async function createTeacher(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim()
   const email = String(formData.get("email") ?? "").trim()
   const phone = String(formData.get("phone") ?? "").trim() || null
+  const passport = String(formData.get("passport") ?? "").trim() || null
   const bio = String(formData.get("bio") ?? "").trim() || null
-  const payPerClassThb = Number(formData.get("payPerClassThb") ?? 0)
   const isActive = formData.get("isActive") === "on"
 
-  if (!name) throw new Error("Nome é obrigatório")
-  if (!email) throw new Error("E-mail é obrigatório")
+  if (!name) throw new Error("Name is required")
+  if (!email) throw new Error("Email is required")
 
   await db.insert(teachers).values({
     name,
     email,
     phone,
+    passport,
     bio,
-    payPerClassCents: Math.round(payPerClassThb * 100),
     isActive,
   })
 
@@ -43,11 +43,11 @@ export async function updateTeacher(id: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim()
   const email = String(formData.get("email") ?? "").trim()
   const phone = String(formData.get("phone") ?? "").trim() || null
+  const passport = String(formData.get("passport") ?? "").trim() || null
   const bio = String(formData.get("bio") ?? "").trim() || null
-  const payPerClassThb = Number(formData.get("payPerClassThb") ?? 0)
   const isActive = formData.get("isActive") === "on"
 
-  if (!name) throw new Error("Nome é obrigatório")
+  if (!name) throw new Error("Name is required")
 
   await db
     .update(teachers)
@@ -55,8 +55,8 @@ export async function updateTeacher(id: string, formData: FormData) {
       name,
       email,
       phone,
+      passport,
       bio,
-      payPerClassCents: Math.round(payPerClassThb * 100),
       isActive,
       updatedAt: new Date().toISOString(),
     })

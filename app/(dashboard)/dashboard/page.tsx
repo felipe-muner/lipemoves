@@ -5,7 +5,6 @@ import {
   yogaClasses,
   students,
   studentMemberships,
-  teacherPayments,
   classAttendance,
 } from "@/lib/db/schema"
 import { and, count, eq, gte, lte, sum } from "drizzle-orm"
@@ -18,6 +17,7 @@ import {
 } from "date-fns"
 import { StatCard } from "@/components/crm/stat-card"
 import { ActivityChart, ActivityPoint } from "@/components/crm/activity-chart"
+import { Money } from "@/components/crm/money"
 import {
   CalendarDays,
   GraduationCap,
@@ -73,12 +73,12 @@ export default async function DashboardHome() {
       .from(yogaClasses)
       .where(gte(yogaClasses.scheduledAt, monthStart))
     const [revenueThisMonth] = await db
-      .select({ v: sum(studentMemberships.pricePaidCents) })
+      .select({ v: sum(studentMemberships.pricePaidThb) })
       .from(studentMemberships)
       .where(gte(studentMemberships.startsOn, monthStart))
 
     const series = await buildSeries()
-    const revenueThb = Math.round(Number(revenueThisMonth.v ?? 0) / 100)
+    const revenue = Number(revenueThisMonth.v ?? 0)
 
     return (
       <div className="space-y-6">
@@ -93,8 +93,8 @@ export default async function DashboardHome() {
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
-            label="Revenue (THB)"
-            value={revenueThb.toLocaleString()}
+            label="Revenue"
+            value={<Money thb={revenue} />}
             icon={Wallet}
             hint="From memberships this month"
             trend={{ value: 12, positive: true }}
@@ -126,6 +126,8 @@ export default async function DashboardHome() {
 
   if (session.role === "teacher" && session.teacherId) {
     const teacherId = session.teacherId
+    const monthEnd = formatISO(endOfMonth(now))
+
     const [myClassesThisMonth] = await db
       .select({ v: count() })
       .from(yogaClasses)
@@ -133,27 +135,27 @@ export default async function DashboardHome() {
         and(
           eq(yogaClasses.teacherId, teacherId),
           gte(yogaClasses.scheduledAt, monthStart),
+          lte(yogaClasses.scheduledAt, monthEnd),
         ),
       )
-    const [pendingPayments] = await db
-      .select({ v: sum(teacherPayments.amountCents) })
-      .from(teacherPayments)
+
+    const myClasses = await db
+      .select({
+        priceThb: yogaClasses.priceThb,
+        teacherSharePercent: yogaClasses.teacherSharePercent,
+      })
+      .from(yogaClasses)
       .where(
         and(
-          eq(teacherPayments.teacherId, teacherId),
-          eq(teacherPayments.status, "pending"),
+          eq(yogaClasses.teacherId, teacherId),
+          gte(yogaClasses.scheduledAt, monthStart),
+          lte(yogaClasses.scheduledAt, monthEnd),
         ),
       )
-    const [paidThisMonth] = await db
-      .select({ v: sum(teacherPayments.amountCents) })
-      .from(teacherPayments)
-      .where(
-        and(
-          eq(teacherPayments.teacherId, teacherId),
-          eq(teacherPayments.status, "paid"),
-          gte(teacherPayments.periodStart, monthStart),
-        ),
-      )
+    const myPayout = myClasses.reduce(
+      (acc, c) => acc + Math.round((c.priceThb * c.teacherSharePercent) / 100),
+      0,
+    )
 
     return (
       <div className="space-y-6">
@@ -173,15 +175,16 @@ export default async function DashboardHome() {
             icon={CalendarDays}
           />
           <StatCard
-            label="Pending (THB)"
-            value={Math.round(Number(pendingPayments.v ?? 0) / 100).toLocaleString()}
-            icon={Wallet}
-            hint="To be paid"
+            label="Earnings this month"
+            value={<Money thb={myPayout} />}
+            icon={TrendingUp}
+            hint="Computed from class prices × share %"
           />
           <StatCard
-            label="Paid this month (THB)"
-            value={Math.round(Number(paidThisMonth.v ?? 0) / 100).toLocaleString()}
-            icon={TrendingUp}
+            label="Status"
+            value="Active"
+            icon={Wallet}
+            hint="Linked to teacher record"
           />
         </div>
       </div>

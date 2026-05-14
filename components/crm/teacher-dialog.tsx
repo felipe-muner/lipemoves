@@ -23,8 +23,8 @@ export interface TeacherDialogValues {
   name?: string
   email?: string
   phone?: string | null
+  passport?: string | null
   bio?: string | null
-  payPerClassCents?: number | null
   isActive?: boolean
 }
 
@@ -110,14 +110,12 @@ export function TeacherDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="payPerClassThb">Pay/class (THB)</Label>
+                <Label htmlFor="passport">Passport</Label>
                 <Input
-                  id="payPerClassThb"
-                  name="payPerClassThb"
-                  type="number"
-                  min="0"
-                  step="50"
-                  defaultValue={Math.round((values?.payPerClassCents ?? 0) / 100)}
+                  id="passport"
+                  name="passport"
+                  defaultValue={values?.passport ?? ""}
+                  placeholder="Optional"
                 />
               </div>
             </div>

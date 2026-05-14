@@ -40,7 +40,8 @@ const TEMPLATE_HEADERS = [
   "date",
   "time",
   "duration_minutes",
-  "drop_in_price_thb",
+  "price_thb",
+  "teacher_share_percent",
   "capacity",
   "description",
 ]
@@ -52,7 +53,8 @@ const TEMPLATE_EXAMPLE = [
     date: "2026-05-18",
     time: "08:00",
     duration_minutes: 75,
-    drop_in_price_thb: 350,
+    price_thb: 350,
+    teacher_share_percent: 70,
     capacity: 20,
     description: "Morning flow",
   },
@@ -62,7 +64,8 @@ const TEMPLATE_EXAMPLE = [
     date: "2026-05-19",
     time: "17:00",
     duration_minutes: 90,
-    drop_in_price_thb: 350,
+    price_thb: 350,
+    teacher_share_percent: 70,
     capacity: 18,
     description: "",
   },
@@ -118,7 +121,8 @@ function rowFromRaw(raw: Record<string, unknown>, line: number): ParsedRow {
     date: date as string | undefined,
     time: time as string | undefined,
     durationMinutes: norm.duration_minutes as number | string | undefined,
-    dropInPriceThb: norm.drop_in_price_thb as number | string | undefined,
+    priceThb: norm.price_thb as number | string | undefined,
+    teacherSharePercent: norm.teacher_share_percent as number | string | undefined,
     capacity: norm.capacity as number | string | undefined,
     description: norm.description as string | undefined,
     raw: norm,
@@ -270,6 +274,7 @@ export function ImportClassesDialog() {
                     <TableHead>Time</TableHead>
                     <TableHead className="text-right">Duration</TableHead>
                     <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Share</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -286,7 +291,10 @@ export function ImportClassesDialog() {
                         {r.durationMinutes ?? 60}
                       </TableCell>
                       <TableCell className="text-right">
-                        {r.dropInPriceThb ?? 0}
+                        {r.priceThb ?? 0}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {r.teacherSharePercent ?? 0}%
                       </TableCell>
                     </TableRow>
                   ))}

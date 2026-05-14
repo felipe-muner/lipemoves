@@ -1,7 +1,7 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
-import { teacherPayments, teachers } from "@/lib/db/schema"
-import { and, eq, gte, lte } from "drizzle-orm"
+import { yogaClasses, teachers } from "@/lib/db/schema"
+import { and, eq, gte, lte, isNotNull } from "drizzle-orm"
 import { format, startOfMonth, endOfMonth, parseISO, formatISO } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -12,10 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Money } from "@/components/crm/money"
 
 export const dynamic = "force-dynamic"
 
@@ -33,54 +33,77 @@ export default async function PaymentsPage({
   const fromIso = formatISO(fromDate)
   const toIso = formatISO(toDate)
 
-  const baseSelect = db
-    .select({
-      id: teacherPayments.id,
-      teacherName: teachers.name,
-      periodStart: teacherPayments.periodStart,
-      periodEnd: teacherPayments.periodEnd,
-      amountCents: teacherPayments.amountCents,
-      currency: teacherPayments.currency,
-      status: teacherPayments.status,
-      paidAt: teacherPayments.paidAt,
-    })
-    .from(teacherPayments)
-    .leftJoin(teachers, eq(teachers.id, teacherPayments.teacherId))
-
-  const teacherFilter =
+  const baseFilters = [
+    gte(yogaClasses.scheduledAt, fromIso),
+    lte(yogaClasses.scheduledAt, toIso),
+    isNotNull(yogaClasses.teacherId),
+  ]
+  const whereClause =
     session.role === "teacher" && session.teacherId
-      ? eq(teacherPayments.teacherId, session.teacherId)
-      : undefined
+      ? and(...baseFilters, eq(yogaClasses.teacherId, session.teacherId))
+      : and(...baseFilters)
 
-  const rows = await baseSelect
-    .where(
-      teacherFilter
-        ? and(
-            teacherFilter,
-            gte(teacherPayments.periodStart, fromIso),
-            lte(teacherPayments.periodStart, toIso),
-          )
-        : and(
-            gte(teacherPayments.periodStart, fromIso),
-            lte(teacherPayments.periodStart, toIso),
-          ),
-    )
-    .orderBy(teacherPayments.periodStart)
+  const classes = await db
+    .select({
+      id: yogaClasses.id,
+      name: yogaClasses.name,
+      scheduledAt: yogaClasses.scheduledAt,
+      priceThb: yogaClasses.priceThb,
+      teacherSharePercent: yogaClasses.teacherSharePercent,
+      teacherId: yogaClasses.teacherId,
+      teacherName: teachers.name,
+    })
+    .from(yogaClasses)
+    .leftJoin(teachers, eq(teachers.id, yogaClasses.teacherId))
+    .where(whereClause)
+    .orderBy(yogaClasses.scheduledAt)
 
-  const total = rows.reduce((acc, r) => acc + (r.amountCents ?? 0), 0)
-  const totalPaid = rows
-    .filter((r) => r.status === "paid")
-    .reduce((acc, r) => acc + (r.amountCents ?? 0), 0)
-  const totalPending = total - totalPaid
+  // Group by teacher for the summary table
+  type Summary = {
+    teacherId: string
+    teacherName: string
+    classCount: number
+    grossThb: number
+    payoutThb: number
+  }
+  const byTeacher = new Map<string, Summary>()
+  let grandGross = 0
+  let grandPayout = 0
+
+  for (const c of classes) {
+    if (!c.teacherId) continue
+    const payout = Math.round((c.priceThb * c.teacherSharePercent) / 100)
+    grandGross += c.priceThb
+    grandPayout += payout
+
+    const existing = byTeacher.get(c.teacherId) ?? {
+      teacherId: c.teacherId,
+      teacherName: c.teacherName ?? "—",
+      classCount: 0,
+      grossThb: 0,
+      payoutThb: 0,
+    }
+    existing.classCount += 1
+    existing.grossThb += c.priceThb
+    existing.payoutThb += payout
+    byTeacher.set(c.teacherId, existing)
+  }
+
+  const summary = Array.from(byTeacher.values()).sort(
+    (a, b) => b.payoutThb - a.payoutThb,
+  )
+
+  const isTeacher = session.role === "teacher"
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {session.role === "teacher" ? "My payments" : "Payments"}
+          {isTeacher ? "My payments" : "Payments"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {format(fromDate, "MMM dd, yyyy")} → {format(toDate, "MMM dd, yyyy")}
+          {format(fromDate, "MMM dd, yyyy")} → {format(toDate, "MMM dd, yyyy")}{" "}
+          · computed from classes (price × teacher share %)
         </p>
       </div>
 
@@ -114,96 +137,140 @@ export default async function PaymentsPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total
+              Classes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{classes.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Gross revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">
-              {Math.round(total / 100).toLocaleString()} THB
+              <Money thb={grandGross} />
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Paid
+              Total payout to teachers
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-emerald-600">
-              {Math.round(totalPaid / 100).toLocaleString()} THB
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-amber-600">
-              {Math.round(totalPending / 100).toLocaleString()} THB
+              <Money thb={grandPayout} />
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {!isTeacher && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Payout by teacher</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Teacher</TableHead>
+                  <TableHead className="text-right">Classes</TableHead>
+                  <TableHead className="text-right">Gross</TableHead>
+                  <TableHead className="text-right">Payout</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {summary.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No classes in this date range.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  summary.map((s) => (
+                    <TableRow key={s.teacherId}>
+                      <TableCell className="font-medium">
+                        {s.teacherName}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {s.classCount}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        <Money thb={s.grossThb} />
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        <Money thb={s.payoutThb} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>{rows.length} payments</CardTitle>
+          <CardTitle>{classes.length} classes in range</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Period</TableHead>
-                {session.role !== "teacher" && <TableHead>Teacher</TableHead>}
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Paid on</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Class</TableHead>
+                {!isTeacher && <TableHead>Teacher</TableHead>}
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Share</TableHead>
+                <TableHead className="text-right">Payout</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {classes.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={session.role !== "teacher" ? 5 : 4}
+                    colSpan={isTeacher ? 5 : 6}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    No payments in this range.
+                    No classes in this date range.
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {format(new Date(r.periodStart), "MMM dd")} →{" "}
-                      {format(new Date(r.periodEnd), "MMM dd, yyyy")}
-                    </TableCell>
-                    {session.role !== "teacher" && (
-                      <TableCell>{r.teacherName ?? "—"}</TableCell>
-                    )}
-                    <TableCell className="text-right whitespace-nowrap">
-                      {Math.round((r.amountCents ?? 0) / 100).toLocaleString()}{" "}
-                      {r.currency?.toUpperCase()}
-                    </TableCell>
-                    <TableCell>
-                      {r.status === "paid" ? (
-                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600">
-                          Paid
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
-                          Pending
-                        </Badge>
+                classes.map((c) => {
+                  const payout = Math.round(
+                    (c.priceThb * c.teacherSharePercent) / 100,
+                  )
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(c.scheduledAt), "MMM dd, HH:mm")}
+                      </TableCell>
+                      <TableCell className="font-medium">{c.name}</TableCell>
+                      {!isTeacher && (
+                        <TableCell>{c.teacherName ?? "—"}</TableCell>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      {r.paidAt ? format(new Date(r.paidAt), "MMM dd, yyyy") : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      <TableCell className="text-right">
+                        <Money thb={c.priceThb} />
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {c.teacherSharePercent}%
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        <Money thb={payout} />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
