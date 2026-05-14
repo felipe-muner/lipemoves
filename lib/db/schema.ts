@@ -252,6 +252,17 @@ export const digitalPurchases = pgTable("digital_purchases", {
 })
 
 // ─── Yoga CRM (single-center) ────────────────────────────
+export const locations = pgTable("locations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 9 }).notNull().default("#fbbf24"),
+  isDefault: boolean("is_default").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
 export const teachers = pgTable("teachers", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
@@ -276,6 +287,9 @@ export const yogaClasses = pgTable("yoga_classes", {
   durationMinutes: integer("duration_minutes").notNull().default(60),
   priceThb: integer("price_thb").notNull().default(0),
   teacherSharePercent: integer("teacher_share_percent").notNull().default(0),
+  locationId: uuid("location_id").references(() => locations.id, {
+    onDelete: "set null",
+  }),
   capacity: integer("capacity"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),

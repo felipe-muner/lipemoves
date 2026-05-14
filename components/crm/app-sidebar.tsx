@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Wallet,
   Mail,
+  MapPin,
   Command,
 } from "lucide-react"
 import Link from "next/link"
@@ -42,6 +43,7 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
   admin: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
+    { href: "/dashboard/locations", label: "Locations", icon: MapPin },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/payments", label: "Payments", icon: Wallet },
@@ -50,6 +52,7 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
   manager: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
+    { href: "/dashboard/locations", label: "Locations", icon: MapPin },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/payments", label: "Payments", icon: Wallet },

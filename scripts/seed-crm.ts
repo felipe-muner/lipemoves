@@ -6,6 +6,7 @@ import {
   students,
   studentMemberships,
   classAttendance,
+  locations,
 } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
@@ -69,6 +70,17 @@ async function main() {
   await db.delete(yogaClasses)
   await db.delete(teachers)
   await db.delete(students)
+  await db.delete(locations)
+
+  console.log("→ Locations (shalas)...")
+  const [shalaMain, shalaOpen, shalaSunset] = await db
+    .insert(locations)
+    .values([
+      { name: "Main Shala", color: "#fbbf24", isDefault: true },
+      { name: "Open Sala", color: "#38bdf8" },
+      { name: "Sunset Deck", color: "#fb7185" },
+    ])
+    .returning()
 
   console.log("→ Promoting admin...")
   await upsertUser({
@@ -154,6 +166,7 @@ async function main() {
     .values([
       {
         teacherId: tAnna.id,
+        locationId: shalaMain.id,
         name: "Vinyasa Flow",
         scheduledAt: classAt(2, 8),
         durationMinutes: 75,
@@ -163,6 +176,7 @@ async function main() {
       },
       {
         teacherId: tAnna.id,
+        locationId: shalaOpen.id,
         name: "Yin Restorative",
         scheduledAt: classAt(4, 17),
         durationMinutes: 90,
@@ -172,6 +186,7 @@ async function main() {
       },
       {
         teacherId: tLuca.id,
+        locationId: shalaMain.id,
         name: "Ashtanga Mysore",
         scheduledAt: classAt(3, 7),
         durationMinutes: 90,
@@ -181,6 +196,7 @@ async function main() {
       },
       {
         teacherId: tPutu.id,
+        locationId: shalaOpen.id,
         name: "Hatha Morning",
         scheduledAt: classAt(2, 7),
         durationMinutes: 75,
@@ -190,6 +206,7 @@ async function main() {
       },
       {
         teacherId: tPutu.id,
+        locationId: shalaSunset.id,
         name: "Pranayama & Meditation",
         scheduledAt: classAt(5, 18),
         durationMinutes: 60,
@@ -197,9 +214,10 @@ async function main() {
         teacherSharePercent: 65,
         capacity: 20,
       },
-      // Upcoming
+      // Upcoming — same time, different shalas (the killer use case)
       {
         teacherId: tAnna.id,
+        locationId: shalaMain.id,
         name: "Vinyasa Flow",
         scheduledAt: formatISO(addDays(now, 1)),
         durationMinutes: 75,
@@ -209,6 +227,7 @@ async function main() {
       },
       {
         teacherId: tLuca.id,
+        locationId: shalaMain.id,
         name: "Ashtanga Led",
         scheduledAt: formatISO(addDays(now, 3)),
         durationMinutes: 90,
@@ -218,6 +237,7 @@ async function main() {
       },
       {
         teacherId: tPutu.id,
+        locationId: shalaSunset.id,
         name: "Hatha Morning",
         scheduledAt: formatISO(addDays(now, 2)),
         durationMinutes: 75,

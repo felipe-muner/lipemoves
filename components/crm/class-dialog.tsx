@@ -34,6 +34,14 @@ export interface ClassDialogValues {
   teacherSharePercent?: number | null
   capacity?: number | null
   teacherId?: string | null
+  locationId?: string | null
+}
+
+export interface LocationOption {
+  id: string
+  name: string
+  color: string
+  isDefault: boolean
 }
 
 function toLocalDatetimeInput(iso?: string) {
@@ -48,6 +56,7 @@ interface BaseProps {
   values?: ClassDialogValues
   action: (formData: FormData) => Promise<void>
   teachers: { id: string; name: string }[]
+  locations: LocationOption[]
 }
 
 interface ControlledProps extends BaseProps {
@@ -63,7 +72,9 @@ interface UncontrolledProps extends BaseProps {
 }
 
 export function ClassDialog(props: ControlledProps | UncontrolledProps) {
-  const { mode, values, action, teachers } = props
+  const { mode, values, action, teachers, locations } = props
+  const defaultLocationId =
+    locations.find((l) => l.isDefault)?.id ?? locations[0]?.id ?? ""
   const isControlled = "open" in props && props.open !== undefined
   const [internalOpen, setInternalOpen] = React.useState(false)
   const open = isControlled ? (props as ControlledProps).open : internalOpen
@@ -73,12 +84,15 @@ export function ClassDialog(props: ControlledProps | UncontrolledProps) {
 
   const [pending, startTransition] = React.useTransition()
   const [teacherId, setTeacherId] = React.useState(values?.teacherId ?? "")
+  const [locationId, setLocationId] = React.useState(
+    values?.locationId ?? defaultLocationId,
+  )
   const router = useRouter()
 
-  // Reset teacherId when values change (e.g. controlled dialog opened with new prefill)
   React.useEffect(() => {
     setTeacherId(values?.teacherId ?? "")
-  }, [values?.teacherId, open])
+    setLocationId(values?.locationId ?? defaultLocationId)
+  }, [values?.teacherId, values?.locationId, defaultLocationId, open])
 
   const trigger = !isControlled
     ? (props as UncontrolledProps).trigger ?? (
@@ -127,25 +141,58 @@ export function ClassDialog(props: ControlledProps | UncontrolledProps) {
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label>Teacher / host</Label>
-              <input type="hidden" name="teacherId" value={teacherId} />
-              <Select
-                value={teacherId || "none"}
-                onValueChange={(v) => setTeacherId(v === "none" ? "" : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pick a teacher" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— no teacher —</SelectItem>
-                  {teachers.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Teacher / host</Label>
+                <input type="hidden" name="teacherId" value={teacherId} />
+                <Select
+                  value={teacherId || "none"}
+                  onValueChange={(v) => setTeacherId(v === "none" ? "" : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pick a teacher" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— no teacher —</SelectItem>
+                    {teachers.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Location</Label>
+                <input type="hidden" name="locationId" value={locationId} />
+                <Select
+                  value={locationId || "none"}
+                  onValueChange={(v) => setLocationId(v === "none" ? "" : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pick a location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— no location —</SelectItem>
+                    {locations.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="inline-block h-3 w-3 rounded"
+                            style={{ background: l.color }}
+                          />
+                          {l.name}
+                          {l.isDefault && (
+                            <span className="text-xs text-muted-foreground">
+                              (default)
+                            </span>
+                          )}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
