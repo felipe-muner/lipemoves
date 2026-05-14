@@ -56,7 +56,7 @@ export function HeaderUserMenu({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/account">
+          <Link href="/dashboard/account">
             <UserCircle className="mr-2 h-4 w-4" />
             Account
           </Link>
