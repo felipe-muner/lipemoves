@@ -83,7 +83,8 @@ export async function copyWeek(
         description: c.description,
         scheduledAt: newScheduledAt,
         durationMinutes: c.durationMinutes,
-        dropInPriceCents: c.dropInPriceCents,
+        priceThb: c.priceThb,
+        teacherSharePercent: c.teacherSharePercent,
         capacity: c.capacity,
       }
     })
@@ -93,7 +94,6 @@ export async function copyWeek(
     await db.insert(yogaClasses).values(toInsert)
   }
 
-  revalidatePath("/dashboard/bookings")
   revalidatePath("/dashboard/classes")
 
   return {
