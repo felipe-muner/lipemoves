@@ -74,6 +74,7 @@ async function main() {
   await upsertUser({
     email: ADMIN_EMAIL,
     name: "Felipe Muner",
+    password: "test123",
     role: "admin",
   })
 
@@ -81,6 +82,7 @@ async function main() {
   await upsertUser({
     email: MANAGER_EMAIL,
     name: "Manager Koh Phangan",
+    password: "test123",
     role: "manager",
   })
 
