@@ -59,15 +59,34 @@ export async function addItemToSale(
   if (!p.isActive) throw new Error("Product is inactive")
   if (quantity <= 0) throw new Error("Quantity must be positive")
 
-  await db.insert(saleItems).values({
-    saleId,
-    productId,
-    productName: p.name,
-    quantity,
-    unitPriceThb: p.priceThb,
-    totalThb: p.priceThb * quantity,
-    notes: notes ?? null,
-  })
+  // If an identical line already exists (same product, same price, no notes
+  // conflict), bump its quantity instead of inserting a new row.
+  const [existing] = await db
+    .select()
+    .from(saleItems)
+    .where(and(eq(saleItems.saleId, saleId), eq(saleItems.productId, productId)))
+    .limit(1)
+
+  if (existing && !notes && !existing.notes) {
+    const nextQty = existing.quantity + quantity
+    await db
+      .update(saleItems)
+      .set({
+        quantity: nextQty,
+        totalThb: existing.unitPriceThb * nextQty,
+      })
+      .where(eq(saleItems.id, existing.id))
+  } else {
+    await db.insert(saleItems).values({
+      saleId,
+      productId,
+      productName: p.name,
+      quantity,
+      unitPriceThb: p.priceThb,
+      totalThb: p.priceThb * quantity,
+      notes: notes ?? null,
+    })
+  }
 
   await rollupSale(saleId)
   revalidatePath("/dashboard/restaurant")
