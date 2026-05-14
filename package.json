@@ -15,6 +15,12 @@
     "email:preview": "email dev --dir lib/email/templates",
     "email:seed": "tsx --env-file=.env.local scripts/seed-email-sequence.ts",
     "crm:seed": "tsx --env-file=.env.local scripts/seed-crm.ts",
+    "presentation:voice": "tsx scripts/presentation/generate-voice.ts",
+    "presentation:capture": "tsx scripts/presentation/capture.ts",
+    "presentation:render": "remotion render remotion/src/index.ts Presentation out/presentation.mp4",
+    "reel:render": "remotion render remotion/src/index.ts Reel out/reel.mp4",
+    "reel2:render": "remotion render remotion/src/index.ts ReelV2 out/reel-v2.mp4",
+    "presentation:studio": "remotion studio remotion/src/index.ts",
     "product:create": "tsx --env-file=.env.local scripts/create-digital-product.ts"
   },
   "dependencies": {
@@ -60,6 +66,7 @@
     "drizzle-kit": "^0.31.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "playwright": "^1.60.0",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
