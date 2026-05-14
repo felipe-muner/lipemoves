@@ -124,6 +124,18 @@
     font-family: var(--font-outfit);
     letter-spacing: -0.02em;
   }
+  /* Restore pointer cursor on interactive elements (Tailwind v4 preflight changed the default). */
+  button:not(:disabled),
+  a,
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  summary,
+  label[for],
+  select:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 /* =============================================
