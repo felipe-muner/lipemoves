@@ -1,6 +1,8 @@
 import "./print.css"
 import PrintToolbar from "./PrintToolbar"
 
+export const dynamic = "force-dynamic"
+
 export const metadata = {
   title: "Movimento Integrado — Kettlebell + Yoga | Lipe Moves",
 }
