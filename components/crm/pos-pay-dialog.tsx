@@ -32,12 +32,16 @@ export function PosPayDialog({
   initialDiscount,
   initialTip,
   action,
+  disabled = false,
+  disabledReason,
 }: {
   saleId: string
   subtotal: number
   initialDiscount: number
   initialTip: number
   action: (formData: FormData) => Promise<void>
+  disabled?: boolean
+  disabledReason?: string
 }) {
   const [open, setOpen] = React.useState(false)
   const [pending, startTransition] = React.useTransition()
@@ -51,7 +55,12 @@ export function PosPayDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="lg" className="w-full">
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={disabled}
+          title={disabled ? disabledReason : undefined}
+        >
           <CreditCard className="mr-2 h-4 w-4" />
           Pay
         </Button>

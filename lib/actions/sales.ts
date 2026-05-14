@@ -67,6 +67,22 @@ export async function addItemToSale(
     .where(and(eq(saleItems.saleId, saleId), eq(saleItems.productId, productId)))
     .limit(1)
 
+  // Stock guard — total quantity of this product across the open tab
+  // (×serving size) can't exceed product stock.
+  const servingsLeft = p.servingSize > 0
+    ? Math.floor(p.stockQty / p.servingSize)
+    : p.stockQty
+  const alreadyOnTab = existing?.quantity ?? 0
+  const nextTotal = alreadyOnTab + quantity
+  if (nextTotal > servingsLeft) {
+    const canAdd = Math.max(0, servingsLeft - alreadyOnTab)
+    throw new Error(
+      canAdd === 0
+        ? `Out of stock — ${p.name} has ${servingsLeft} available and ${alreadyOnTab} are already on the tab.`
+        : `Only ${canAdd} more ${p.name} available.`,
+    )
+  }
+
   if (existing && !notes && !existing.notes) {
     const nextQty = existing.quantity + quantity
     await db
@@ -109,6 +125,22 @@ export async function updateSaleItemQuantity(saleItemId: string, quantity: numbe
   }
   const [item] = await db.select().from(saleItems).where(eq(saleItems.id, saleItemId)).limit(1)
   if (!item) return
+
+  // Stock guard
+  if (item.productId) {
+    const [p] = await db.select().from(products).where(eq(products.id, item.productId)).limit(1)
+    if (p) {
+      const servingsLeft = p.servingSize > 0
+        ? Math.floor(p.stockQty / p.servingSize)
+        : p.stockQty
+      if (quantity > servingsLeft) {
+        throw new Error(
+          `Only ${servingsLeft} ${p.name} available in stock.`,
+        )
+      }
+    }
+  }
+
   await db
     .update(saleItems)
     .set({
