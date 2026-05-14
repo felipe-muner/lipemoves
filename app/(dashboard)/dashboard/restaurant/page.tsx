@@ -15,8 +15,9 @@ import { and, eq, inArray, desc } from "drizzle-orm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Minus, Trash2, X, ArrowLeft } from "lucide-react"
+import { Plus, Minus, Trash2, ArrowLeft } from "lucide-react"
 import { PosPayDialog } from "@/components/crm/pos-pay-dialog"
+import { CloseTabButton } from "@/components/crm/close-tab-button"
 import {
   openOrCreateTab,
   addItemToSale,
@@ -181,12 +182,11 @@ export default async function RestaurantPage({
               </p>
             </div>
           </div>
-          <form action={cancelSale.bind(null, tab.id)}>
-            <Button type="submit" variant="ghost" size="sm" className="text-muted-foreground">
-              <X className="mr-1 h-3.5 w-3.5" />
-              Close tab without paying
-            </Button>
-          </form>
+          <CloseTabButton
+            itemCount={items.length}
+            totalThb={tab.totalThb}
+            action={cancelSale.bind(null, tab.id)}
+          />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
