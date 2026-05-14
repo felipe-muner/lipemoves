@@ -45,7 +45,7 @@ export default function RegisterForm() {
       return
     }
 
-    router.push("/videos")
+    router.push("/dashboard")
     router.refresh()
   }
 
@@ -130,7 +130,7 @@ export default function RegisterForm() {
         </div>
 
         <button
-          onClick={() => signIn("google", { callbackUrl: "/videos" })}
+          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
           className="mt-6 flex h-10 w-full items-center justify-center gap-2 rounded-md border border-input text-sm font-medium hover:bg-accent"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">

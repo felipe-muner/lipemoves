@@ -8,7 +8,7 @@ import Link from "next/link"
 export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/videos"
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
