@@ -7,6 +7,7 @@ import {
   uuid,
   varchar,
   pgEnum,
+  jsonb,
 } from "drizzle-orm/pg-core"
 
 // ─── Enums ───────────────────────────────────────────────
@@ -27,6 +28,26 @@ export const userRoleEnum = pgEnum("user_role", [
 export const membershipTypeEnum = pgEnum("membership_type", [
   "drop_in",
   "monthly",
+])
+
+export const emailCampaignTemplateEnum = pgEnum("email_campaign_template", [
+  "announcement",
+  "class_reminder",
+  "membership_expiring",
+  "custom",
+])
+
+export const emailCampaignStatusEnum = pgEnum("email_campaign_status", [
+  "draft",
+  "sending",
+  "sent",
+  "failed",
+])
+
+export const emailRecipientStatusEnum = pgEnum("email_recipient_status", [
+  "queued",
+  "sent",
+  "failed",
 ])
 
 // ─── Users ───────────────────────────────────────────────
@@ -310,6 +331,41 @@ export const emailSends = pgTable("email_sends", {
   }),
   subject: varchar("subject", { length: 255 }).notNull(),
   status: emailSendStatusEnum("status").notNull().default("queued"),
+  resendId: varchar("resend_id", { length: 255 }),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// ─── Email campaigns (one-shot broadcasts) ──────────────────
+export const emailCampaigns = pgTable("email_campaigns", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  template: emailCampaignTemplateEnum("template").notNull().default("custom"),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  bodyText: text("body_text").notNull(),
+  /** Snapshot of the filter used to resolve recipients (audience). */
+  audience: jsonb("audience").notNull(),
+  /** Human-readable summary, e.g. "All students (43)". */
+  audienceSummary: varchar("audience_summary", { length: 255 }).notNull(),
+  recipientCount: integer("recipient_count").notNull().default(0),
+  sentCount: integer("sent_count").notNull().default(0),
+  failedCount: integer("failed_count").notNull().default(0),
+  status: emailCampaignStatusEnum("status").notNull().default("draft"),
+  sentAt: timestamp("sent_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const emailCampaignSends = pgTable("email_campaign_sends", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  campaignId: uuid("campaign_id")
+    .notNull()
+    .references(() => emailCampaigns.id, { onDelete: "cascade" }),
+  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
+  recipientName: varchar("recipient_name", { length: 255 }),
+  status: emailRecipientStatusEnum("status").notNull().default("queued"),
   resendId: varchar("resend_id", { length: 255 }),
   errorMessage: text("error_message"),
   sentAt: timestamp("sent_at", { mode: "string" }),
