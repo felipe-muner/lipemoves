@@ -50,6 +50,48 @@ export const emailRecipientStatusEnum = pgEnum("email_recipient_status", [
   "failed",
 ])
 
+export const productBaseUnitEnum = pgEnum("product_base_unit", [
+  "g",
+  "ml",
+  "piece",
+])
+
+export const productCategoryEnum = pgEnum("product_category", [
+  "drink",
+  "food",
+  "supplement",
+  "retail",
+  "other",
+])
+
+export const stockMovementReasonEnum = pgEnum("stock_movement_reason", [
+  "purchase",
+  "sale",
+  "adjustment",
+  "opening",
+  "waste",
+])
+
+export const restaurantTableStatusEnum = pgEnum("restaurant_table_status", [
+  "open",
+  "occupied",
+  "cleaning",
+  "closed",
+])
+
+export const saleStatusEnum = pgEnum("sale_status", [
+  "open",
+  "paid",
+  "cancelled",
+])
+
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "cash",
+  "card",
+  "transfer",
+  "other",
+])
+
 // ─── Users ───────────────────────────────────────────────
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -263,7 +305,13 @@ export const locations = pgTable("locations", {
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
 
-export const teachers = pgTable("teachers", {
+/**
+ * Employees — the unified "people who work here" entity.
+ * Replaces the old single-purpose `teachers` table. An employee can
+ * hold multiple roles (teacher, waiter, manager, ...) and belong to
+ * multiple teams (kitchen, front-desk, ...).
+ */
+export const employees = pgTable("employees", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
   name: varchar("name", { length: 255 }).notNull(),
@@ -276,9 +324,48 @@ export const teachers = pgTable("teachers", {
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
 
+export const roles = pgTable("roles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 9 }).notNull().default("#a78bfa"),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const teams = pgTable("teams", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 9 }).notNull().default("#38bdf8"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const employeeRoles = pgTable("employee_roles", {
+  employeeId: uuid("employee_id")
+    .notNull()
+    .references(() => employees.id, { onDelete: "cascade" }),
+  roleId: uuid("role_id")
+    .notNull()
+    .references(() => roles.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const employeeTeams = pgTable("employee_teams", {
+  employeeId: uuid("employee_id")
+    .notNull()
+    .references(() => employees.id, { onDelete: "cascade" }),
+  teamId: uuid("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at", { mode: "string" }).defaultNow().notNull(),
+})
+
 export const yogaClasses = pgTable("yoga_classes", {
   id: uuid("id").defaultRandom().primaryKey(),
-  teacherId: uuid("teacher_id").references(() => teachers.id, {
+  employeeId: uuid("employee_id").references(() => employees.id, {
     onDelete: "set null",
   }),
   name: varchar("name", { length: 255 }).notNull(),
@@ -383,5 +470,95 @@ export const emailCampaignSends = pgTable("email_campaign_sends", {
   resendId: varchar("resend_id", { length: 255 }),
   errorMessage: text("error_message"),
   sentAt: timestamp("sent_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// ─── Products & stock ────────────────────────────────────────
+export const products = pgTable("products", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sku: varchar("sku", { length: 100 }).unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: productCategoryEnum("category").notNull().default("other"),
+  baseUnit: productBaseUnitEnum("base_unit").notNull().default("piece"),
+  /** Stock kept in base-unit. e.g. 1 kg whey → stockQty=1000, baseUnit=g. */
+  stockQty: integer("stock_qty").notNull().default(0),
+  /** Amount consumed per sale unit. e.g. a 30g shake → servingSize=30. */
+  servingSize: integer("serving_size").notNull().default(1),
+  /** Price per sale unit (i.e. per serving), in whole THB. */
+  priceThb: integer("price_thb").notNull().default(0),
+  /** Optional cost per base-unit (THB×100 cents-style) — used later for COGS. */
+  costThbCents: integer("cost_thb_cents"),
+  imageUrl: text("image_url"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const stockMovements = pgTable("stock_movements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  /** Signed integer in product.baseUnit (positive = add, negative = consume). */
+  change: integer("change").notNull(),
+  reason: stockMovementReasonEnum("reason").notNull(),
+  refType: varchar("ref_type", { length: 30 }),
+  refId: uuid("ref_id"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// ─── Restaurant ──────────────────────────────────────────────
+export const restaurantTables = pgTable("restaurant_tables", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tableNumber: varchar("table_number", { length: 50 }).notNull(),
+  room: varchar("room", { length: 100 }),
+  seats: integer("seats"),
+  status: restaurantTableStatusEnum("status").notNull().default("open"),
+  isActive: boolean("is_active").notNull().default(true),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const sales = pgTable("sales", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tableId: uuid("table_id").references(() => restaurantTables.id, {
+    onDelete: "set null",
+  }),
+  /** The waiter / server. */
+  employeeId: uuid("employee_id").references(() => employees.id, {
+    onDelete: "set null",
+  }),
+  status: saleStatusEnum("status").notNull().default("open"),
+  subtotalThb: integer("subtotal_thb").notNull().default(0),
+  discountThb: integer("discount_thb").notNull().default(0),
+  tipThb: integer("tip_thb").notNull().default(0),
+  totalThb: integer("total_thb").notNull().default(0),
+  paymentMethod: paymentMethodEnum("payment_method"),
+  paymentNote: varchar("payment_note", { length: 255 }),
+  customerNote: text("customer_note"),
+  openedAt: timestamp("opened_at", { mode: "string" }).defaultNow().notNull(),
+  paidAt: timestamp("paid_at", { mode: "string" }),
+  cancelledAt: timestamp("cancelled_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const saleItems = pgTable("sale_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  saleId: uuid("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").references(() => products.id, {
+    onDelete: "set null",
+  }),
+  /** Snapshot of the product name at sale time (so historical sales survive renames). */
+  productName: varchar("product_name", { length: 255 }).notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  unitPriceThb: integer("unit_price_thb").notNull().default(0),
+  totalThb: integer("total_thb").notNull().default(0),
+  notes: text("notes"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 })
