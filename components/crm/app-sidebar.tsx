@@ -87,7 +87,7 @@ export function AppSidebar({
                   <Command className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Lipe CRM</span>
+                  <span className="truncate font-semibold">Yoga Center</span>
                   <span className="truncate text-xs capitalize text-muted-foreground">
                     {role}
                   </span>
