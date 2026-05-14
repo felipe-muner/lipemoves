@@ -65,45 +65,49 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
       }
-      if (token?.id) {
-        const [dbUser] = await db
-          .select({
-            id: users.id,
-            role: users.role,
-            email: users.email,
-          })
-          .from(users)
-          .where(eq(users.id, token.id as string))
-          .limit(1)
 
-        let role = dbUser?.role ?? null
-
-        // Auto-link Google login → teacher when emails match
-        if (!role && dbUser?.email) {
-          const [t] = await db
-            .select({ id: employees.id })
-            .from(employees)
-            .where(eq(employees.email, dbUser.email))
-            .limit(1)
-          if (t) {
-            await db
-              .update(users)
-              .set({ role: "teacher" })
-              .where(eq(users.id, dbUser.id))
-            await db
-              .update(employees)
-              .set({ userId: dbUser.id })
-              .where(eq(employees.id, t.id))
-            role = "teacher"
-          }
-        }
-
-        token.role = role
+      const shouldRefresh = !!user || trigger === "update" || token.role === undefined
+      if (!shouldRefresh || !token?.id) {
+        return token
       }
+
+      const [dbUser] = await db
+        .select({
+          id: users.id,
+          role: users.role,
+          email: users.email,
+        })
+        .from(users)
+        .where(eq(users.id, token.id as string))
+        .limit(1)
+
+      let role = dbUser?.role ?? null
+
+      // Auto-link Google login → teacher when emails match
+      if (!role && dbUser?.email) {
+        const [t] = await db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(eq(employees.email, dbUser.email))
+          .limit(1)
+        if (t) {
+          await db
+            .update(users)
+            .set({ role: "teacher" })
+            .where(eq(users.id, dbUser.id))
+          await db
+            .update(employees)
+            .set({ userId: dbUser.id })
+            .where(eq(employees.id, t.id))
+          role = "teacher"
+        }
+      }
+
+      token.role = role
       return token
     },
     async session({ session, token }) {
