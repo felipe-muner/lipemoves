@@ -19,6 +19,8 @@ import { Badge } from "@/components/ui/badge"
 import { Money } from "@/components/crm/money"
 import { StatCard } from "@/components/crm/stat-card"
 import { CalendarDays, Users, Coins, Wallet } from "lucide-react"
+import { parsePagination } from "@/lib/utils/pagination"
+import { DataTablePagination } from "@/components/crm/data-table-pagination"
 import {
   markClassesPaid,
   markTeacherUnpaidPaid,
@@ -33,10 +35,17 @@ type StatusFilter = "unpaid" | "paid" | "all"
 export default async function PaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; status?: StatusFilter }>
+  searchParams: Promise<{
+    from?: string
+    to?: string
+    status?: StatusFilter
+    page?: string
+    perPage?: string
+  }>
 }) {
   const session = await requireDashboardSession()
   const params = await searchParams
+  const { page, perPage, offset } = parsePagination(params)
 
   const now = new Date()
   const fromDate = params.from ? parseISO(params.from) : startOfMonth(now)
@@ -287,11 +296,15 @@ export default async function PaymentsPage({
         <CardHeader>
           <CardTitle>{classes.length} classes</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {canMarkPaid && (
             <form id="bulkPaidForm" action={markClassesPaid} className="hidden" />
           )}
           <div>
+            {(() => {
+              const visibleClasses = classes.slice(offset, offset + perPage)
+              return (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -308,7 +321,7 @@ export default async function PaymentsPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classes.length === 0 ? (
+                {visibleClasses.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={isTeacher ? 6 : 9}
@@ -318,7 +331,7 @@ export default async function PaymentsPage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  classes.map((c) => {
+                  visibleClasses.map((c) => {
                     const attendees = Number(c.attendeeCount ?? 0)
                     const gross = attendees * c.priceThb
                     const payout = Math.round(
@@ -400,14 +413,23 @@ export default async function PaymentsPage({
                 )}
               </TableBody>
             </Table>
-            {canMarkPaid && classes.some((c) => !c.paidAt) && (
+            {canMarkPaid && visibleClasses.some((c) => !c.paidAt) && (
               <div className="mt-4 flex justify-end">
                 <Button type="submit" form="bulkPaidForm" variant="outline">
                   Mark selected as paid
                 </Button>
               </div>
             )}
+              </>
+              )
+            })()}
           </div>
+          <DataTablePagination
+            total={classes.length}
+            page={page}
+            perPage={perPage}
+            label="classes"
+          />
         </CardContent>
       </Card>
     </div>

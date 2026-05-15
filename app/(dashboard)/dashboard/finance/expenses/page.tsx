@@ -32,6 +32,8 @@ import { FinanceFilters } from "@/components/crm/finance-filters"
 import { EmployeeFilter } from "@/components/crm/employee-filter"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
+import { parsePagination } from "@/lib/utils/pagination"
+import { DataTablePagination } from "@/components/crm/data-table-pagination"
 import {
   createExpense,
   updateExpense,
@@ -55,6 +57,8 @@ export default async function ExpensesPage({
     categoryId?: string
     employeeId?: string
     tab?: "manual" | "payouts"
+    page?: string
+    perPage?: string
   }>
 }) {
   const session = await requireDashboardSession()
@@ -63,6 +67,7 @@ export default async function ExpensesPage({
   await ensureDefaultExpenseCategories()
 
   const params = await searchParams
+  const { page, perPage, offset } = parsePagination(params)
   const now = new Date()
   const from = params.from ? parseISO(params.from) : startOfMonth(now)
   const to = params.to ? endOfDay(parseISO(params.to)) : endOfMonth(now)
@@ -104,6 +109,8 @@ export default async function ExpensesPage({
 
   const manualTotal = filteredManual.reduce((a, b) => a + b.amountThb, 0)
   const payoutTotal = filteredPayouts.reduce((a, b) => a + b.payoutThb, 0)
+  const visibleManual = filteredManual.slice(offset, offset + perPage)
+  const visiblePayouts = filteredPayouts.slice(offset, offset + perPage)
   const grandTotal = manualTotal + payoutTotal
 
   return (
@@ -176,7 +183,7 @@ export default async function ExpensesPage({
         <CardHeader>
           <CardTitle>{filteredManual.length} manual expenses</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <Table>
             <TableHeader>
               <TableRow>
@@ -191,7 +198,7 @@ export default async function ExpensesPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredManual.length === 0 ? (
+              {visibleManual.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={8}
@@ -201,7 +208,7 @@ export default async function ExpensesPage({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredManual.map((e) => (
+                visibleManual.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="whitespace-nowrap">
                       {format(parseISO(e.incurredOn), "MMM dd, yyyy")}
@@ -281,6 +288,12 @@ export default async function ExpensesPage({
               )}
             </TableBody>
           </Table>
+          <DataTablePagination
+            total={filteredManual.length}
+            page={page}
+            perPage={perPage}
+            label="expenses"
+          />
         </CardContent>
       </Card>
 
@@ -327,8 +340,8 @@ export default async function ExpensesPage({
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {filteredPayouts.length === 0 ? (
+            <CardContent className="space-y-3">
+              {visiblePayouts.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
                   No teacher classes marked paid in this range.
                 </p>
@@ -344,7 +357,7 @@ export default async function ExpensesPage({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPayouts.map((p) => (
+                    {visiblePayouts.map((p) => (
                       <TableRow key={p.id}>
                         <TableCell className="whitespace-nowrap">
                           {p.paidAt
@@ -366,6 +379,12 @@ export default async function ExpensesPage({
                   </TableBody>
                 </Table>
               )}
+              <DataTablePagination
+                total={filteredPayouts.length}
+                page={page}
+                perPage={perPage}
+                label="payouts"
+              />
             </CardContent>
           </Card>
         </TabsContent>
