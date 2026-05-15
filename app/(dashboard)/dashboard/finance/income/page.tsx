@@ -21,6 +21,8 @@ import { Money } from "@/components/crm/money"
 import { StatCard } from "@/components/crm/stat-card"
 import { TrendingUp, Utensils, BadgeCheck, Ticket } from "lucide-react"
 import { FinanceFilters } from "@/components/crm/finance-filters"
+import { parsePagination } from "@/lib/utils/pagination"
+import { DataTablePagination } from "@/components/crm/data-table-pagination"
 import {
   restaurantDailyTotals,
   membershipPurchases,
@@ -34,7 +36,13 @@ type SourceFilter = "all" | "restaurant" | "memberships" | "drop_in"
 export default async function FinanceIncomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; source?: SourceFilter }>
+  searchParams: Promise<{
+    from?: string
+    to?: string
+    source?: SourceFilter
+    page?: string
+    perPage?: string
+  }>
 }) {
   const session = await requireDashboardSession()
   if (session.role !== "admin" && session.role !== "manager") notFound()
@@ -44,12 +52,17 @@ export default async function FinanceIncomePage({
   const from = params.from ? parseISO(params.from) : startOfMonth(now)
   const to = params.to ? endOfDay(parseISO(params.to)) : endOfMonth(now)
   const source: SourceFilter = params.source ?? "all"
+  const { page, perPage, offset } = parsePagination(params)
 
   const [restaurant, memberships, dropIns] = await Promise.all([
     restaurantDailyTotals({ from, to }),
     membershipPurchases({ from, to }),
     dropInPayments({ from, to }),
   ])
+
+  const visibleRestaurant = restaurant.slice(offset, offset + perPage)
+  const visibleMemberships = memberships.slice(offset, offset + perPage)
+  const visibleDropIns = dropIns.slice(offset, offset + perPage)
 
   const restaurantTotal = restaurant.reduce((a, b) => a + b.totalThb, 0)
   const membershipsTotal = memberships.reduce((a, b) => a + b.amountThb, 0)
@@ -115,7 +128,7 @@ export default async function FinanceIncomePage({
               Restaurant — daily totals ({restaurant.length} days)
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -125,7 +138,7 @@ export default async function FinanceIncomePage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {restaurant.length === 0 ? (
+                {visibleRestaurant.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={3}
@@ -135,7 +148,7 @@ export default async function FinanceIncomePage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  restaurant.map((r) => (
+                  visibleRestaurant.map((r) => (
                     <TableRow key={r.day}>
                       <TableCell className="whitespace-nowrap">
                         {format(parseISO(r.day), "EEE, MMM dd, yyyy")}
@@ -151,6 +164,12 @@ export default async function FinanceIncomePage({
                 )}
               </TableBody>
             </Table>
+            <DataTablePagination
+              total={restaurant.length}
+              page={page}
+              perPage={perPage}
+              label="days"
+            />
           </CardContent>
         </Card>
       )}
@@ -162,7 +181,7 @@ export default async function FinanceIncomePage({
               Memberships — {memberships.length} purchases
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -173,7 +192,7 @@ export default async function FinanceIncomePage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {memberships.length === 0 ? (
+                {visibleMemberships.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={4}
@@ -183,7 +202,7 @@ export default async function FinanceIncomePage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  memberships.map((m) => (
+                  visibleMemberships.map((m) => (
                     <TableRow key={m.id}>
                       <TableCell className="whitespace-nowrap">
                         {format(parseISO(m.date), "MMM dd, yyyy")}
@@ -200,6 +219,12 @@ export default async function FinanceIncomePage({
                 )}
               </TableBody>
             </Table>
+            <DataTablePagination
+              total={memberships.length}
+              page={page}
+              perPage={perPage}
+              label="memberships"
+            />
           </CardContent>
         </Card>
       )}
@@ -209,7 +234,7 @@ export default async function FinanceIncomePage({
           <CardHeader>
             <CardTitle>Drop-in — {dropIns.length} payments</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -221,7 +246,7 @@ export default async function FinanceIncomePage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dropIns.length === 0 ? (
+                {visibleDropIns.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={5}
@@ -231,7 +256,7 @@ export default async function FinanceIncomePage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  dropIns.map((d) => (
+                  visibleDropIns.map((d) => (
                     <TableRow key={d.id}>
                       <TableCell className="whitespace-nowrap">
                         {format(parseISO(d.date), "MMM dd, yyyy HH:mm")}
@@ -249,6 +274,12 @@ export default async function FinanceIncomePage({
                 )}
               </TableBody>
             </Table>
+            <DataTablePagination
+              total={dropIns.length}
+              page={page}
+              perPage={perPage}
+              label="drop-ins"
+            />
           </CardContent>
         </Card>
       )}
