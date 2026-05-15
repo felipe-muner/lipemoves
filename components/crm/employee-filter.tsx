@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { EntityCombobox, EntityComboboxItem } from "./entity-combobox"
+import { EntitySearchFilter } from "./entity-search-filter"
 
 export function EmployeeFilter({
   employees,
@@ -22,31 +21,17 @@ export function EmployeeFilter({
   className?: string
   placeholder?: string
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  const items: EntityComboboxItem[] = employees.map((e) => ({
-    id: e.id,
-    label: e.name,
-    image: e.image ?? null,
-    imageType: "avatar",
-    description: e.email ?? undefined,
-  }))
-
-  function apply(id: string | null) {
-    const params = new URLSearchParams(searchParams)
-    if (id) params.set(paramName, id)
-    else params.delete(paramName)
-    router.push(`${pathname}?${params.toString()}`)
-  }
-
   return (
-    <EntityCombobox
-      items={items}
-      value={value ?? null}
-      onValueChange={apply}
-      allOption={{ id: "__all__", label: placeholder }}
+    <EntitySearchFilter
+      items={employees.map((e) => ({
+        id: e.id,
+        label: e.name,
+        image: e.image ?? null,
+        imageType: "avatar",
+        description: e.email ?? undefined,
+      }))}
+      paramName={paramName}
+      value={value ?? undefined}
       placeholder={placeholder}
       searchPlaceholder="Search employees..."
       emptyText="No employees match."

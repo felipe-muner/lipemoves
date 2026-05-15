@@ -17,6 +17,8 @@ import { Pencil } from "lucide-react"
 import { ProductDialog } from "@/components/crm/product-dialog"
 import { StockAdjustDialog } from "@/components/crm/stock-adjust-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { parseIdsParam } from "@/lib/utils/url-params"
 import { Money } from "@/components/crm/money"
 import { ProductAvatar } from "@/components/crm/product-avatar"
 import {
@@ -28,11 +30,19 @@ import {
 
 export const dynamic = "force-dynamic"
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ productId?: string }>
+}) {
   const session = await requireDashboardSession()
   if (session.role !== "admin" && session.role !== "manager") notFound()
 
   const rows = await db.select().from(products).orderBy(products.createdAt)
+  const { productId = "" } = await searchParams
+  const selectedIds = parseIdsParam(productId)
+  const filtered =
+    selectedIds.size > 0 ? rows.filter((r) => selectedIds.has(r.id)) : rows
 
   return (
     <div className="space-y-6">
@@ -47,9 +57,28 @@ export default async function ProductsPage() {
         <ProductDialog mode="create" action={createProduct} />
       </div>
 
+      <div className="md:max-w-md">
+        <EntitySearchFilter
+          items={rows.map((r) => ({
+            id: r.id,
+            label: r.name,
+            description: r.sku ?? r.category,
+            image: r.imageUrl ?? null,
+            imageType: "logo",
+          }))}
+          multiple
+          paramName="productId"
+          value={productId}
+          placeholder="Search products..."
+          searchPlaceholder="Search by name or SKU..."
+          emptyText="No products match."
+          allLabel="All products"
+        />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>{rows.length} products</CardTitle>
+          <CardTitle>{filtered.length} products</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -65,14 +94,16 @@ export default async function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    No products yet.
+                    {rows.length === 0
+                      ? "No products yet."
+                      : "No products match the filter."}
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((p) => {
+                filtered.map((p) => {
                   const servingsLeft = p.servingSize > 0
                     ? Math.floor(p.stockQty / p.servingSize)
                     : p.stockQty

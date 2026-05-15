@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
 import { LocationDialog } from "@/components/crm/location-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createLocation,
   updateLocation,
@@ -26,7 +28,11 @@ import {
 
 export const dynamic = "force-dynamic"
 
-export default async function LocationsPage() {
+export default async function LocationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ locationId?: string }>
+}) {
   const session = await requireDashboardSession()
   if (session.role !== "admin" && session.role !== "manager") notFound()
 
@@ -36,6 +42,11 @@ export default async function LocationsPage() {
     .select()
     .from(locations)
     .orderBy(desc(locations.isDefault), locations.name)
+
+  const { locationId = "" } = await searchParams
+  const selectedIds = parseIdsParam(locationId)
+  const filtered =
+    selectedIds.size > 0 ? rows.filter((r) => selectedIds.has(r.id)) : rows
 
   return (
     <div className="space-y-6">
@@ -50,9 +61,28 @@ export default async function LocationsPage() {
         <LocationDialog mode="create" action={createLocation} />
       </div>
 
+      <div className="md:max-w-md">
+        <EntitySearchFilter
+          items={rows.map((r) => ({
+            id: r.id,
+            label: r.name,
+            description: r.description ?? undefined,
+            imageType: "logo",
+            color: r.color,
+          }))}
+          multiple
+          paramName="locationId"
+          value={locationId}
+          placeholder="Search locations..."
+          searchPlaceholder="Search locations..."
+          emptyText="No locations match."
+          allLabel="All locations"
+        />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>{rows.length} locations</CardTitle>
+          <CardTitle>{filtered.length} locations</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -67,7 +97,13 @@ export default async function LocationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    {rows.length === 0 ? "No locations yet." : "No locations match the filter."}
+                  </TableCell>
+                </TableRow>
+              ) : (filtered.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>
                     <span
@@ -126,7 +162,7 @@ export default async function LocationsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )))}
             </TableBody>
           </Table>
         </CardContent>

@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { NationalityPicker } from "./nationality-picker"
 
 export interface StudentDialogValues {
   email?: string
@@ -124,12 +125,8 @@ export function StudentDialog({
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="nationality">Nationality</Label>
-              <Input
-                id="nationality"
-                name="nationality"
-                defaultValue={values?.nationality ?? ""}
-              />
+              <Label>Nationality</Label>
+              <NationalityPicker defaultValue={values?.nationality ?? ""} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="notes">Notes</Label>
