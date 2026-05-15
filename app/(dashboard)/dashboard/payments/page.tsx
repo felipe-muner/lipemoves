@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Money } from "@/components/crm/money"
+import { StatCard } from "@/components/crm/stat-card"
+import { CalendarDays, Users, Coins, Wallet } from "lucide-react"
 import {
   markClassesPaid,
   markTeacherUnpaidPaid,
@@ -181,53 +183,24 @@ export default async function PaymentsPage({
       </Card>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Classes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{classes.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Attendees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{grandAttendees}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Gross
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">
-              <Money thb={grandGross} />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Owed to teachers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-amber-600">
-              <Money thb={grandUnpaidPayout} />
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
+        <StatCard label="Classes" value={classes.length} icon={CalendarDays} />
+        <StatCard label="Attendees" value={grandAttendees} icon={Users} />
+        <StatCard
+          label="Gross"
+          value={<Money thb={grandGross} />}
+          icon={Coins}
+        />
+        <StatCard
+          label="Owed to teachers"
+          value={<Money thb={grandUnpaidPayout} />}
+          icon={Wallet}
+          valueClassName="text-amber-600"
+          hint={
+            <>
               of <Money thb={grandPayout} /> total payout
-            </p>
-          </CardContent>
-        </Card>
+            </>
+          }
+        />
       </div>
 
       {!isTeacher && (

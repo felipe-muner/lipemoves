@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Money } from "@/components/crm/money"
+import { StatCard } from "@/components/crm/stat-card"
+import { TrendingUp, Utensils, BadgeCheck, Ticket } from "lucide-react"
 import { FinanceFilters } from "@/components/crm/finance-filters"
 import {
   restaurantDailyTotals,
@@ -80,10 +82,30 @@ export default async function FinanceIncomePage({
       </Card>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <KpiCard label="Total income" amount={grandTotal} />
-        <KpiCard label="Restaurant" amount={restaurantTotal} />
-        <KpiCard label="Memberships" amount={membershipsTotal} />
-        <KpiCard label="Drop-in" amount={dropInTotal} />
+        <StatCard
+          label="Total income"
+          value={<Money thb={grandTotal} />}
+          icon={TrendingUp}
+          valueClassName="text-emerald-600"
+        />
+        <StatCard
+          label="Restaurant"
+          value={<Money thb={restaurantTotal} />}
+          icon={Utensils}
+          valueClassName="text-emerald-600"
+        />
+        <StatCard
+          label="Memberships"
+          value={<Money thb={membershipsTotal} />}
+          icon={BadgeCheck}
+          valueClassName="text-emerald-600"
+        />
+        <StatCard
+          label="Drop-in"
+          value={<Money thb={dropInTotal} />}
+          icon={Ticket}
+          valueClassName="text-emerald-600"
+        />
       </div>
 
       {(source === "all" || source === "restaurant") && (
@@ -231,23 +253,6 @@ export default async function FinanceIncomePage({
         </Card>
       )}
     </div>
-  )
-}
-
-function KpiCard({ label, amount }: { label: string; amount: number }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold text-emerald-600">
-          <Money thb={amount} />
-        </div>
-      </CardContent>
-    </Card>
   )
 }
 
