@@ -32,12 +32,12 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
           >
             <defs>
               <linearGradient id="colorClasses" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--foreground)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="var(--foreground)" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorAttendees" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--muted-foreground)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="var(--muted-foreground)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
@@ -58,8 +58,8 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
             />
             <Tooltip
               contentStyle={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
                 fontSize: 12,
                 padding: "8px 12px",
@@ -68,14 +68,14 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
             <Area
               type="monotone"
               dataKey="classes"
-              stroke="hsl(var(--foreground))"
+              stroke="var(--foreground)"
               strokeWidth={2}
               fill="url(#colorClasses)"
             />
             <Area
               type="monotone"
               dataKey="attendees"
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--muted-foreground)"
               strokeWidth={2}
               fill="url(#colorAttendees)"
             />
