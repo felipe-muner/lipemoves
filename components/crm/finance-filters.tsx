@@ -20,6 +20,8 @@ export interface FinanceFiltersProps {
   categoryId?: string
   categories?: Array<{ id: string; name: string }>
   showCategory?: boolean
+  /** Optional extra control rendered inline (e.g. an employee combobox). */
+  extraField?: React.ReactNode
 }
 
 function fmt(d: Date) {
@@ -32,6 +34,7 @@ export function FinanceFilters({
   categoryId,
   categories = [],
   showCategory = false,
+  extraField,
 }: FinanceFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -106,6 +109,7 @@ export function FinanceFilters({
             </select>
           </div>
         )}
+        {extraField}
         <Button type="submit">Filter</Button>
       </form>
       <div className="flex flex-wrap gap-2">

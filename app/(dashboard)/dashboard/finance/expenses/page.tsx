@@ -24,9 +24,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Money } from "@/components/crm/money"
+import { StatCard } from "@/components/crm/stat-card"
+import { TrendingDown, Wallet, Coins } from "lucide-react"
 import { ExpenseDialog } from "@/components/crm/expense-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { FinanceFilters } from "@/components/crm/finance-filters"
+import { EmployeeFilter } from "@/components/crm/employee-filter"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
 import {
   createExpense,
   updateExpense,
@@ -48,6 +53,8 @@ export default async function ExpensesPage({
     from?: string
     to?: string
     categoryId?: string
+    employeeId?: string
+    tab?: "manual" | "payouts"
   }>
 }) {
   const session = await requireDashboardSession()
@@ -60,13 +67,19 @@ export default async function ExpensesPage({
   const from = params.from ? parseISO(params.from) : startOfMonth(now)
   const to = params.to ? endOfDay(parseISO(params.to)) : endOfMonth(now)
   const categoryId = params.categoryId ?? ""
+  const employeeId = params.employeeId ?? ""
+  const activeTab = params.tab === "payouts" ? "payouts" : "manual"
 
   const [categories, allExpenses, payouts, employeeRows] = await Promise.all([
     listExpenseCategories(),
     manualExpenses({ from, to }),
     teacherPayouts({ from, to }),
     db
-      .select({ id: employees.id, name: employees.name })
+      .select({
+        id: employees.id,
+        name: employees.name,
+        email: employees.email,
+      })
       .from(employees)
       .where(eq(employees.isActive, true))
       .orderBy(employees.name),
@@ -79,12 +92,18 @@ export default async function ExpensesPage({
     color: c.color,
   }))
 
-  const filtered = categoryId
-    ? allExpenses.filter((e) => e.categoryId === categoryId)
-    : allExpenses
+  const filteredManual = allExpenses.filter((e) => {
+    if (categoryId && e.categoryId !== categoryId) return false
+    if (employeeId && e.employeeId !== employeeId) return false
+    return true
+  })
+  const filteredPayouts = payouts.filter((p) => {
+    if (employeeId && p.teacherId !== employeeId) return false
+    return true
+  })
 
-  const manualTotal = filtered.reduce((a, b) => a + b.amountThb, 0)
-  const payoutTotal = payouts.reduce((a, b) => a + b.payoutThb, 0)
+  const manualTotal = filteredManual.reduce((a, b) => a + b.amountThb, 0)
+  const payoutTotal = filteredPayouts.reduce((a, b) => a + b.payoutThb, 0)
   const grandTotal = manualTotal + payoutTotal
 
   return (
@@ -113,30 +132,49 @@ export default async function ExpensesPage({
         </div>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <FinanceFilters
-            defaultFrom={format(from, "yyyy-MM-dd")}
-            defaultTo={format(to, "yyyy-MM-dd")}
-            categoryId={categoryId}
-            categories={activeCategories.map((c) => ({
-              id: c.id,
-              name: c.name,
-            }))}
-            showCategory
-          />
-        </CardContent>
-      </Card>
+      <Tabs defaultValue={activeTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="manual">
+            Manual expenses ({filteredManual.length})
+          </TabsTrigger>
+          <TabsTrigger value="payouts">
+            Teacher payouts ({filteredPayouts.length})
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <KpiCard label="Manual expenses" amount={manualTotal} />
-        <KpiCard label="Teacher payouts" amount={payoutTotal} />
-        <KpiCard label="Total out" amount={grandTotal} accent="red" />
-      </div>
+        <TabsContent value="manual" className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <FinanceFilters
+                defaultFrom={format(from, "yyyy-MM-dd")}
+                defaultTo={format(to, "yyyy-MM-dd")}
+                categoryId={categoryId}
+                categories={activeCategories.map((c) => ({
+                  id: c.id,
+                  name: c.name,
+                }))}
+                showCategory
+              />
+            </CardContent>
+          </Card>
 
-      <Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            <StatCard
+              label="Manual expenses"
+              value={<Money thb={manualTotal} />}
+              icon={Coins}
+            />
+            <StatCard
+              label="Total out (incl. payouts)"
+              value={<Money thb={grandTotal} />}
+              icon={TrendingDown}
+              valueClassName="text-red-600"
+            />
+          </div>
+
+          <Card>
         <CardHeader>
-          <CardTitle>{filtered.length} manual expenses</CardTitle>
+          <CardTitle>{filteredManual.length} manual expenses</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -153,7 +191,7 @@ export default async function ExpensesPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {filteredManual.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={8}
@@ -163,7 +201,7 @@ export default async function ExpensesPage({
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((e) => (
+                filteredManual.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="whitespace-nowrap">
                       {format(parseISO(e.incurredOn), "MMM dd, yyyy")}
@@ -246,83 +284,93 @@ export default async function ExpensesPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Teacher payouts in range — {payouts.length}{" "}
-            <span className="text-xs font-normal text-muted-foreground">
-              (read-only · manage in{" "}
-              <Link href="/dashboard/payments" className="underline">
-                payroll
-              </Link>
-              )
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {payouts.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No teacher classes marked paid in this range.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Paid on</TableHead>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Teacher</TableHead>
-                  <TableHead className="text-right">Attendees</TableHead>
-                  <TableHead className="text-right">Payout</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payouts.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {p.paidAt ? format(parseISO(p.paidAt), "MMM dd, yyyy") : "—"}
-                    </TableCell>
-                    <TableCell className="font-medium">{p.className}</TableCell>
-                    <TableCell>{p.teacherName ?? "—"}</TableCell>
-                    <TableCell className="text-right">
-                      {p.attendeeCount}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      <Money thb={p.payoutThb} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="payouts" className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <FinanceFilters
+                defaultFrom={format(from, "yyyy-MM-dd")}
+                defaultTo={format(to, "yyyy-MM-dd")}
+                extraField={
+                  <div className="grid gap-1.5 min-w-[220px]">
+                    <Label htmlFor="employeeId" className="text-xs">
+                      Teacher
+                    </Label>
+                    <EmployeeFilter
+                      employees={employeeRows}
+                      value={employeeId}
+                      placeholder="All teachers"
+                    />
+                  </div>
+                }
+              />
+            </CardContent>
+          </Card>
+
+          <StatCard
+            label="Teacher payouts"
+            value={<Money thb={payoutTotal} />}
+            icon={Wallet}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {filteredPayouts.length} teacher payouts{" "}
+                <span className="text-xs font-normal text-muted-foreground">
+                  (read-only · manage in{" "}
+                  <Link href="/dashboard/payments" className="underline">
+                    payroll
+                  </Link>
+                  )
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredPayouts.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No teacher classes marked paid in this range.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Paid on</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead className="text-right">Attendees</TableHead>
+                      <TableHead className="text-right">Payout</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPayouts.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {p.paidAt
+                            ? format(parseISO(p.paidAt), "MMM dd, yyyy")
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {p.className}
+                        </TableCell>
+                        <TableCell>{p.teacherName ?? "—"}</TableCell>
+                        <TableCell className="text-right">
+                          {p.attendeeCount}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          <Money thb={p.payoutThb} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 
-function KpiCard({
-  label,
-  amount,
-  accent = "default",
-}: {
-  label: string
-  amount: number
-  accent?: "default" | "red"
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={`text-2xl font-semibold ${accent === "red" ? "text-red-600" : ""}`}
-        >
-          <Money thb={amount} />
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
