@@ -4,6 +4,8 @@ import { KenBurnsClip, makeFrames } from "./KenBurnsReel";
 import { Presentation } from "./Slide";
 import { Reel, REEL_FPS, REEL_TOTAL_FRAMES } from "./Reel";
 import { ReelV2, REEL_V2_FPS, REEL_V2_TOTAL_FRAMES } from "./ReelV2";
+import { PitchReel, PITCH_FPS, PITCH_TOTAL_FRAMES } from "./PitchReel";
+import { StoryReel, STORY_FPS, STORY_TOTAL_FRAMES } from "./StoryReel";
 import { slides as presentationSlides } from "../../scripts/presentation/slides";
 import durations from "../../public/presentation/audio/durations.json";
 
@@ -82,6 +84,22 @@ export const RemotionRoot = () => {
           }}
         />
       ))}
+      <Composition
+        id="PitchReel"
+        component={PitchReel}
+        durationInFrames={PITCH_TOTAL_FRAMES}
+        fps={PITCH_FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="StoryReel"
+        component={StoryReel}
+        durationInFrames={STORY_TOTAL_FRAMES}
+        fps={STORY_FPS}
+        width={1920}
+        height={1080}
+      />
       <Composition
         id="Presentation"
         component={Presentation}
