@@ -24,9 +24,12 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
         <CardTitle>Activity</CardTitle>
         <CardDescription>Classes and attendees over the last 6 months</CardDescription>
       </CardHeader>
-      <CardContent className="h-[300px] pl-0">
+      <CardContent className="h-[340px] pr-2">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
+          <AreaChart
+            data={data}
+            margin={{ top: 16, right: 24, bottom: 16, left: 8 }}
+          >
             <defs>
               <linearGradient id="colorClasses" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.4} />
@@ -42,15 +45,24 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
               dataKey="label"
               tickLine={false}
               axisLine={false}
+              tickMargin={12}
+              padding={{ left: 16, right: 16 }}
               className="text-xs"
             />
-            <YAxis tickLine={false} axisLine={false} className="text-xs" width={32} />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={12}
+              width={44}
+              className="text-xs"
+            />
             <Tooltip
               contentStyle={{
                 background: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 fontSize: 12,
+                padding: "8px 12px",
               }}
             />
             <Area
