@@ -13,6 +13,15 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Pencil } from "lucide-react"
+import { StudentDialog } from "@/components/crm/student-dialog"
+import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import {
+  createStudent,
+  updateStudent,
+  deleteStudent,
+} from "@/lib/actions/students"
 
 export const dynamic = "force-dynamic"
 
@@ -27,6 +36,7 @@ export default async function StudentsPage() {
       passport: students.passport,
       phone: students.phone,
       nationality: students.nationality,
+      notes: students.notes,
       membershipCount: sql<number>`count(${studentMemberships.id})::int`,
     })
     .from(students)
@@ -39,11 +49,14 @@ export default async function StudentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
-        <p className="text-sm text-muted-foreground">
-          All students enrolled at the studio.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
+          <p className="text-sm text-muted-foreground">
+            All students enrolled at the studio.
+          </p>
+        </div>
+        <StudentDialog mode="create" action={createStudent} />
       </div>
 
       <Card>
@@ -59,12 +72,13 @@ export default async function StudentsPage() {
                 <TableHead>Passport</TableHead>
                 <TableHead>Nationality</TableHead>
                 <TableHead className="text-right">Memberships</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     No students yet.
                   </TableCell>
                 </TableRow>
@@ -77,6 +91,31 @@ export default async function StudentsPage() {
                     <TableCell>{r.nationality ?? "—"}</TableCell>
                     <TableCell className="text-right">
                       <Badge variant="secondary">{r.membershipCount}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <StudentDialog
+                          mode="edit"
+                          values={{
+                            email: r.email,
+                            name: r.name,
+                            phone: r.phone,
+                            passport: r.passport,
+                            nationality: r.nationality,
+                            notes: r.notes,
+                          }}
+                          action={updateStudent.bind(null, r.email)}
+                          trigger={
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          }
+                        />
+                        <DeleteRowButton
+                          action={deleteStudent.bind(null, r.email)}
+                          confirmText={`Delete "${r.name}"? Their memberships and attendance will also be removed.`}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
