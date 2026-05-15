@@ -21,6 +21,7 @@ import {
   FileText,
   PieChart,
   Tags,
+  Ticket,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -120,6 +121,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
+    { href: "/dashboard/memberships", label: "Memberships", icon: Ticket },
     FINANCE_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     RESTAURANT_GROUP,
@@ -131,6 +133,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
+    { href: "/dashboard/memberships", label: "Memberships", icon: Ticket },
     FINANCE_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     RESTAURANT_GROUP,
