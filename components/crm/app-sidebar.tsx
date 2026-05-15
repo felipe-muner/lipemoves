@@ -16,6 +16,11 @@ import {
   Armchair,
   ChevronRight,
   ChevronUp,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  PieChart,
+  Tags,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -81,6 +86,32 @@ const RESTAURANT_GROUP: NavGroup = {
   ],
 }
 
+const FINANCE_GROUP: NavGroup = {
+  label: "Finance",
+  icon: PieChart,
+  basePath: "/dashboard/finance",
+  children: [
+    { href: "/dashboard/finance", label: "Overview", icon: PieChart },
+    { href: "/dashboard/finance/income", label: "Income", icon: TrendingUp },
+    {
+      href: "/dashboard/finance/expenses",
+      label: "Expenses",
+      icon: TrendingDown,
+    },
+    {
+      href: "/dashboard/finance/categories",
+      label: "Categories",
+      icon: Tags,
+    },
+    { href: "/dashboard/payments", label: "Payroll", icon: Wallet },
+    {
+      href: "/dashboard/finance/reports",
+      label: "Reports",
+      icon: FileText,
+    },
+  ],
+}
+
 const NAV: Record<Role, NavItem[]> = {
   admin: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -89,7 +120,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
-    { href: "/dashboard/payments", label: "Payments", icon: Wallet },
+    FINANCE_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     RESTAURANT_GROUP,
   ],
@@ -100,7 +131,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
     { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
-    { href: "/dashboard/payments", label: "Payments", icon: Wallet },
+    FINANCE_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     RESTAURANT_GROUP,
   ],
@@ -113,9 +144,10 @@ const NAV: Record<Role, NavItem[]> = {
 
 function isActiveLeaf(pathname: string, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard"
-  // Exact match OR child path. For /restaurant we want exact match,
-  // since /restaurant-tables shouldn't activate /restaurant.
+  // Exact match OR child path. For /restaurant + /finance overview we want
+  // exact match, since deeper paths have their own sub-nav entries.
   if (href === "/dashboard/restaurant") return pathname === href
+  if (href === "/dashboard/finance") return pathname === href
   return pathname === href || pathname.startsWith(href + "/")
 }
 

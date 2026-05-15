@@ -421,6 +421,9 @@ export const classAttendance = pgTable("class_attendance", {
     onDelete: "set null",
   }),
   checkedInAt: timestamp("checked_in_at", { mode: "string" }).defaultNow().notNull(),
+  /** Cash a student paid for this single attendance (drop-in). 0 if covered by a membership. */
+  pricePaidThb: integer("price_paid_thb").notNull().default(0),
+  paymentMethod: paymentMethodEnum("payment_method"),
 })
 
 export const emailSends = pgTable("email_sends", {
@@ -562,4 +565,42 @@ export const saleItems = pgTable("sale_items", {
   totalThb: integer("total_thb").notNull().default(0),
   notes: text("notes"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// ─── Finance: outgoing money (expenses, salaries, rent, ...) ───
+export const expenseCategories = pgTable("expense_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  color: varchar("color", { length: 16 }).notNull().default("#64748b"),
+  description: text("description"),
+  isSystem: boolean("is_system").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const expenses = pgTable("expenses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => expenseCategories.id, { onDelete: "restrict" }),
+  amountThb: integer("amount_thb").notNull(),
+  /** Date the expense was incurred (used for monthly grouping). */
+  incurredOn: timestamp("incurred_on", { mode: "string" }).notNull(),
+  vendor: varchar("vendor", { length: 255 }),
+  description: text("description"),
+  /** Optional employee link — for salaries / per-person reimbursements. */
+  employeeId: uuid("employee_id").references(() => employees.id, {
+    onDelete: "set null",
+  }),
+  paymentMethod: paymentMethodEnum("payment_method"),
+  paidAt: timestamp("paid_at", { mode: "string" }),
+  receiptUrl: varchar("receipt_url", { length: 500 }),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
