@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
 import { RestaurantTableDialog } from "@/components/crm/restaurant-table-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createRestaurantTable,
   updateRestaurantTable,
@@ -31,11 +33,19 @@ const STATUS_TONES: Record<string, string> = {
   closed: "bg-muted text-muted-foreground",
 }
 
-export default async function RestaurantTablesPage() {
+export default async function RestaurantTablesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tableId?: string }>
+}) {
   const session = await requireDashboardSession()
   if (session.role !== "admin" && session.role !== "manager") notFound()
 
   const rows = await db.select().from(restaurantTables).orderBy(restaurantTables.tableNumber)
+  const { tableId = "" } = await searchParams
+  const selectedIds = parseIdsParam(tableId)
+  const filtered =
+    selectedIds.size > 0 ? rows.filter((r) => selectedIds.has(r.id)) : rows
 
   return (
     <div className="space-y-6">
@@ -49,9 +59,29 @@ export default async function RestaurantTablesPage() {
         <RestaurantTableDialog mode="create" action={createRestaurantTable} />
       </div>
 
+      <div className="md:max-w-md">
+        <EntitySearchFilter
+          items={rows.map((r) => ({
+            id: r.id,
+            label: r.tableNumber,
+            description: [r.room, r.seats ? `${r.seats} seats` : null]
+              .filter(Boolean)
+              .join(" · "),
+            imageType: "logo",
+          }))}
+          multiple
+          paramName="tableId"
+          value={tableId}
+          placeholder="Search tables..."
+          searchPlaceholder="Search by number or room..."
+          emptyText="No tables match."
+          allLabel="All tables"
+        />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>{rows.length} tables</CardTitle>
+          <CardTitle>{filtered.length} tables</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -66,14 +96,14 @@ export default async function RestaurantTablesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    No tables yet.
+                    {rows.length === 0 ? "No tables yet." : "No tables match the filter."}
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((t) => (
+                filtered.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.tableNumber}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">

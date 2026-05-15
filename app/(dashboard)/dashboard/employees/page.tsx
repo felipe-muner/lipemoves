@@ -18,6 +18,8 @@ import {
 import { EmployeeDialog } from "@/components/crm/employee-dialog"
 import { RoleTeamDialog } from "@/components/crm/role-team-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createEmployee,
   updateEmployee,
@@ -33,13 +35,25 @@ import {
 
 export const dynamic = "force-dynamic"
 
-export default async function EmployeesPage() {
+export default async function EmployeesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ employeeId?: string }>
+}) {
   const session = await requireDashboardSession()
   if (session.role !== "admin" && session.role !== "manager") notFound()
+
+  const { employeeId = "" } = await searchParams
+  const selectedIds = parseIdsParam(employeeId)
 
   const employeeRows = await employeeListWithRoleTeam()
   const roleRows = await db.select().from(roles).orderBy(roles.name)
   const teamRows = await db.select().from(teams).orderBy(teams.name)
+
+  const filteredEmployees =
+    selectedIds.size > 0
+      ? employeeRows.filter((e) => selectedIds.has(e.id))
+      : employeeRows
 
   const roleChips = roleRows.map((r) => ({
     id: r.id,
@@ -66,13 +80,29 @@ export default async function EmployeesPage() {
 
       <Tabs defaultValue="employees">
         <TabsList>
-          <TabsTrigger value="employees">Employees ({employeeRows.length})</TabsTrigger>
+          <TabsTrigger value="employees">Employees ({filteredEmployees.length})</TabsTrigger>
           <TabsTrigger value="roles">Roles ({roleRows.length})</TabsTrigger>
           <TabsTrigger value="teams">Teams ({teamRows.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="employees" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="md:max-w-md w-full">
+              <EntitySearchFilter
+                multiple
+                items={employeeRows.map((e) => ({
+                  id: e.id,
+                  label: e.name,
+                  description: e.email,
+                }))}
+                paramName="employeeId"
+                value={employeeId}
+                placeholder="Search employees..."
+                searchPlaceholder="Search by name or email..."
+                emptyText="No employees match."
+                allLabel="All employees"
+              />
+            </div>
             <EmployeeDialog
               mode="create"
               roles={roleChips}
@@ -95,14 +125,16 @@ export default async function EmployeesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {employeeRows.length === 0 ? (
+                  {filteredEmployees.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                        No employees yet.
+                        {employeeRows.length === 0
+                          ? "No employees yet."
+                          : "No employees match the filter."}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    employeeRows.map((e) => (
+                    filteredEmployees.map((e) => (
                       <TableRow key={e.id}>
                         <TableCell className="font-medium">{e.name}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">

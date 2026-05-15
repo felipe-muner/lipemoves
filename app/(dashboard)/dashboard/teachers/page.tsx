@@ -17,6 +17,8 @@ import { TeacherDialog } from "@/components/crm/teacher-dialog"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createTeacher,
   updateTeacher,
@@ -25,9 +27,16 @@ import {
 
 export const dynamic = "force-dynamic"
 
-export default async function TeachersPage() {
+export default async function TeachersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ teacherId?: string }>
+}) {
   const session = await requireDashboardSession()
   if (session.role === "teacher") notFound()
+
+  const { teacherId = "" } = await searchParams
+  const selectedIds = parseIdsParam(teacherId)
 
   // Employees who hold the "teacher" role
   const rows = await db
@@ -47,6 +56,14 @@ export default async function TeachersPage() {
     .where(eq(roles.slug, "teacher"))
     .orderBy(employees.createdAt)
 
+  const items = rows.map((r) => ({
+    id: r.id,
+    label: r.name,
+    description: r.email,
+  }))
+  const filtered =
+    selectedIds.size > 0 ? rows.filter((r) => selectedIds.has(r.id)) : rows
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -59,9 +76,22 @@ export default async function TeachersPage() {
         <TeacherDialog mode="create" action={createTeacher} />
       </div>
 
+      <div className="md:max-w-md">
+        <EntitySearchFilter
+          multiple
+          items={items}
+          paramName="teacherId"
+          value={teacherId}
+          placeholder="Search teachers..."
+          searchPlaceholder="Search by name or email..."
+          emptyText="No teachers match."
+          allLabel="All teachers"
+        />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>{rows.length} teachers</CardTitle>
+          <CardTitle>{filtered.length} teachers</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -76,17 +106,19 @@ export default async function TeachersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={6}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    No teachers yet.
+                    {rows.length === 0
+                      ? "No teachers yet."
+                      : "No teachers match the filter."}
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r) => (
+                filtered.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.name}</TableCell>
                     <TableCell>{r.email}</TableCell>
