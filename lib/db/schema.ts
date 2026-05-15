@@ -28,6 +28,9 @@ export const userRoleEnum = pgEnum("user_role", [
 export const membershipTypeEnum = pgEnum("membership_type", [
   "drop_in",
   "monthly",
+  "class_pack",
+  "free_pass",
+  "custom",
 ])
 
 export const emailCampaignTemplateEnum = pgEnum("email_campaign_template", [
@@ -395,11 +398,34 @@ export const students = pgTable("students", {
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
 
+// Reusable plan templates (1 Month Unlimited, Drop-in, 10 Class Pack, …).
+export const membershipPlans = pgTable("membership_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  type: membershipTypeEnum("type").notNull().default("custom"),
+  /** Validity duration in days. null = unlimited time. */
+  durationDays: integer("duration_days"),
+  /** Class credits granted. null = unlimited classes for the duration. */
+  classesIncluded: integer("classes_included"),
+  priceThb: integer("price_thb").notNull().default(0),
+  color: varchar("color", { length: 16 }).notNull().default("#0ea5e9"),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
 export const studentMemberships = pgTable("student_memberships", {
   id: uuid("id").defaultRandom().primaryKey(),
   studentEmail: varchar("student_email", { length: 255 })
     .notNull()
     .references(() => students.email, { onDelete: "cascade" }),
+  /** Optional link to a plan template. Snapshot fields (type/price) stay even if plan is deleted. */
+  planId: uuid("plan_id").references(() => membershipPlans.id, {
+    onDelete: "set null",
+  }),
   type: membershipTypeEnum("type").notNull(),
   startsOn: timestamp("starts_on", { mode: "string" }).notNull(),
   endsOn: timestamp("ends_on", { mode: "string" }),

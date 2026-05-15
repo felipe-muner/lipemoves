@@ -101,6 +101,13 @@ const NAV_GROUPS: Group[] = [
         keywords: "shala room studio",
         roles: ["admin", "manager"],
       },
+      {
+        label: "Memberships",
+        href: "/dashboard/memberships",
+        icon: Tags,
+        keywords: "plans drop-in pass packs subscription",
+        roles: ["admin", "manager"],
+      },
     ],
   },
   {
