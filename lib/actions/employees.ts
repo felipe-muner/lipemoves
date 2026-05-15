@@ -38,19 +38,21 @@ function readEmployeeFields(formData: FormData) {
 
 async function syncRoles(employeeId: string, roleIds: string[]) {
   await db.delete(employeeRoles).where(eq(employeeRoles.employeeId, employeeId))
-  if (roleIds.length > 0) {
+  const unique = Array.from(new Set(roleIds))
+  if (unique.length > 0) {
     await db
       .insert(employeeRoles)
-      .values(roleIds.map((roleId) => ({ employeeId, roleId })))
+      .values(unique.map((roleId) => ({ employeeId, roleId })))
   }
 }
 
 async function syncTeams(employeeId: string, teamIds: string[]) {
   await db.delete(employeeTeams).where(eq(employeeTeams.employeeId, employeeId))
-  if (teamIds.length > 0) {
+  const unique = Array.from(new Set(teamIds))
+  if (unique.length > 0) {
     await db
       .insert(employeeTeams)
-      .values(teamIds.map((teamId) => ({ employeeId, teamId })))
+      .values(unique.map((teamId) => ({ employeeId, teamId })))
   }
 }
 
@@ -77,9 +79,22 @@ export async function updateEmployee(id: string, formData: FormData) {
   revalidatePath("/dashboard/teachers")
 }
 
-export async function deleteEmployee(id: string) {
+export async function deactivateEmployee(id: string) {
   await requireManageScope()
-  await db.delete(employees).where(eq(employees.id, id))
+  await db
+    .update(employees)
+    .set({ isActive: false, updatedAt: new Date().toISOString() })
+    .where(eq(employees.id, id))
+  revalidatePath("/dashboard/employees")
+  revalidatePath("/dashboard/teachers")
+}
+
+export async function reactivateEmployee(id: string) {
+  await requireManageScope()
+  await db
+    .update(employees)
+    .set({ isActive: true, updatedAt: new Date().toISOString() })
+    .where(eq(employees.id, id))
   revalidatePath("/dashboard/employees")
   revalidatePath("/dashboard/teachers")
 }
