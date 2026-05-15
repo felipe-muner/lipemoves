@@ -378,6 +378,7 @@ export const yogaClasses = pgTable("yoga_classes", {
     onDelete: "set null",
   }),
   capacity: integer("capacity"),
+  paidAt: timestamp("paid_at", { mode: "string" }),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
