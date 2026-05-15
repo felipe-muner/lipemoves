@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EmployeeDialog } from "@/components/crm/employee-dialog"
+import { EntityAvatar } from "@/components/crm/entity-avatar"
 import { RoleTeamDialog } from "@/components/crm/role-team-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
@@ -136,7 +137,12 @@ export default async function EmployeesPage({
                   ) : (
                     filteredEmployees.map((e) => (
                       <TableRow key={e.id}>
-                        <TableCell className="font-medium">{e.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <EntityAvatar name={e.name} />
+                            <span>{e.name}</span>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {e.email}
                         </TableCell>

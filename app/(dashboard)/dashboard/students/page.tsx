@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
 import { StudentDialog } from "@/components/crm/student-dialog"
+import { EntityAvatar } from "@/components/crm/entity-avatar"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
 import { StudentMembershipsDialog } from "@/components/crm/student-memberships-dialog"
@@ -198,7 +199,12 @@ export default async function StudentsPage({
               ) : (
                 rows.map((r) => (
                   <TableRow key={r.email}>
-                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <EntityAvatar name={r.name} />
+                        <span>{r.name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{r.email}</TableCell>
                     <TableCell>{r.passport ?? "—"}</TableCell>
                     <TableCell>

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { TeacherDialog } from "@/components/crm/teacher-dialog"
+import { EntityAvatar } from "@/components/crm/entity-avatar"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
@@ -120,7 +121,12 @@ export default async function TeachersPage({
               ) : (
                 filtered.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <EntityAvatar name={r.name} />
+                        <span>{r.name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{r.email}</TableCell>
                     <TableCell>{r.phone ?? "—"}</TableCell>
                     <TableCell>{r.passport ?? "—"}</TableCell>
