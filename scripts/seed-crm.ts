@@ -16,6 +16,8 @@ import {
   stockMovements,
   sales,
   saleItems,
+  expenses,
+  expenseCategories,
 } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
@@ -28,6 +30,7 @@ import {
   endOfMonth,
   setHours,
   setMinutes,
+  subMonths,
 } from "date-fns"
 
 const ADMIN_EMAIL = "felipe.muner@gmail.com"
@@ -201,6 +204,8 @@ export async function seedCrm() {
   await db.delete(restaurantTables)
   await db.delete(classAttendance)
   await db.delete(studentMemberships)
+  await db.delete(expenses)
+  await db.delete(expenseCategories)
   await db.delete(yogaClasses)
   await db.delete(employees)
   await db.delete(students)
@@ -415,10 +420,114 @@ export async function seedCrm() {
     })
   }
 
+  console.log("→ Expense categories (8 defaults)...")
+  const CATS: Array<{
+    name: string
+    slug: string
+    color: string
+    description: string
+    sortOrder: number
+  }> = [
+    { name: "Rent", slug: "rent", color: "#0ea5e9", description: "Studio rent", sortOrder: 10 },
+    { name: "Utilities", slug: "utilities", color: "#22c55e", description: "Electricity, water, internet", sortOrder: 20 },
+    { name: "Salaries (non-teacher)", slug: "salary", color: "#a855f7", description: "Managers, cleaners, waiters", sortOrder: 30 },
+    { name: "Marketing", slug: "marketing", color: "#ec4899", description: "Ads, promotions, social", sortOrder: 40 },
+    { name: "Supplies", slug: "supplies", color: "#f59e0b", description: "Inventory, mats, ingredients", sortOrder: 50 },
+    { name: "Maintenance", slug: "maintenance", color: "#ef4444", description: "Repairs, plumber, equipment", sortOrder: 60 },
+    { name: "Taxes & fees", slug: "taxes_fees", color: "#64748b", description: "Government, banking, transaction fees", sortOrder: 70 },
+    { name: "Other", slug: "other", color: "#475569", description: "Catch-all", sortOrder: 99 },
+  ]
+  const catRows = await db
+    .insert(expenseCategories)
+    .values(CATS.map((c) => ({ ...c, isSystem: true })))
+    .returning()
+  const catBySlug = new Map(catRows.map((c) => [c.slug, c.id]))
+
+  console.log("→ Sample expenses (last 3 months)...")
+  const nowExp = new Date()
+  type ExpSpec = {
+    monthsAgo: number
+    day: number
+    slug: string
+    amountThb: number
+    vendor: string | null
+    description: string
+    paid?: boolean
+    employee?: typeof waiterEmp | null
+  }
+  const EXPENSE_SPECS: ExpSpec[] = [
+    // 2 months ago
+    { monthsAgo: 2, day: 1,  slug: "rent",        amountThb: 25000, vendor: "Landlord",  description: "Monthly studio rent", paid: true },
+    { monthsAgo: 2, day: 5,  slug: "utilities",   amountThb: 4200,  vendor: "PEA",       description: "Electricity bill",    paid: true },
+    { monthsAgo: 2, day: 5,  slug: "utilities",   amountThb: 850,   vendor: "PWA",       description: "Water bill",          paid: true },
+    { monthsAgo: 2, day: 7,  slug: "utilities",   amountThb: 1490,  vendor: "AIS Fibre", description: "Internet",            paid: true },
+    { monthsAgo: 2, day: 10, slug: "supplies",    amountThb: 3200,  vendor: "Makro",     description: "Smoothie ingredients" , paid: true },
+    { monthsAgo: 2, day: 12, slug: "supplies",    amountThb: 1800,  vendor: "Yoga Wares",description: "10 new yoga mats",    paid: true },
+    { monthsAgo: 2, day: 18, slug: "marketing",   amountThb: 2500,  vendor: "Meta",      description: "Instagram ads",       paid: true },
+    { monthsAgo: 2, day: 22, slug: "maintenance", amountThb: 900,   vendor: "Local handyman", description: "Plumber — main shala", paid: true },
+    { monthsAgo: 2, day: 28, slug: "salary",      amountThb: 18000, vendor: null,        description: "Monthly salary",      paid: true, employee: waiterEmp },
+
+    // 1 month ago
+    { monthsAgo: 1, day: 1,  slug: "rent",        amountThb: 25000, vendor: "Landlord",  description: "Monthly studio rent", paid: true },
+    { monthsAgo: 1, day: 5,  slug: "utilities",   amountThb: 3950,  vendor: "PEA",       description: "Electricity bill",    paid: true },
+    { monthsAgo: 1, day: 5,  slug: "utilities",   amountThb: 920,   vendor: "PWA",       description: "Water bill",          paid: true },
+    { monthsAgo: 1, day: 7,  slug: "utilities",   amountThb: 1490,  vendor: "AIS Fibre", description: "Internet",            paid: true },
+    { monthsAgo: 1, day: 11, slug: "supplies",    amountThb: 2800,  vendor: "Makro",     description: "Smoothie + kombucha stock", paid: true },
+    { monthsAgo: 1, day: 15, slug: "marketing",   amountThb: 3500,  vendor: "Meta",      description: "Workshop launch ads", paid: true },
+    { monthsAgo: 1, day: 20, slug: "maintenance", amountThb: 1500,  vendor: "AC Pro",    description: "AC service — both shalas", paid: true },
+    { monthsAgo: 1, day: 25, slug: "taxes_fees", amountThb: 1280,  vendor: "Bank",      description: "Card processing fees", paid: true },
+    { monthsAgo: 1, day: 28, slug: "salary",      amountThb: 18000, vendor: null,        description: "Monthly salary",      paid: true, employee: waiterEmp },
+
+    // Current month
+    { monthsAgo: 0, day: 1,  slug: "rent",        amountThb: 25000, vendor: "Landlord",  description: "Monthly studio rent", paid: true },
+    { monthsAgo: 0, day: 5,  slug: "utilities",   amountThb: 4500,  vendor: "PEA",       description: "Electricity bill",    paid: false },
+    { monthsAgo: 0, day: 6,  slug: "supplies",    amountThb: 2100,  vendor: "Makro",     description: "Restock — smoothie ingredients", paid: true },
+    { monthsAgo: 0, day: 8,  slug: "marketing",   amountThb: 1800,  vendor: "Meta",      description: "Boost retreat post",  paid: true },
+    { monthsAgo: 0, day: 12, slug: "other",       amountThb: 650,   vendor: "Tesco",     description: "Cleaning supplies",   paid: true },
+  ]
+
+  for (const e of EXPENSE_SPECS) {
+    const categoryId = catBySlug.get(e.slug)
+    if (!categoryId) continue
+    const ref = subMonths(nowExp, e.monthsAgo)
+    const date = new Date(ref.getFullYear(), ref.getMonth(), e.day, 10, 0, 0)
+    const incurredOn = formatISO(date)
+    const paidAt = e.paid ? incurredOn : null
+    await db.insert(expenses).values({
+      categoryId,
+      amountThb: e.amountThb,
+      incurredOn,
+      vendor: e.vendor,
+      description: e.description,
+      employeeId: e.employee?.id ?? null,
+      paymentMethod: "transfer",
+      paidAt,
+    })
+  }
+
+  console.log("→ Marking some past teacher classes as paid (cash-basis payouts)...")
+  // Pull every class that already happened and randomly mark ~half paid in
+  // each of the last 2 months so /finance has payout data to visualize.
+  const pastClasses = await db.select({ id: yogaClasses.id, scheduledAt: yogaClasses.scheduledAt }).from(yogaClasses)
+  const cutoff = nowExp
+  for (const c of pastClasses) {
+    const when = new Date(c.scheduledAt)
+    if (when >= cutoff) continue
+    if (Math.random() < 0.5) continue
+    // Pay out the 1st of the following month — typical payday cadence
+    const payday = new Date(when.getFullYear(), when.getMonth() + 1, 1, 12, 0, 0)
+    if (payday > nowExp) continue
+    await db
+      .update(yogaClasses)
+      .set({ paidAt: formatISO(payday) })
+      .where(eq(yogaClasses.id, c.id))
+  }
+
   console.log("")
   console.log("✅ Seed complete")
   console.log("")
   console.log(`Yoga: ${TEACHER_SPECS.length} teachers · ${REGULAR_CLASSES.length} weekly classes · ${WORKSHOPS.length} upcoming workshops · 2 shalas`)
+  console.log(`Finance: 8 expense categories · ${EXPENSE_SPECS.length} sample expenses · teacher payouts marked paid on the 1st`)
   console.log("")
   console.log("Logins (password test123, or Google with same email):")
   console.log(`  Admin:   ${ADMIN_EMAIL}`)
