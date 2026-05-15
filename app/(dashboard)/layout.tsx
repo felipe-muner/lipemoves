@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/crm/app-sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { CurrencySwitch } from "@/components/crm/currency-switch"
 import { HeaderUserMenu } from "@/components/crm/header-user-menu"
+import { CommandPalette } from "@/components/crm/command-palette"
 
 export default async function DashboardLayout({
   children,
@@ -44,10 +45,12 @@ export default async function DashboardLayout({
         }}
       />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:rounded-tl-xl md:rounded-tr-xl">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
-          <div className="flex-1" />
+          <div className="flex flex-1 justify-center px-2">
+            <CommandPalette role={role} />
+          </div>
           <CurrencySwitch />
           <ThemeToggle />
           <Separator orientation="vertical" className="mx-1 h-6" />
