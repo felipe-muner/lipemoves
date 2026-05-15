@@ -173,7 +173,7 @@ export function AppSidebar({
       .slice(0, 2) ?? "?"
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -288,10 +288,7 @@ function NavCollapsibleGroup({
     >
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton
-            tooltip={group.label}
-            isActive={parentActive}
-          >
+          <SidebarMenuButton tooltip={group.label}>
             <group.icon />
             <span>{group.label}</span>
             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
