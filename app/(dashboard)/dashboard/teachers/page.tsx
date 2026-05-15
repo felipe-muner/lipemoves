@@ -18,25 +18,32 @@ import { EntityAvatar } from "@/components/crm/entity-avatar"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { ReactivateRowButton } from "@/components/crm/reactivate-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
 import { parseIdsParam } from "@/lib/utils/url-params"
+import Link from "next/link"
 import {
   createTeacher,
   updateTeacher,
-  deleteTeacher,
+  deactivateTeacher,
+  reactivateTeacher,
 } from "@/lib/actions/teachers"
 
 export const dynamic = "force-dynamic"
 
+type StatusFilter = "active" | "inactive" | "all"
+
 export default async function TeachersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ teacherId?: string }>
+  searchParams: Promise<{ teacherId?: string; status?: StatusFilter }>
 }) {
   const session = await requireDashboardSession()
   if (session.role === "teacher") notFound()
 
-  const { teacherId = "" } = await searchParams
+  const params = await searchParams
+  const { teacherId = "" } = params
+  const status: StatusFilter = params.status ?? "active"
   const selectedIds = parseIdsParam(teacherId)
 
   // Employees who hold the "teacher" role
@@ -62,8 +69,15 @@ export default async function TeachersPage({
     label: r.name,
     description: r.email,
   }))
-  const filtered =
-    selectedIds.size > 0 ? rows.filter((r) => selectedIds.has(r.id)) : rows
+
+  const activeCount = rows.filter((r) => r.isActive).length
+  const inactiveCount = rows.length - activeCount
+
+  let filtered = rows
+  if (status === "active") filtered = filtered.filter((r) => r.isActive)
+  if (status === "inactive") filtered = filtered.filter((r) => !r.isActive)
+  if (selectedIds.size > 0)
+    filtered = filtered.filter((r) => selectedIds.has(r.id))
 
   return (
     <div className="space-y-6">
@@ -77,17 +91,24 @@ export default async function TeachersPage({
         <TeacherDialog mode="create" action={createTeacher} />
       </div>
 
-      <div className="md:max-w-md">
-        <EntitySearchFilter
-          multiple
-          items={items}
-          paramName="teacherId"
-          value={teacherId}
-          placeholder="Search teachers..."
-          searchPlaceholder="Search by name or email..."
-          emptyText="No teachers match."
-          allLabel="All teachers"
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="md:max-w-md flex-1 min-w-[260px]">
+          <EntitySearchFilter
+            multiple
+            items={items}
+            paramName="teacherId"
+            value={teacherId}
+            placeholder="Search teachers..."
+            searchPlaceholder="Search by name or email..."
+            emptyText="No teachers match."
+            allLabel="All teachers"
+          />
+        </div>
+        <div className="flex gap-1 rounded-full bg-muted p-1 text-xs">
+          <StatusPill current={status} value="active" label={`Active (${activeCount})`} />
+          <StatusPill current={status} value="inactive" label={`Inactive (${inactiveCount})`} />
+          <StatusPill current={status} value="all" label={`All (${rows.length})`} />
+        </div>
       </div>
 
       <Card>
@@ -159,10 +180,18 @@ export default async function TeachersPage({
                             </Button>
                           }
                         />
-                        <DeleteRowButton
-                          action={deleteTeacher.bind(null, r.id)}
-                          confirmText={`Delete "${r.name}"? Classes will keep but lose teacher.`}
-                        />
+                        {r.isActive ? (
+                          <DeleteRowButton
+                            action={deactivateTeacher.bind(null, r.id)}
+                            confirmText={`Deactivate "${r.name}"? They stay in the system — switch to the Inactive filter to bring them back.`}
+                          />
+                        ) : (
+                          <ReactivateRowButton
+                            action={reactivateTeacher.bind(null, r.id)}
+                            label={`Reactivate ${r.name}`}
+                            confirmText={`Reactivate "${r.name}"? They'll be active and appear under the Active filter again.`}
+                          />
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -173,5 +202,29 @@ export default async function TeachersPage({
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function StatusPill({
+  current,
+  value,
+  label,
+}: {
+  current: StatusFilter
+  value: StatusFilter
+  label: string
+}) {
+  const active = current === value
+  return (
+    <Link
+      href={`?status=${value}`}
+      className={`rounded-full px-3 py-1 transition-colors ${
+        active
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {label}
+    </Link>
   )
 }

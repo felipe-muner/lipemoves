@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { employees, roles, employeeRoles } from "@/lib/db/schema"
-import { and, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 
@@ -86,19 +86,23 @@ export async function updateTeacher(id: string, formData: FormData) {
   revalidatePath("/dashboard/employees")
 }
 
-export async function deleteTeacher(id: string) {
+export async function deactivateTeacher(id: string) {
   await requireManageScope()
-  // Removing the teacher role keeps the employee record around for restaurant /
-  // other roles. If you want to delete the person entirely, use the employees CRUD.
-  const roleId = await teacherRoleId()
   await db
-    .delete(employeeRoles)
-    .where(
-      and(
-        eq(employeeRoles.employeeId, id),
-        eq(employeeRoles.roleId, roleId),
-      ),
-    )
+    .update(employees)
+    .set({ isActive: false, updatedAt: new Date().toISOString() })
+    .where(eq(employees.id, id))
+  revalidatePath("/dashboard/teachers")
+  revalidatePath("/dashboard/employees")
+}
+
+export async function reactivateTeacher(id: string) {
+  await requireManageScope()
+  await db
+    .update(employees)
+    .set({ isActive: true, updatedAt: new Date().toISOString() })
+    .where(eq(employees.id, id))
+  await ensureTeacherRole(id)
   revalidatePath("/dashboard/teachers")
   revalidatePath("/dashboard/employees")
 }

@@ -19,12 +19,14 @@ import { EmployeeDialog } from "@/components/crm/employee-dialog"
 import { EntityAvatar } from "@/components/crm/entity-avatar"
 import { RoleTeamDialog } from "@/components/crm/role-team-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
+import { ReactivateRowButton } from "@/components/crm/reactivate-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
 import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createEmployee,
   updateEmployee,
-  deleteEmployee,
+  deactivateEmployee,
+  reactivateEmployee,
   createRole,
   updateRole,
   deleteRole,
@@ -228,10 +230,17 @@ export default async function EmployeesPage({
                                 </Button>
                               }
                             />
-                            <DeleteRowButton
-                              action={deleteEmployee.bind(null, e.id)}
-                              confirmText={`Delete "${e.name}"? All their role + team assignments are removed.`}
-                            />
+                            {e.isActive ? (
+                              <DeleteRowButton
+                                action={deactivateEmployee.bind(null, e.id)}
+                                confirmText={`Deactivate "${e.name}"? They'll be hidden from default lists but their record is kept.`}
+                              />
+                            ) : (
+                              <ReactivateRowButton
+                                action={reactivateEmployee.bind(null, e.id)}
+                                confirmText={`Reactivate "${e.name}"?`}
+                              />
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
