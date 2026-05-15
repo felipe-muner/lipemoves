@@ -14,6 +14,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { Money } from "@/components/crm/money"
+import { StatCard } from "@/components/crm/stat-card"
+import {
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  Percent,
+} from "lucide-react"
 import { FinanceFilters } from "@/components/crm/finance-filters"
 import { FinanceMonthlyChart } from "@/components/crm/finance-monthly-chart"
 import { ensureDefaultExpenseCategories } from "@/lib/actions/expense-categories"
@@ -79,69 +86,59 @@ export default async function FinanceOverviewPage({
       </Card>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Income
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-emerald-600">
-              <Money thb={summary.income.total} />
+        <StatCard
+          label="Income"
+          value={<Money thb={summary.income.total} />}
+          icon={TrendingUp}
+          valueClassName="text-emerald-600"
+          hint={
+            <div className="space-y-0.5">
+              <div>
+                Restaurant <Money thb={summary.income.restaurant} />
+              </div>
+              <div>
+                Memberships <Money thb={summary.income.memberships} />
+              </div>
+              <div>
+                Drop-in <Money thb={summary.income.dropIn} />
+              </div>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Restaurant <Money thb={summary.income.restaurant} /> · Memberships{" "}
-              <Money thb={summary.income.memberships} /> · Drop-in{" "}
-              <Money thb={summary.income.dropIn} />
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Expenses
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-red-600">
-              <Money thb={summary.expenses.total} />
+          }
+        />
+        <StatCard
+          label="Expenses"
+          value={<Money thb={summary.expenses.total} />}
+          icon={TrendingDown}
+          valueClassName="text-red-600"
+          hint={
+            <div className="space-y-0.5">
+              <div>
+                Manual <Money thb={summary.expenses.manual} />
+              </div>
+              <div>
+                Teacher payouts <Money thb={summary.expenses.payouts} />
+              </div>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Manual <Money thb={summary.expenses.manual} /> · Teacher payouts{" "}
-              <Money thb={summary.expenses.payouts} />
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Net profit
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-semibold ${summary.net >= 0 ? "text-emerald-600" : "text-red-600"}`}
-            >
-              <Money thb={summary.net} />
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">In − Out</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Margin
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-semibold ${summary.margin >= 0 ? "text-emerald-600" : "text-red-600"}`}
-            >
-              {summary.margin}%
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">Net / income</p>
-          </CardContent>
-        </Card>
+          }
+        />
+        <StatCard
+          label="Net profit"
+          value={<Money thb={summary.net} />}
+          icon={Scale}
+          valueClassName={
+            summary.net >= 0 ? "text-emerald-600" : "text-red-600"
+          }
+          hint="In − Out"
+        />
+        <StatCard
+          label="Margin"
+          value={`${summary.margin}%`}
+          icon={Percent}
+          valueClassName={
+            summary.margin >= 0 ? "text-emerald-600" : "text-red-600"
+          }
+          hint="Net / income"
+        />
       </div>
 
       <Card>
