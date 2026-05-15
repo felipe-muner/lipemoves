@@ -9,6 +9,7 @@ import {
   yogaClasses,
   students,
   studentMemberships,
+  membershipPlans,
   classAttendance,
   locations,
   products,
@@ -25,6 +26,7 @@ import {
   addDays,
   addHours,
   formatISO,
+  parseISO,
   startOfMonth,
   startOfWeek,
   endOfMonth,
@@ -35,6 +37,31 @@ import {
 
 const ADMIN_EMAIL = "felipe.muner@gmail.com"
 const MANAGER_EMAIL = "kohphanganguide@gmail.com"
+
+/**
+ * Koh Phangan seasonal multipliers (1.0 = year average).
+ * Sources: Tourist arrival data + Full Moon Party calendar + monsoon pattern.
+ *   Dec/Jan/Feb peak (cool, dry, Christmas/NYE, Full Moon),
+ *   Sep lowest (worst monsoon), May–Oct generally low,
+ *   Jul–Aug mini-peak from Israeli/European summer holiday.
+ */
+const SEASONALITY: Record<number, number> = {
+  0: 1.5,  // Jan
+  1: 1.4,  // Feb
+  2: 1.2,  // Mar
+  3: 0.7,  // Apr (post-Songkran)
+  4: 0.55, // May
+  5: 0.6,  // Jun
+  6: 0.85, // Jul (Euro summer)
+  7: 0.9,  // Aug
+  8: 0.4,  // Sep (peak monsoon)
+  9: 0.55, // Oct
+  10: 1.0, // Nov (building up)
+  11: 1.6, // Dec (peak)
+}
+function seasonFactor(d: Date): number {
+  return SEASONALITY[d.getMonth()] ?? 1
+}
 
 async function upsertUser(opts: {
   email: string
@@ -204,6 +231,7 @@ export async function seedCrm() {
   await db.delete(restaurantTables)
   await db.delete(classAttendance)
   await db.delete(studentMemberships)
+  await db.delete(membershipPlans)
   await db.delete(expenses)
   await db.delete(expenseCategories)
   await db.delete(yogaClasses)
@@ -255,6 +283,24 @@ export async function seedCrm() {
     TEACHER_SPECS.map((t, i) => [t.slug, employeeRows[i]]),
   )
 
+  console.log("→ Ensuring default roles + teams...")
+  await db
+    .insert(roles)
+    .values([
+      { name: "Teacher", slug: "teacher", color: "#a855f7", isSystem: true },
+      { name: "Manager", slug: "manager", color: "#0ea5e9", isSystem: true },
+      { name: "Waiter", slug: "waiter", color: "#f59e0b", isSystem: true },
+      { name: "Cleaner", slug: "cleaner", color: "#64748b", isSystem: true },
+    ])
+    .onConflictDoNothing({ target: roles.slug })
+  await db
+    .insert(teams)
+    .values([
+      { name: "Yoga", slug: "yoga", color: "#a855f7" },
+      { name: "Restaurant", slug: "restaurant", color: "#f59e0b" },
+    ])
+    .onConflictDoNothing({ target: teams.slug })
+
   console.log("→ Assigning teacher role + yoga team...")
   const [teacherRole] = await db
     .select({ id: roles.id })
@@ -280,12 +326,12 @@ export async function seedCrm() {
   }
 
   console.log(
-    `→ Regular classes (this week + 3 prior weeks) — ${REGULAR_CLASSES.length * 4} classes...`,
+    `→ Regular classes (52 weeks of history) — ${REGULAR_CLASSES.length * 52} classes...`,
   )
-  // Anchor classes on the current week's Monday, and replicate for the
-  // previous 3 weeks so the payroll / finance pages have history.
+  // 12 months of weekly history so finance / payments / attendance reflect
+  // Koh Phangan seasonality across a full year.
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
-  const weekOffsets = [-3, -2, -1, 0]
+  const weekOffsets = Array.from({ length: 52 }, (_, i) => i - 51) // -51..0
   const classRows = await db
     .insert(yogaClasses)
     .values(
@@ -312,62 +358,224 @@ export async function seedCrm() {
     )
     .returning()
 
-  console.log(`→ ${WORKSHOPS.length} workshops (next 4 weeks)...`)
+  console.log(`→ Workshops (12 months, seasonal density)...`)
   const now = new Date()
-  const workshopRows = await db
-    .insert(yogaClasses)
-    .values(
-      WORKSHOPS.map((w) => {
-        const t = teacherBySlug.get(w.teacherSlug)
-        if (!t) throw new Error(`Teacher slug ${w.teacherSlug} not found`)
-        const scheduledAt = formatISO(
-          setMinutes(setHours(addDays(now, w.daysFromNow), w.hour), 0),
-        )
-        return {
-          name: w.name,
-          employeeId: t.id,
-          locationId: locMap[w.locationSlug],
-          scheduledAt,
-          durationMinutes: w.duration,
-          priceThb: w.priceThb,
-          teacherSharePercent: w.sharePercent,
-          capacity: 30,
-        }
-      }),
+  // Distribute workshops weekly across the 52-week window: more in high season,
+  // fewer in low season. Each week we sample n workshops from the template list.
+  const workshopValues: Array<{
+    name: string
+    employeeId: string
+    locationId: string
+    scheduledAt: string
+    durationMinutes: number
+    priceThb: number
+    teacherSharePercent: number
+    capacity: number
+  }> = []
+  for (const wOff of weekOffsets) {
+    const weekMidpoint = addDays(weekStart, wOff * 7 + 3)
+    const factor = seasonFactor(weekMidpoint)
+    // ~ factor * 2 workshops/week, jittered. High season => ~3, low => ~1.
+    const target = Math.max(
+      0,
+      Math.round(factor * 2.2 + (Math.random() - 0.5)),
     )
-    .returning()
+    const picks = WORKSHOPS.slice().sort(() => Math.random() - 0.5).slice(0, target)
+    for (let i = 0; i < picks.length; i++) {
+      const w = picks[i]
+      const t = teacherBySlug.get(w.teacherSlug)
+      if (!t) continue
+      // Spread within the week: each workshop on a different day.
+      const day = addDays(weekStart, wOff * 7 + ((i + 2) % 7))
+      const scheduledAt = formatISO(setMinutes(setHours(day, w.hour), 0))
+      workshopValues.push({
+        name: w.name,
+        employeeId: t.id,
+        locationId: locMap[w.locationSlug],
+        scheduledAt,
+        durationMinutes: w.duration,
+        priceThb: w.priceThb,
+        teacherSharePercent: w.sharePercent,
+        capacity: 30,
+      })
+    }
+  }
+  const workshopRows =
+    workshopValues.length > 0
+      ? await db.insert(yogaClasses).values(workshopValues).returning()
+      : []
 
-  console.log("→ 6 students...")
-  await db.insert(students).values([
+  console.log("→ Students (6 named + 74 international pool = 80 total)...")
+  const NAMED_STUDENTS = [
     { email: "lena.mueller@example.com",   name: "Lena Müller",       passport: "C01X45678", phone: "+49 151 22334455", nationality: "German"     },
     { email: "sophie.dubois@example.com",  name: "Sophie Dubois",     passport: "20FR98765", phone: "+33 6 12 34 56 78", nationality: "French"    },
     { email: "james.oconnor@example.com",  name: "James O'Connor",    passport: "P99887766", phone: "+1 415 555 0199",  nationality: "American"  },
     { email: "yuki.tanaka@example.com",    name: "Yuki Tanaka",       passport: "TR1234567", phone: "+81 90 1234 5678", nationality: "Japanese"  },
     { email: "ana.costa@example.com",      name: "Ana Costa",         passport: "BR998877",  phone: "+55 11 99876 5432", nationality: "Brazilian" },
     { email: "tom.harris@example.com",     name: "Tom Harris",        passport: "GB1029384", phone: "+44 7700 900123",  nationality: "British"   },
-  ])
-
-  console.log("→ Memberships...")
-  const monthStart = startOfMonth(now)
-  const monthEndIso = formatISO(endOfMonth(now))
-  await db.insert(studentMemberships).values([
-    { studentEmail: "lena.mueller@example.com",  type: "monthly", startsOn: formatISO(monthStart),              endsOn: monthEndIso, pricePaidThb: 3500 },
-    { studentEmail: "sophie.dubois@example.com", type: "monthly", startsOn: formatISO(addDays(monthStart, 1)), endsOn: monthEndIso, pricePaidThb: 3500 },
-    { studentEmail: "james.oconnor@example.com", type: "drop_in", startsOn: formatISO(addDays(monthStart, 2)), pricePaidThb: 350 },
-    { studentEmail: "tom.harris@example.com",    type: "drop_in", startsOn: formatISO(addDays(monthStart, 3)), pricePaidThb: 400 },
-    { studentEmail: "yuki.tanaka@example.com",   type: "monthly", startsOn: formatISO(monthStart),              endsOn: monthEndIso, pricePaidThb: 3500 },
-    { studentEmail: "ana.costa@example.com",     type: "drop_in", startsOn: formatISO(addDays(monthStart, 4)), pricePaidThb: 300 },
-  ])
-
-  console.log("→ Class attendance (every class, 1–6 students each)...")
-  const allStudentEmails = [
-    "lena.mueller@example.com",
-    "sophie.dubois@example.com",
-    "james.oconnor@example.com",
-    "yuki.tanaka@example.com",
-    "ana.costa@example.com",
-    "tom.harris@example.com",
   ]
+
+  // International pool — weighted toward Koh Phangan's actual demographics
+  // (lots of Israelis, Germans, French, British, Russians, plus Americans,
+  // Australians, Italians, Brazilians, Japanese, etc.)
+  const FIRSTS = [
+    "Noa", "Tal", "Yael", "Eden", "Ori", "Liron", "Maya", "Itai", "Daniel", "Roy",
+    "Hannah", "Klaus", "Sven", "Lukas", "Mia", "Lara", "Felix", "Greta", "Jonas",
+    "Camille", "Léa", "Hugo", "Margot", "Antoine", "Élise", "Théo",
+    "Oliver", "Emma", "Charlotte", "Jack", "Sophie", "Harry", "Ava", "George",
+    "Dmitry", "Anastasia", "Ivan", "Olga", "Sergey", "Natasha",
+    "Luca", "Giulia", "Matteo", "Chiara", "Lorenzo", "Alessia",
+    "Pedro", "Carla", "Bruno", "Fernanda", "Rafael", "Mariana",
+    "Kenji", "Hina", "Ren", "Aoi",
+    "Liam", "Ethan", "Olivia", "Madison",
+    "Lachlan", "Hayley", "Isla", "Riley",
+    "Indra", "Putri", "Ari", "Made",
+  ]
+  const LASTS = [
+    "Cohen", "Levi", "Friedman", "Mizrahi", "Shapira",
+    "Schmidt", "Weber", "Bauer", "Hoffmann", "Wagner",
+    "Martin", "Bernard", "Lefebvre", "Roux", "Moreau",
+    "Smith", "Brown", "Taylor", "Walker", "Hughes",
+    "Ivanov", "Petrov", "Sokolov", "Volkov",
+    "Rossi", "Conti", "Esposito", "Greco",
+    "Silva", "Souza", "Lima", "Pereira",
+    "Tanaka", "Sato", "Yamada", "Suzuki",
+    "Garcia", "Hernandez", "Lopez", "Martinez",
+    "Nguyen", "Tran", "Pham",
+    "O'Brien", "MacKenzie",
+  ]
+  const NATS = [
+    "Israeli","Israeli","Israeli","Israeli", // heavy weight — big demographic on Phangan
+    "German","German","German",
+    "French","French",
+    "British","British",
+    "Russian","Russian",
+    "Italian",
+    "American","American",
+    "Australian",
+    "Brazilian",
+    "Japanese",
+    "Spanish",
+    "Swedish",
+    "Norwegian",
+    "Dutch",
+    "Indonesian",
+  ]
+  function pick<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)]
+  }
+  const poolStudents: typeof NAMED_STUDENTS = []
+  const usedEmails = new Set(NAMED_STUDENTS.map((s) => s.email))
+  for (let i = 0; poolStudents.length < 74 && i < 500; i++) {
+    const first = pick(FIRSTS)
+    const last = pick(LASTS)
+    const email = `${first.toLowerCase().replace(/[^a-z]/g, "")}.${last.toLowerCase().replace(/[^a-z]/g, "")}${i}@example.com`
+    if (usedEmails.has(email)) continue
+    usedEmails.add(email)
+    poolStudents.push({
+      email,
+      name: `${first} ${last}`,
+      passport: null as unknown as string,
+      phone: null as unknown as string,
+      nationality: pick(NATS),
+    })
+  }
+  await db.insert(students).values([...NAMED_STUDENTS, ...poolStudents])
+  const allStudentEmails = [
+    ...NAMED_STUDENTS.map((s) => s.email),
+    ...poolStudents.map((s) => s.email),
+  ]
+
+  console.log("→ Membership plans (Yoga / Pool / Ice Bath)...")
+  const planRows = await db
+    .insert(membershipPlans)
+    .values([
+      // YOGA — purple, light → dark
+      { name: "Yoga — Drop In Class",             slug: "yoga_drop_in",         type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 450,  color: "#c084fc", description: "Single yoga class",                              sortOrder: 10 },
+      { name: "Yoga — 5 Classes Pass",            slug: "yoga_5_classes",       type: "class_pack", durationDays: 60, classesIncluded: 5,    priceThb: 2000, color: "#a855f7", description: "5 yoga classes",                                  sortOrder: 11 },
+      { name: "Yoga — 10 Classes Pass",           slug: "yoga_10_classes",      type: "class_pack", durationDays: 90, classesIncluded: 10,   priceThb: 3500, color: "#9333ea", description: "10 yoga classes",                                 sortOrder: 12 },
+      { name: "Yoga — 30 Days Unlimited",         slug: "yoga_30_unlimited",    type: "monthly",    durationDays: 30, classesIncluded: null, priceThb: 5000, color: "#7e22ce", description: "Three time slots/day, 30 days",                   sortOrder: 13 },
+
+      // POOL — saturated royal blue, light → dark
+      { name: "Pool — Daily Pass · Package 1",    slug: "pool_daily_p1",        type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 599,  color: "#3b82f6", description: "Daily pool pass (Package 1) · 10:30 – 19:30",      sortOrder: 20 },
+      { name: "Pool — Daily Pass · Package 2",    slug: "pool_daily_p2",        type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 999,  color: "#1d4ed8", description: "Daily pool pass (Package 2) · 10:30 – 19:30",      sortOrder: 21 },
+
+      // ICE BATH — icy / frost teal, light → dark
+      { name: "Ice Bath — Daily Pass",            slug: "ice_daily",            type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 200,  color: "#a5f3fc", description: "Single ice bath session",                          sortOrder: 30 },
+      { name: "Ice Bath — 5 Sessions Pass",       slug: "ice_5_sessions",       type: "class_pack", durationDays: 60, classesIncluded: 5,    priceThb: 900,  color: "#22d3ee", description: "5 ice bath sessions",                              sortOrder: 31 },
+      { name: "Ice Bath — 10 Sessions Pass",      slug: "ice_10_sessions",      type: "class_pack", durationDays: 90, classesIncluded: 10,   priceThb: 1500, color: "#0e9aa7", description: "10 ice bath sessions",                             sortOrder: 32 },
+      { name: "Ice Bath — 30 Days Unlimited",     slug: "ice_30_unlimited",     type: "monthly",    durationDays: 30, classesIncluded: null, priceThb: 2205, color: "#115e59", description: "Unlimited 30 days · Infrared Sauna & Herbal Steam", sortOrder: 33 },
+    ])
+    .returning()
+  const planBySlug = new Map(planRows.map((p) => [p.slug, p]))
+
+  console.log("→ Memberships (12 months, seasonal — high season = many monthly passes)...")
+  // Per month: ~ 28 * factor purchases distributed across all students.
+  // Plan distribution: high-season favors drop-ins / day passes (tourists),
+  // low-season favors longer commitments (residents stay).
+  const planList = planRows
+  const dropInPlans = planList.filter((p) => p.type === "drop_in")
+  const packPlans = planList.filter((p) => p.type === "class_pack")
+  const monthlyPlans = planList.filter((p) => p.type === "monthly")
+
+  function pickPlan(factor: number) {
+    // High season => 60% drop-in, 25% pack, 15% monthly.
+    // Low season  => 25% drop-in, 35% pack, 40% monthly.
+    const r = Math.random()
+    if (factor > 1) {
+      if (r < 0.6) return pick(dropInPlans)
+      if (r < 0.85) return pick(packPlans)
+      return pick(monthlyPlans)
+    }
+    if (r < 0.25) return pick(dropInPlans)
+    if (r < 0.6) return pick(packPlans)
+    return pick(monthlyPlans)
+  }
+
+  const membershipValues: Array<{
+    studentEmail: string
+    planId: string
+    type: "drop_in" | "monthly" | "class_pack" | "free_pass" | "custom"
+    startsOn: string
+    endsOn: string | null
+    classesRemaining: number | null
+    pricePaidThb: number
+  }> = []
+  for (let monthsAgo = 0; monthsAgo <= 12; monthsAgo++) {
+    const ref = subMonths(now, monthsAgo)
+    const factor = seasonFactor(ref)
+    const count = Math.max(0, Math.round(28 * factor + (Math.random() - 0.5) * 6))
+    for (let i = 0; i < count; i++) {
+      const plan = pickPlan(factor)
+      const dayOfMonth = 1 + Math.floor(Math.random() * 27)
+      const startsOn = formatISO(
+        new Date(ref.getFullYear(), ref.getMonth(), dayOfMonth, 10, 0, 0),
+      )
+      const endsOn = plan.durationDays
+        ? formatISO(addDays(parseISO(startsOn), plan.durationDays))
+        : null
+      const buyer = pick(allStudentEmails)
+      membershipValues.push({
+        studentEmail: buyer,
+        planId: plan.id,
+        type: plan.type,
+        startsOn,
+        endsOn,
+        classesRemaining: plan.classesIncluded,
+        pricePaidThb: plan.priceThb,
+      })
+    }
+  }
+  if (membershipValues.length > 0) {
+    const BATCH = 500
+    for (let i = 0; i < membershipValues.length; i += BATCH) {
+      await db
+        .insert(studentMemberships)
+        .values(membershipValues.slice(i, i + BATCH))
+    }
+  }
+
+  console.log("→ Class attendance (seasonal: high season 8–14, low season 1–4)...")
   function shuffled<T>(arr: T[]): T[] {
     const copy = [...arr]
     for (let i = copy.length - 1; i > 0; i--) {
@@ -387,14 +595,22 @@ export async function seedCrm() {
   for (const c of everyClass) {
     const when = new Date(c.scheduledAt)
     const isPast = when < now
-    // Past classes: 2–6 students. Future workshops: 1–4 students (forward-booked).
-    const target = isPast
-      ? Math.floor(Math.random() * 5) + 2
-      : Math.floor(Math.random() * 4) + 1
+    const factor = seasonFactor(when)
+    // Base attendance = 7, scaled by seasonality, jittered. Future classes
+    // are dampened (people book closer to date). Cap by capacity.
+    const base = isPast ? 7 : 3
+    const target = Math.max(
+      0,
+      Math.min(
+        c.capacity ?? 20,
+        Math.round(base * factor + (Math.random() - 0.5) * 4),
+      ),
+    )
     const picks = shuffled(allStudentEmails).slice(0, target)
     for (const email of picks) {
-      // ~70% of attendances are covered by a membership (price 0), 30% drop-in cash.
-      const isDropIn = Math.random() < 0.3
+      // Drop-in share is higher in high season (tourists pay cash).
+      const dropInChance = 0.2 + factor * 0.15
+      const isDropIn = Math.random() < dropInChance
       attendanceRows.push({
         classId: c.id,
         studentEmail: email,
@@ -405,7 +621,11 @@ export async function seedCrm() {
     }
   }
   if (attendanceRows.length > 0) {
-    await db.insert(classAttendance).values(attendanceRows)
+    // Batch inserts to keep individual statements reasonable.
+    const BATCH = 1000
+    for (let i = 0; i < attendanceRows.length; i += BATCH) {
+      await db.insert(classAttendance).values(attendanceRows.slice(i, i + BATCH))
+    }
   }
 
   console.log("→ Restaurant tables...")
@@ -419,14 +639,17 @@ export async function seedCrm() {
   ])
 
   console.log("→ Products...")
-  await db.insert(products).values([
-    { name: "Whey Protein Shake",  sku: "SHK-WHEY", category: "supplement", baseUnit: "g",     stockQty: 1000, servingSize: 30, priceThb: 180 },
-    { name: "Fresh Coconut",       sku: "DRK-COCO", category: "drink",      baseUnit: "piece", stockQty: 24,   servingSize: 1,  priceThb: 90  },
-    { name: "Açaí Bowl",           sku: "FD-ACAI",  category: "food",       baseUnit: "piece", stockQty: 12,   servingSize: 1,  priceThb: 220 },
-    { name: "Kombucha 330ml",      sku: "DRK-KMB",  category: "drink",      baseUnit: "ml",    stockQty: 9900, servingSize: 330, priceThb: 120 },
-    { name: "Avocado Toast",       sku: "FD-AVO",   category: "food",       baseUnit: "piece", stockQty: 15,   servingSize: 1,  priceThb: 180 },
-    { name: "Yoga Mat",            sku: "RT-MAT",   category: "retail",     baseUnit: "piece", stockQty: 8,    servingSize: 1,  priceThb: 1500 },
-  ])
+  const productRows = await db
+    .insert(products)
+    .values([
+      { name: "Whey Protein Shake",  sku: "SHK-WHEY", category: "supplement", baseUnit: "g",     stockQty: 1000, servingSize: 30, priceThb: 180 },
+      { name: "Fresh Coconut",       sku: "DRK-COCO", category: "drink",      baseUnit: "piece", stockQty: 24,   servingSize: 1,  priceThb: 90  },
+      { name: "Açaí Bowl",           sku: "FD-ACAI",  category: "food",       baseUnit: "piece", stockQty: 12,   servingSize: 1,  priceThb: 220 },
+      { name: "Kombucha 330ml",      sku: "DRK-KMB",  category: "drink",      baseUnit: "ml",    stockQty: 9900, servingSize: 330, priceThb: 120 },
+      { name: "Avocado Toast",       sku: "FD-AVO",   category: "food",       baseUnit: "piece", stockQty: 15,   servingSize: 1,  priceThb: 180 },
+      { name: "Yoga Mat",            sku: "RT-MAT",   category: "retail",     baseUnit: "piece", stockQty: 8,    servingSize: 1,  priceThb: 1500 },
+    ])
+    .returning()
 
   console.log("→ Sample waiter (Som)...")
   const [waiterRole] = await db
@@ -464,6 +687,89 @@ export async function seedCrm() {
     })
   }
 
+  console.log("→ Restaurant sales (12 months, seasonal)...")
+  // Daily sales count scales with season. Year average ~4/day; high season ~7;
+  // low season ~2. Each sale has 1–4 items from the product catalog.
+  const salesValues: Array<{
+    employeeId: string
+    status: "paid"
+    subtotalThb: number
+    totalThb: number
+    paymentMethod: "cash" | "card" | "transfer" | "other"
+    paidAt: string
+    openedAt: string
+  }> = []
+  const saleItemsBlueprint: Array<{
+    saleIndex: number
+    productId: string
+    productName: string
+    quantity: number
+    unitPriceThb: number
+    totalThb: number
+  }> = []
+  for (let daysAgo = 365; daysAgo >= 0; daysAgo--) {
+    const day = addDays(now, -daysAgo)
+    const factor = seasonFactor(day)
+    const count = Math.max(
+      0,
+      Math.round(4 * factor + (Math.random() - 0.5) * 2),
+    )
+    for (let i = 0; i < count; i++) {
+      const itemCount = 1 + Math.floor(Math.random() * 3)
+      let subtotal = 0
+      const items: typeof saleItemsBlueprint = []
+      for (let j = 0; j < itemCount; j++) {
+        const p = pick(productRows)
+        const qty = 1 + Math.floor(Math.random() * 2)
+        const line = p.priceThb * qty
+        subtotal += line
+        items.push({
+          saleIndex: salesValues.length,
+          productId: p.id,
+          productName: p.name,
+          quantity: qty,
+          unitPriceThb: p.priceThb,
+          totalThb: line,
+        })
+      }
+      const hour = 9 + Math.floor(Math.random() * 12)
+      const paidAt = formatISO(setMinutes(setHours(day, hour), 0))
+      const method = pick(["cash", "card", "transfer"] as const)
+      salesValues.push({
+        employeeId: waiterEmp.id,
+        status: "paid",
+        subtotalThb: subtotal,
+        totalThb: subtotal,
+        paymentMethod: method,
+        paidAt,
+        openedAt: paidAt,
+      })
+      saleItemsBlueprint.push(...items)
+    }
+  }
+  if (salesValues.length > 0) {
+    const BATCH = 500
+    const insertedSales: Array<{ id: string }> = []
+    for (let i = 0; i < salesValues.length; i += BATCH) {
+      const rows = await db
+        .insert(sales)
+        .values(salesValues.slice(i, i + BATCH))
+        .returning({ id: sales.id })
+      insertedSales.push(...rows)
+    }
+    const itemRows = saleItemsBlueprint.map((b) => ({
+      saleId: insertedSales[b.saleIndex].id,
+      productId: b.productId,
+      productName: b.productName,
+      quantity: b.quantity,
+      unitPriceThb: b.unitPriceThb,
+      totalThb: b.totalThb,
+    }))
+    for (let i = 0; i < itemRows.length; i += BATCH) {
+      await db.insert(saleItems).values(itemRows.slice(i, i + BATCH))
+    }
+  }
+
   console.log("→ Expense categories (8 defaults)...")
   const CATS: Array<{
     name: string
@@ -490,66 +796,73 @@ export async function seedCrm() {
     .from(expenseCategories)
   const catBySlug = new Map(catRows.map((c) => [c.slug, c.id]))
 
-  console.log("→ Sample expenses (last 3 months)...")
+  console.log("→ Expenses (12 months: fixed costs + seasonal marketing/supplies)...")
   const nowExp = new Date()
   type ExpSpec = {
-    monthsAgo: number
-    day: number
     slug: string
     amountThb: number
     vendor: string | null
     description: string
-    paid?: boolean
     employee?: typeof waiterEmp | null
   }
-  const EXPENSE_SPECS: ExpSpec[] = [
-    // 2 months ago
-    { monthsAgo: 2, day: 1,  slug: "rent",        amountThb: 25000, vendor: "Landlord",  description: "Monthly studio rent", paid: true },
-    { monthsAgo: 2, day: 5,  slug: "utilities",   amountThb: 4200,  vendor: "PEA",       description: "Electricity bill",    paid: true },
-    { monthsAgo: 2, day: 5,  slug: "utilities",   amountThb: 850,   vendor: "PWA",       description: "Water bill",          paid: true },
-    { monthsAgo: 2, day: 7,  slug: "utilities",   amountThb: 1490,  vendor: "AIS Fibre", description: "Internet",            paid: true },
-    { monthsAgo: 2, day: 10, slug: "supplies",    amountThb: 3200,  vendor: "Makro",     description: "Smoothie ingredients" , paid: true },
-    { monthsAgo: 2, day: 12, slug: "supplies",    amountThb: 1800,  vendor: "Yoga Wares",description: "10 new yoga mats",    paid: true },
-    { monthsAgo: 2, day: 18, slug: "marketing",   amountThb: 2500,  vendor: "Meta",      description: "Instagram ads",       paid: true },
-    { monthsAgo: 2, day: 22, slug: "maintenance", amountThb: 900,   vendor: "Local handyman", description: "Plumber — main shala", paid: true },
-    { monthsAgo: 2, day: 28, slug: "salary",      amountThb: 18000, vendor: null,        description: "Monthly salary",      paid: true, employee: waiterEmp },
+  const expenseValues: Array<{
+    categoryId: string
+    amountThb: number
+    incurredOn: string
+    vendor: string | null
+    description: string
+    employeeId: string | null
+    paymentMethod: "transfer"
+    paidAt: string | null
+  }> = []
+  for (let monthsAgo = 0; monthsAgo <= 12; monthsAgo++) {
+    const ref = subMonths(nowExp, monthsAgo)
+    const factor = seasonFactor(ref)
+    const monthly: ExpSpec[] = [
+      { slug: "rent",      amountThb: 25000,                                vendor: "Landlord",  description: "Monthly studio rent" },
+      { slug: "utilities", amountThb: Math.round(3800 + factor * 1200),     vendor: "PEA",       description: "Electricity bill" },
+      { slug: "utilities", amountThb: Math.round(800 + factor * 300),       vendor: "PWA",       description: "Water bill" },
+      { slug: "utilities", amountThb: 1490,                                 vendor: "AIS Fibre", description: "Internet" },
+      { slug: "supplies",  amountThb: Math.round(2200 + factor * 2500),     vendor: "Makro",     description: "Restaurant ingredients" },
+      { slug: "marketing", amountThb: Math.round(1500 + (1.2 - factor) * 2500), vendor: "Meta",  description: "Instagram / Facebook ads" },
+      { slug: "salary",    amountThb: 18000,                                vendor: null,        description: "Monthly salary", employee: waiterEmp },
+    ]
+    // Occasional one-off expenses
+    if (Math.random() < 0.5) {
+      monthly.push({ slug: "maintenance", amountThb: 800 + Math.floor(Math.random() * 2200), vendor: "Handyman", description: "Repairs / maintenance" })
+    }
+    if (monthsAgo % 3 === 0) {
+      monthly.push({ slug: "taxes_fees", amountThb: 1100 + Math.floor(Math.random() * 600), vendor: "Bank", description: "Card processing fees" })
+    }
+    if (factor > 1 && Math.random() < 0.5) {
+      // Higher restock in high season
+      monthly.push({ slug: "supplies", amountThb: 1500 + Math.floor(Math.random() * 1500), vendor: "Yoga Wares", description: "New mats / towels" })
+    }
 
-    // 1 month ago
-    { monthsAgo: 1, day: 1,  slug: "rent",        amountThb: 25000, vendor: "Landlord",  description: "Monthly studio rent", paid: true },
-    { monthsAgo: 1, day: 5,  slug: "utilities",   amountThb: 3950,  vendor: "PEA",       description: "Electricity bill",    paid: true },
-    { monthsAgo: 1, day: 5,  slug: "utilities",   amountThb: 920,   vendor: "PWA",       description: "Water bill",          paid: true },
-    { monthsAgo: 1, day: 7,  slug: "utilities",   amountThb: 1490,  vendor: "AIS Fibre", description: "Internet",            paid: true },
-    { monthsAgo: 1, day: 11, slug: "supplies",    amountThb: 2800,  vendor: "Makro",     description: "Smoothie + kombucha stock", paid: true },
-    { monthsAgo: 1, day: 15, slug: "marketing",   amountThb: 3500,  vendor: "Meta",      description: "Workshop launch ads", paid: true },
-    { monthsAgo: 1, day: 20, slug: "maintenance", amountThb: 1500,  vendor: "AC Pro",    description: "AC service — both shalas", paid: true },
-    { monthsAgo: 1, day: 25, slug: "taxes_fees", amountThb: 1280,  vendor: "Bank",      description: "Card processing fees", paid: true },
-    { monthsAgo: 1, day: 28, slug: "salary",      amountThb: 18000, vendor: null,        description: "Monthly salary",      paid: true, employee: waiterEmp },
-
-    // Current month
-    { monthsAgo: 0, day: 1,  slug: "rent",        amountThb: 25000, vendor: "Landlord",  description: "Monthly studio rent", paid: true },
-    { monthsAgo: 0, day: 5,  slug: "utilities",   amountThb: 4500,  vendor: "PEA",       description: "Electricity bill",    paid: false },
-    { monthsAgo: 0, day: 6,  slug: "supplies",    amountThb: 2100,  vendor: "Makro",     description: "Restock — smoothie ingredients", paid: true },
-    { monthsAgo: 0, day: 8,  slug: "marketing",   amountThb: 1800,  vendor: "Meta",      description: "Boost retreat post",  paid: true },
-    { monthsAgo: 0, day: 12, slug: "other",       amountThb: 650,   vendor: "Tesco",     description: "Cleaning supplies",   paid: true },
-  ]
-
-  for (const e of EXPENSE_SPECS) {
-    const categoryId = catBySlug.get(e.slug)
-    if (!categoryId) continue
-    const ref = subMonths(nowExp, e.monthsAgo)
-    const date = new Date(ref.getFullYear(), ref.getMonth(), e.day, 10, 0, 0)
-    const incurredOn = formatISO(date)
-    const paidAt = e.paid ? incurredOn : null
-    await db.insert(expenses).values({
-      categoryId,
-      amountThb: e.amountThb,
-      incurredOn,
-      vendor: e.vendor,
-      description: e.description,
-      employeeId: e.employee?.id ?? null,
-      paymentMethod: "transfer",
-      paidAt,
-    })
+    for (const e of monthly) {
+      const categoryId = catBySlug.get(e.slug)
+      if (!categoryId) continue
+      const day = 1 + Math.floor(Math.random() * 27)
+      const incurredOn = formatISO(new Date(ref.getFullYear(), ref.getMonth(), day, 10, 0, 0))
+      // Current-month expenses sometimes unpaid; everything older is paid.
+      const paid = monthsAgo > 0 || Math.random() > 0.3
+      expenseValues.push({
+        categoryId,
+        amountThb: e.amountThb,
+        incurredOn,
+        vendor: e.vendor,
+        description: e.description,
+        employeeId: e.employee?.id ?? null,
+        paymentMethod: "transfer",
+        paidAt: paid ? incurredOn : null,
+      })
+    }
+  }
+  if (expenseValues.length > 0) {
+    const BATCH = 200
+    for (let i = 0; i < expenseValues.length; i += BATCH) {
+      await db.insert(expenses).values(expenseValues.slice(i, i + BATCH))
+    }
   }
 
   console.log("→ Marking some past teacher classes as paid (cash-basis payouts)...")
@@ -573,8 +886,11 @@ export async function seedCrm() {
   console.log("")
   console.log("✅ Seed complete")
   console.log("")
-  console.log(`Yoga: ${TEACHER_SPECS.length} teachers · ${REGULAR_CLASSES.length} weekly classes · ${WORKSHOPS.length} upcoming workshops · 2 shalas`)
-  console.log(`Finance: 8 expense categories · ${EXPENSE_SPECS.length} sample expenses · teacher payouts marked paid on the 1st`)
+  console.log(`Yoga: ${TEACHER_SPECS.length} teachers · ${classRows.length} class sessions over 52 weeks · ${workshopRows.length} workshops · 2 shalas`)
+  console.log(`Students: ${6 + poolStudents.length} (named + international pool)`)
+  console.log(`Finance: 8 expense categories · ${expenseValues.length} expenses · ${salesValues.length} restaurant sales`)
+  console.log(`Memberships: ${planRows.length} plans · ${membershipValues.length} purchases distributed across 12 months`)
+  console.log(`Seasonality: Dec/Jan/Feb peak · Sep low (factors ${Object.values(SEASONALITY).join(", ")})`)
   console.log("")
   console.log("Logins (password test123, or Google with same email):")
   console.log(`  Admin:   ${ADMIN_EMAIL}`)
