@@ -1,6 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { TrendingDown, TrendingUp } from "lucide-react"
+import { Card } from "@/components/ui/card"
 
 export function StatCard({
   label,
@@ -16,41 +14,39 @@ export function StatCard({
   trend?: { value: number; positive: boolean }
 }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-          <Icon className="h-4 w-4 text-muted-foreground" />
+    <Card className="relative overflow-hidden border-border/60 bg-gradient-to-b from-card from-35% to-neutral-200 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.04)] dark:to-neutral-800">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5">
+          <p className="text-base font-bold tracking-tight text-foreground">
+            {label}
+          </p>
+          {trend ? (
+            <p className="text-sm">
+              <span
+                className={
+                  trend.positive
+                    ? "font-semibold text-emerald-600 dark:text-emerald-400"
+                    : "font-semibold text-red-600 dark:text-red-400"
+                }
+              >
+                {trend.positive ? "+" : "-"}
+                {Math.abs(trend.value)}%
+              </span>{" "}
+              <span className="text-muted-foreground">from last month</span>
+            </p>
+          ) : hint ? (
+            <p className="text-sm text-muted-foreground">{hint}</p>
+          ) : null}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-baseline gap-2">
-          <div className="text-2xl font-semibold tracking-tight">{value}</div>
-          {trend && (
-            <Badge
-              variant="secondary"
-              className={
-                trend.positive
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-red-500/10 text-red-600 dark:text-red-400"
-              }
-            >
-              {trend.positive ? (
-                <TrendingUp className="mr-1 h-3 w-3" />
-              ) : (
-                <TrendingDown className="mr-1 h-3 w-3" />
-              )}
-              {trend.positive ? "+" : ""}
-              {trend.value}%
-            </Badge>
-          )}
-        </div>
-        {hint && (
-          <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-        )}
-      </CardContent>
+        <Icon
+          className="h-6 w-6 shrink-0 text-muted-foreground/60"
+          strokeWidth={1.75}
+          aria-hidden
+        />
+      </div>
+      <div className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
+        {value}
+      </div>
     </Card>
   )
 }
