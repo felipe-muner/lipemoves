@@ -146,6 +146,86 @@ async function capture() {
   await page.waitForTimeout(1200)
   await shoot(page, "13-emails")
 
+  // ─── Last 24h features ────────────────────────────────────────
+
+  console.log("→ Finance overview")
+  await page.goto(`${BASE}/dashboard/finance`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(1000)
+  await shoot(page, "14-finance-overview")
+
+  console.log("→ Finance income (with tabs)")
+  await page.goto(`${BASE}/dashboard/finance/income`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(1000)
+  await shoot(page, "15-finance-income")
+
+  console.log("→ Finance expenses (with tabs + employee filter)")
+  await page.goto(`${BASE}/dashboard/finance/expenses`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(1000)
+  await shoot(page, "16-finance-expenses")
+
+  console.log("→ Expense categories")
+  await page.goto(`${BASE}/dashboard/finance/categories`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(800)
+  await shoot(page, "17-expense-categories")
+
+  console.log("→ PDF reports hub")
+  await page.goto(`${BASE}/dashboard/finance/reports`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(800)
+  await shoot(page, "18-pdf-reports")
+
+  console.log("→ Membership plans")
+  await page.goto(`${BASE}/dashboard/memberships`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(1000)
+  await shoot(page, "19-memberships")
+
+  console.log("→ Per-student membership history dialog")
+  await page.goto(`${BASE}/dashboard/students`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(800)
+  // Click the first "plans" badge
+  const plansBadge = page.locator("button:has-text('plans'), button:has-text('plan')").first()
+  if (await plansBadge.count()) {
+    await plansBadge.click()
+    await page.waitForSelector('[role="dialog"]')
+    await page.waitForTimeout(500)
+    await shoot(page, "20-student-memberships")
+    await page.keyboard.press("Escape")
+    await page.waitForTimeout(300)
+  }
+
+  console.log("→ Students with avatars + flag nationality")
+  await shoot(page, "21-students-avatars")
+
+  console.log("→ Restaurant POS")
+  await page.goto(`${BASE}/dashboard/restaurant`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(1000)
+  await shoot(page, "22-restaurant-pos")
+
+  console.log("→ Command palette (⌘K search)")
+  await page.goto(`${BASE}/dashboard`)
+  await page.waitForLoadState("networkidle")
+  await page.waitForTimeout(600)
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+K" : "Control+K")
+  await page.waitForTimeout(600)
+  await shoot(page, "23-command-palette")
+  await page.keyboard.press("Escape")
+
+  console.log("→ Dark mode showcase")
+  // Toggle theme by clicking the theme button in header
+  const themeBtn = page.locator('button[aria-label*="theme" i], button:has(svg.lucide-moon), button:has(svg.lucide-sun)').first()
+  if (await themeBtn.count()) {
+    await themeBtn.click()
+    await page.waitForTimeout(700)
+    await shoot(page, "24-dark-mode")
+  }
+
   await browser.close()
   console.log(`\n✅ Screenshots saved to ${OUT_DIR}`)
 }
