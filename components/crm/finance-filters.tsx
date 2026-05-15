@@ -9,6 +9,8 @@ import {
   startOfYear,
   endOfYear,
   subMonths,
+  setYear,
+  getYear,
 } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,7 +52,7 @@ export function FinanceFilters({
   const presets = [
     {
       label: "This month",
-      run: () => applyRange(startOfMonth(new Date()), endOfMonth(new Date())),
+      run: () => applyRange(startOfMonth(new Date()), new Date()),
     },
     {
       label: "Last month",
@@ -62,10 +64,7 @@ export function FinanceFilters({
     {
       label: "Last 3 months",
       run: () =>
-        applyRange(
-          startOfMonth(subMonths(new Date(), 2)),
-          endOfMonth(new Date()),
-        ),
+        applyRange(startOfMonth(subMonths(new Date(), 2)), new Date()),
     },
     {
       label: "Year to date",
@@ -74,15 +73,32 @@ export function FinanceFilters({
     {
       label: "Last year",
       run: () => {
-        const ref = subMonths(new Date(), 12)
+        const ref = setYear(new Date(), getYear(new Date()) - 1)
         applyRange(startOfYear(ref), endOfYear(ref))
       },
     },
   ]
 
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const fd = new FormData(form)
+    const params = new URLSearchParams(searchParams)
+    const newFrom = String(fd.get("from") ?? "")
+    const newTo = String(fd.get("to") ?? "")
+    if (newFrom) params.set("from", newFrom)
+    if (newTo) params.set("to", newTo)
+    if (showCategory) {
+      const cat = String(fd.get("categoryId") ?? "")
+      if (cat) params.set("categoryId", cat)
+      else params.delete("categoryId")
+    }
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
   return (
     <div className="space-y-3">
-      <form className="flex flex-wrap items-end gap-3">
+      <form className="flex flex-wrap items-end gap-3" onSubmit={onSubmit}>
         <div className="grid gap-1.5">
           <Label htmlFor="from" className="text-xs">From</Label>
           <Input id="from" type="date" name="from" defaultValue={defaultFrom} />
