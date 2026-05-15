@@ -279,53 +279,63 @@ export async function seedCrm() {
     )
   }
 
-  console.log("→ 21 regular classes (this week, 2 locations)...")
-  // Anchor classes on the current week's Monday
+  console.log(
+    `→ Regular classes (this week + 3 prior weeks) — ${REGULAR_CLASSES.length * 4} classes...`,
+  )
+  // Anchor classes on the current week's Monday, and replicate for the
+  // previous 3 weeks so the payroll / finance pages have history.
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekOffsets = [-3, -2, -1, 0]
   const classRows = await db
     .insert(yogaClasses)
     .values(
-      REGULAR_CLASSES.map((c) => {
-        const t = teacherBySlug.get(c.teacherSlug)
-        if (!t) throw new Error(`Teacher slug ${c.teacherSlug} not found`)
-        const scheduledAt = formatISO(
-          setMinutes(setHours(addDays(weekStart, c.dayOffset), c.hour), 0),
-        )
-        return {
-          name: c.name,
-          employeeId: t.id,
-          locationId: locMap[c.locationSlug],
-          scheduledAt,
-          durationMinutes: c.duration,
-          priceThb: c.priceThb,
-          teacherSharePercent: c.sharePercent,
-          capacity: 20,
-        }
-      }),
+      weekOffsets.flatMap((wOff) =>
+        REGULAR_CLASSES.map((c) => {
+          const t = teacherBySlug.get(c.teacherSlug)
+          if (!t) throw new Error(`Teacher slug ${c.teacherSlug} not found`)
+          const dayShifted = addDays(weekStart, c.dayOffset + wOff * 7)
+          const scheduledAt = formatISO(
+            setMinutes(setHours(dayShifted, c.hour), 0),
+          )
+          return {
+            name: c.name,
+            employeeId: t.id,
+            locationId: locMap[c.locationSlug],
+            scheduledAt,
+            durationMinutes: c.duration,
+            priceThb: c.priceThb,
+            teacherSharePercent: c.sharePercent,
+            capacity: 20,
+          }
+        }),
+      ),
     )
     .returning()
 
   console.log(`→ ${WORKSHOPS.length} workshops (next 4 weeks)...`)
   const now = new Date()
-  await db.insert(yogaClasses).values(
-    WORKSHOPS.map((w) => {
-      const t = teacherBySlug.get(w.teacherSlug)
-      if (!t) throw new Error(`Teacher slug ${w.teacherSlug} not found`)
-      const scheduledAt = formatISO(
-        setMinutes(setHours(addDays(now, w.daysFromNow), w.hour), 0),
-      )
-      return {
-        name: w.name,
-        employeeId: t.id,
-        locationId: locMap[w.locationSlug],
-        scheduledAt,
-        durationMinutes: w.duration,
-        priceThb: w.priceThb,
-        teacherSharePercent: w.sharePercent,
-        capacity: 30,
-      }
-    }),
-  )
+  const workshopRows = await db
+    .insert(yogaClasses)
+    .values(
+      WORKSHOPS.map((w) => {
+        const t = teacherBySlug.get(w.teacherSlug)
+        if (!t) throw new Error(`Teacher slug ${w.teacherSlug} not found`)
+        const scheduledAt = formatISO(
+          setMinutes(setHours(addDays(now, w.daysFromNow), w.hour), 0),
+        )
+        return {
+          name: w.name,
+          employeeId: t.id,
+          locationId: locMap[w.locationSlug],
+          scheduledAt,
+          durationMinutes: w.duration,
+          priceThb: w.priceThb,
+          teacherSharePercent: w.sharePercent,
+          capacity: 30,
+        }
+      }),
+    )
+    .returning()
 
   console.log("→ 6 students...")
   await db.insert(students).values([
@@ -349,20 +359,54 @@ export async function seedCrm() {
     { studentEmail: "ana.costa@example.com",     type: "drop_in", startsOn: formatISO(addDays(monthStart, 4)), pricePaidThb: 300 },
   ])
 
-  console.log("→ Class attendance (sample)...")
-  await db.insert(classAttendance).values(
-    classRows.slice(0, 5).map((c, i) => ({
-      classId: c.id,
-      studentEmail: [
-        "lena.mueller@example.com",
-        "sophie.dubois@example.com",
-        "james.oconnor@example.com",
-        "yuki.tanaka@example.com",
-        "ana.costa@example.com",
-      ][i],
-      checkedInAt: formatISO(addHours(new Date(c.scheduledAt), 0)),
-    })),
-  )
+  console.log("→ Class attendance (every class, 1–6 students each)...")
+  const allStudentEmails = [
+    "lena.mueller@example.com",
+    "sophie.dubois@example.com",
+    "james.oconnor@example.com",
+    "yuki.tanaka@example.com",
+    "ana.costa@example.com",
+    "tom.harris@example.com",
+  ]
+  function shuffled<T>(arr: T[]): T[] {
+    const copy = [...arr]
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[copy[i], copy[j]] = [copy[j], copy[i]]
+    }
+    return copy
+  }
+  const attendanceRows: Array<{
+    classId: string
+    studentEmail: string
+    checkedInAt: string
+    pricePaidThb: number
+    paymentMethod: "cash" | "card" | "transfer" | "other" | null
+  }> = []
+  const everyClass = [...classRows, ...workshopRows]
+  for (const c of everyClass) {
+    const when = new Date(c.scheduledAt)
+    const isPast = when < now
+    // Past classes: 2–6 students. Future workshops: 1–4 students (forward-booked).
+    const target = isPast
+      ? Math.floor(Math.random() * 5) + 2
+      : Math.floor(Math.random() * 4) + 1
+    const picks = shuffled(allStudentEmails).slice(0, target)
+    for (const email of picks) {
+      // ~70% of attendances are covered by a membership (price 0), 30% drop-in cash.
+      const isDropIn = Math.random() < 0.3
+      attendanceRows.push({
+        classId: c.id,
+        studentEmail: email,
+        checkedInAt: formatISO(addHours(when, 0)),
+        pricePaidThb: isDropIn ? c.priceThb : 0,
+        paymentMethod: isDropIn ? "cash" : null,
+      })
+    }
+  }
+  if (attendanceRows.length > 0) {
+    await db.insert(classAttendance).values(attendanceRows)
+  }
 
   console.log("→ Restaurant tables...")
   await db.insert(restaurantTables).values([
@@ -437,10 +481,13 @@ export async function seedCrm() {
     { name: "Taxes & fees", slug: "taxes_fees", color: "#64748b", description: "Government, banking, transaction fees", sortOrder: 70 },
     { name: "Other", slug: "other", color: "#475569", description: "Catch-all", sortOrder: 99 },
   ]
-  const catRows = await db
+  await db
     .insert(expenseCategories)
     .values(CATS.map((c) => ({ ...c, isSystem: true })))
-    .returning()
+    .onConflictDoNothing({ target: expenseCategories.slug })
+  const catRows = await db
+    .select({ id: expenseCategories.id, slug: expenseCategories.slug })
+    .from(expenseCategories)
   const catBySlug = new Map(catRows.map((c) => [c.slug, c.id]))
 
   console.log("→ Sample expenses (last 3 months)...")
