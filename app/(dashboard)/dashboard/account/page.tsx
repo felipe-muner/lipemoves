@@ -10,11 +10,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { AccountPreferences } from "@/components/crm/account-preferences"
 import { SignOutButton } from "@/components/crm/sign-out-button"
+import { WeatherCard } from "@/components/crm/weather-card"
+import { getKohPhanganWeather } from "@/lib/weather/koh-phangan"
 
 export const dynamic = "force-dynamic"
 
 export default async function AccountPage() {
   const session = await requireDashboardSession()
+  const weather = await getKohPhanganWeather()
   const initials =
     session.name
       ?.split(" ")
@@ -62,6 +65,8 @@ export default async function AccountPage() {
           </div>
         </CardContent>
       </Card>
+
+      <WeatherCard data={weather} />
 
       <AccountPreferences />
 
