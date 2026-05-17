@@ -487,8 +487,16 @@ export async function seedCrm() {
     ...NAMED_STUDENTS.map((s) => s.email),
     ...poolStudents.map((s) => s.email),
   ]
+  // Reserve the last 5 students as "no-plan" so the empty-state "Add plan"
+  // button is testable on the students page without manual setup.
+  const noPlanEmails = new Set(allStudentEmails.slice(-5))
+  const buyerEmails = allStudentEmails.filter((e) => !noPlanEmails.has(e))
 
   console.log("→ Membership plans (Day Pass + unlimited durations)...")
+  // Re-clear in case the dev server hit a page that calls
+  // ensureDefaultMembershipPlans() between our initial cleanup and now.
+  await db.delete(studentMemberships)
+  await db.delete(membershipPlans)
   const planRows = await db
     .insert(membershipPlans)
     .values([
@@ -560,7 +568,7 @@ export async function seedCrm() {
       const endsOn = plan.durationDays
         ? formatISO(addDays(parseISO(startsOn), plan.durationDays))
         : null
-      const buyer = pick(allStudentEmails)
+      const buyer = pick(buyerEmails)
       membershipValues.push({
         studentEmail: buyer,
         planId: plan.id,
@@ -574,7 +582,7 @@ export async function seedCrm() {
   }
   // Guarantee a few currently-active memberships so reception check-in is
   // easy to test for every plan type without manually adding rows.
-  const guaranteedEmails = [...allStudentEmails]
+  const guaranteedEmails = [...buyerEmails]
     .sort(() => Math.random() - 0.5)
     .slice(0, 7)
   const guaranteedPlans = [
