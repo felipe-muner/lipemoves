@@ -81,6 +81,18 @@ export async function checkInStudent(
     .limit(1)
   if (!student) return { ok: false, reason: "Student not found" }
 
+  async function logFailure(reason: string): Promise<CheckinResult> {
+    await db.insert(membershipCheckins).values({
+      membershipId: null,
+      studentEmail: email,
+      decremented: false,
+      success: false,
+      failureReason: reason,
+    })
+    revalidatePath("/dashboard/checkin")
+    return { ok: false, reason }
+  }
+
   const rows = await db
     .select({
       id: studentMemberships.id,
@@ -116,11 +128,15 @@ export async function checkInStudent(
           ),
         )
     : []
-  const usedTodayIds = new Set(usedTodayRows.map((r) => r.membershipId))
+  const usedTodayIds = new Set(
+    usedTodayRows
+      .map((r) => r.membershipId)
+      .filter((id): id is string => id !== null),
+  )
 
   const chosen = pickActiveMembership(rows, today, usedTodayIds)
   if (!chosen) {
-    return { ok: false, reason: "No active membership" }
+    return logFailure("No active membership")
   }
 
   const usedToday = usedTodayIds.has(chosen.id)
