@@ -25,26 +25,18 @@ export function EntityAvatar({
   flag?: string | null
 }) {
   return (
-    <span className="relative inline-flex h-10 w-16 shrink-0 items-center">
-      {flag ? (
-        <span
-          className="absolute left-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted text-[1.5rem] leading-none"
-          aria-hidden
-        >
-          {flag}
-        </span>
-      ) : null}
-      <Avatar
-        className={cn(
-          "relative ml-auto h-10 w-10 shrink-0 ring-2 ring-background",
-          className,
-        )}
-      >
+    <span className="inline-flex shrink-0 items-center gap-2">
+      <Avatar className={cn("h-10 w-10 shrink-0", className)}>
         {image && <AvatarImage src={image} alt={name} />}
         <AvatarFallback className="bg-muted text-[11px] font-semibold text-foreground">
           {getInitials(name)}
         </AvatarFallback>
       </Avatar>
+      {flag ? (
+        <span className="text-xl leading-none" aria-hidden>
+          {flag}
+        </span>
+      ) : null}
     </span>
   )
 }
