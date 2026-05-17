@@ -3,10 +3,17 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { format, parseISO } from "date-fns"
+import { addDays, format, parseISO } from "date-fns"
 import { ChevronDown, ChevronRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DeleteRowButton } from "./delete-row-button"
+import { EntityCombobox } from "./entity-combobox"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   Dialog,
   DialogContent,
@@ -68,7 +75,9 @@ export function StudentMembershipsDialog({
   plans,
   recordAction,
   deleteAction,
-  trigger,
+  triggerClassName,
+  triggerChildren,
+  autoOpenAdd = false,
 }: {
   studentEmail: string
   studentName: string
@@ -76,10 +85,16 @@ export function StudentMembershipsDialog({
   plans: PlanOption[]
   recordAction: (formData: FormData) => Promise<void>
   deleteAction: (id: string) => Promise<void>
-  trigger: React.ReactNode
+  triggerClassName?: string
+  triggerChildren: React.ReactNode
+  autoOpenAdd?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
   const [adding, setAdding] = React.useState(false)
+
+  React.useEffect(() => {
+    if (open && autoOpenAdd && memberships.length === 0) setAdding(true)
+  }, [open, autoOpenAdd, memberships.length])
   const [pending, startTransition] = React.useTransition()
   const router = useRouter()
 
@@ -88,6 +103,27 @@ export function StudentMembershipsDialog({
     plans[0]?.id ?? "",
   )
   const selectedPlan = plans.find((p) => p.id === selectedPlanId)
+  const [startsOn, setStartsOn] = React.useState<string>(today)
+  const [endsOn, setEndsOn] = React.useState<string>("")
+
+  React.useEffect(() => {
+    if (!selectedPlan?.durationDays || !startsOn) {
+      setEndsOn("")
+      return
+    }
+    setEndsOn(
+      format(
+        addDays(parseISO(startsOn), selectedPlan.durationDays),
+        "yyyy-MM-dd",
+      ),
+    )
+  }, [selectedPlan, startsOn])
+
+  const planItems = plans.map((p) => ({
+    id: p.id,
+    label: `${p.name} — ${p.priceThb} ฿`,
+    color: p.color,
+  }))
 
   const lifetimeValue = memberships.reduce((a, m) => a + m.pricePaidThb, 0)
 
@@ -107,8 +143,10 @@ export function StudentMembershipsDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[680px]">
+      <DialogTrigger className={triggerClassName}>
+        {triggerChildren}
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[680px]">
         <DialogHeader>
           <DialogTitle>{studentName}'s memberships</DialogTitle>
           <DialogDescription>
@@ -117,7 +155,7 @@ export function StudentMembershipsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
+        <div className="flex-1 space-y-3 overflow-y-auto py-2 pr-1">
           {memberships.length === 0 ? (
             <p className="rounded border border-dashed py-6 text-center text-sm text-muted-foreground">
               No memberships yet.
@@ -151,35 +189,40 @@ export function StudentMembershipsDialog({
             >
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label htmlFor="planId" className="text-xs">
-                    Plan
-                  </Label>
-                  <select
-                    id="planId"
-                    name="planId"
+                  <Label className="text-xs">Plan</Label>
+                  <EntityCombobox
+                    items={planItems}
                     value={selectedPlanId}
-                    onChange={(e) => setSelectedPlanId(e.target.value)}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
-                  >
-                    {plans.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — {p.priceThb} ฿
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={(v) => setSelectedPlanId(v ?? "")}
+                    placeholder="Select a plan..."
+                    searchPlaceholder="Search plans..."
+                    emptyText="No plans found."
+                  />
+                  <input type="hidden" name="planId" value={selectedPlanId} />
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="pricePaidThb" className="text-xs">
                     Price (THB)
                   </Label>
-                  <Input
-                    id="pricePaidThb"
-                    name="pricePaidThb"
-                    type="number"
-                    min={0}
-                    defaultValue={selectedPlan?.priceThb ?? 0}
-                    key={selectedPlanId + "-price"}
-                  />
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Input
+                          id="pricePaidThb"
+                          name="pricePaidThb"
+                          type="number"
+                          readOnly
+                          tabIndex={-1}
+                          value={selectedPlan?.priceThb ?? 0}
+                          className="cursor-not-allowed bg-muted"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        To change the price, edit the plan on the Memberships
+                        page.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
 
@@ -192,7 +235,8 @@ export function StudentMembershipsDialog({
                     id="startsOn"
                     name="startsOn"
                     type="date"
-                    defaultValue={today}
+                    value={startsOn}
+                    onChange={(e) => setStartsOn(e.target.value)}
                     required
                   />
                 </div>
@@ -204,7 +248,8 @@ export function StudentMembershipsDialog({
                     id="endsOn"
                     name="endsOn"
                     type="date"
-                    placeholder="Auto from plan"
+                    value={endsOn}
+                    onChange={(e) => setEndsOn(e.target.value)}
                   />
                 </div>
               </div>

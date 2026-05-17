@@ -1,3 +1,7 @@
+import { Plus } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   StudentMembershipsDialog,
   type PlanOption,
@@ -35,6 +39,7 @@ export function StudentMembershipsCell({
   plans: PlanOption[]
   checkinsByMembership: Map<string, CheckinDay[]>
 }) {
+  const isEmpty = memberships.length === 0
   return (
     <StudentMembershipsDialog
       studentEmail={studentEmail}
@@ -46,13 +51,32 @@ export function StudentMembershipsCell({
       plans={plans}
       recordAction={recordStudentMembership}
       deleteAction={deleteStudentMembership}
-      trigger={
-        <button className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs hover:bg-secondary/80">
-          <span className="font-medium">{memberships.length}</span>
-          <span className="text-muted-foreground">
+      autoOpenAdd={isEmpty}
+      triggerClassName={cn(
+        buttonVariants({
+          variant: isEmpty ? "outline" : "secondary",
+          size: "sm",
+        }),
+        "h-8 px-3 text-xs",
+        isEmpty ? "gap-1 border-dashed" : "gap-1.5",
+      )}
+      triggerChildren={
+        isEmpty ? (
+          <>
+            <Plus className="h-3.5 w-3.5" />
+            Add plan
+          </>
+        ) : (
+          <>
+            <Badge
+              variant="default"
+              className="h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none"
+            >
+              {memberships.length}
+            </Badge>
             {memberships.length === 1 ? "plan" : "plans"}
-          </span>
-        </button>
+          </>
+        )
       }
     />
   )
