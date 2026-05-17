@@ -33,26 +33,37 @@ export function TeacherDialog({
   values,
   action,
   trigger,
+  defaultOpen,
+  onCloseHref,
 }: {
   mode: "create" | "edit"
   values?: TeacherDialogValues
   action: (formData: FormData) => Promise<void>
-  trigger?: React.ReactNode
+  trigger?: React.ReactNode | false
+  defaultOpen?: boolean
+  onCloseHref?: string
 }) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(defaultOpen ?? false)
   const [pending, startTransition] = React.useTransition()
   const router = useRouter()
 
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next)
+    if (!next && onCloseHref) router.replace(onCloseHref)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New teacher
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger !== false && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New teacher
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[480px]">
         <form
           action={(formData) => {
@@ -81,6 +92,9 @@ export function TeacherDialog({
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            {values?.id ? (
+              <input type="hidden" name="id" value={values.id} />
+            ) : null}
             <div className="grid gap-2">
               <Label htmlFor="name">Name *</Label>
               <Input
