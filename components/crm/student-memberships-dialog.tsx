@@ -315,7 +315,12 @@ function MembershipCard({
 }) {
   const [expanded, setExpanded] = React.useState(false)
   const expired = m.endsOn ? parseISO(m.endsOn) < new Date() : false
-  const daysUsed = m.checkins.filter((c) => c.decremented).length
+  const isUnlimited = m.classesRemaining == null
+  // For unlimited plans, every unique check-in day counts. For class-packs,
+  // only days that actually decremented a credit count.
+  const daysUsed = isUnlimited
+    ? m.checkins.length
+    : m.checkins.filter((c) => c.decremented).length
   const totalEntries = m.checkins.reduce((sum, c) => sum + c.entries, 0)
   // For class-pack plans we know the cap (used + remaining). For unlimited
   // plans we just show entries.
