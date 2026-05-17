@@ -50,10 +50,11 @@ export async function createStudent(formData: FormData) {
   revalidatePath("/dashboard/students")
 }
 
-export async function updateStudent(email: string, formData: FormData) {
+export async function updateStudent(formData: FormData) {
   await requireManageScope()
   const fields = readFields(formData)
-
+  const email = fields.email
+  if (!email) throw new Error("Student email is required")
   if (!fields.name) throw new Error("Name is required")
 
   await db

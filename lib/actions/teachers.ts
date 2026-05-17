@@ -57,8 +57,10 @@ export async function createTeacher(formData: FormData) {
   revalidatePath("/dashboard/employees")
 }
 
-export async function updateTeacher(id: string, formData: FormData) {
+export async function updateTeacher(formData: FormData) {
   await requireManageScope()
+  const id = String(formData.get("id") ?? "").trim()
+  if (!id) throw new Error("Teacher id is required")
   const name = String(formData.get("name") ?? "").trim()
   const email = String(formData.get("email") ?? "").trim()
   const phone = String(formData.get("phone") ?? "").trim() || null

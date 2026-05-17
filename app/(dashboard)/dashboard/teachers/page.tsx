@@ -20,7 +20,7 @@ import { Pencil } from "lucide-react"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { ReactivateRowButton } from "@/components/crm/reactivate-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
-import { parseIdsParam } from "@/lib/utils/url-params"
+import { hrefWith, parseIdsParam } from "@/lib/utils/url-params"
 import Link from "next/link"
 import {
   createTeacher,
@@ -36,15 +36,24 @@ type StatusFilter = "active" | "inactive" | "all"
 export default async function TeachersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ teacherId?: string; status?: StatusFilter }>
+  searchParams: Promise<{
+    teacherId?: string
+    status?: StatusFilter
+    editId?: string
+  }>
 }) {
   const session = await requireDashboardSession()
   if (session.role === "teacher") notFound()
 
   const params = await searchParams
-  const { teacherId = "" } = params
+  const { teacherId = "", editId } = params
   const status: StatusFilter = params.status ?? "active"
   const selectedIds = parseIdsParam(teacherId)
+
+  const baseParams = {
+    status: status === "active" ? undefined : status,
+    teacherId,
+  }
 
   // Employees who hold the "teacher" role
   const rows = await db
@@ -78,6 +87,8 @@ export default async function TeachersPage({
   if (status === "inactive") filtered = filtered.filter((r) => !r.isActive)
   if (selectedIds.size > 0)
     filtered = filtered.filter((r) => selectedIds.has(r.id))
+
+  const editingTeacher = editId ? rows.find((r) => r.id === editId) : undefined
 
   return (
     <div className="space-y-6">
@@ -162,24 +173,19 @@ export default async function TeachersPage({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <TeacherDialog
-                          mode="edit"
-                          values={{
-                            id: r.id,
-                            name: r.name,
-                            email: r.email,
-                            phone: r.phone,
-                            passport: r.passport,
-                            bio: r.bio,
-                            isActive: r.isActive,
-                          }}
-                          action={updateTeacher.bind(null, r.id)}
-                          trigger={
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          }
-                        />
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                        >
+                          <Link
+                            href={hrefWith({ ...baseParams, editId: r.id })}
+                            aria-label={`Edit ${r.name}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
                         {r.isActive ? (
                           <DeleteRowButton
                             action={deactivateTeacher.bind(null, r.id)}
@@ -201,6 +207,26 @@ export default async function TeachersPage({
           </Table>
         </CardContent>
       </Card>
+
+      {editingTeacher ? (
+        <TeacherDialog
+          key={editingTeacher.id}
+          mode="edit"
+          values={{
+            id: editingTeacher.id,
+            name: editingTeacher.name,
+            email: editingTeacher.email,
+            phone: editingTeacher.phone,
+            passport: editingTeacher.passport,
+            bio: editingTeacher.bio,
+            isActive: editingTeacher.isActive,
+          }}
+          action={updateTeacher}
+          trigger={false}
+          defaultOpen
+          onCloseHref={hrefWith(baseParams)}
+        />
+      ) : null}
     </div>
   )
 }

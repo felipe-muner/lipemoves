@@ -21,7 +21,8 @@ import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
 import { StudentMembershipsCell } from "@/components/crm/student-memberships-cell"
 import { loadStudentMembershipsData } from "@/lib/db/queries/student-memberships"
-import { parseIdsParam } from "@/lib/utils/url-params"
+import Link from "next/link"
+import { hrefWith, parseIdsParam } from "@/lib/utils/url-params"
 import { nationalityFlag } from "@/lib/utils/country-flag"
 import {
   createStudent,
@@ -41,15 +42,22 @@ export default async function StudentsPage({
     studentId?: string
     page?: string
     perPage?: string
+    editEmail?: string
   }>
 }) {
   const session = await requireDashboardSession()
   if (session.role === "teacher") notFound()
 
   const params = await searchParams
-  const { studentId = "" } = params
+  const { studentId = "", editEmail } = params
   const selectedIds = parseIdsParam(studentId)
   const { page, perPage, offset } = parsePagination(params)
+
+  const baseParams = {
+    studentId,
+    page: params.page,
+    perPage: params.perPage,
+  }
 
   await ensureDefaultMembershipPlans()
 
@@ -99,6 +107,22 @@ export default async function StudentsPage({
     description: r.email,
   }))
 
+  const editingStudent = editEmail
+    ? await db
+        .select({
+          email: students.email,
+          name: students.name,
+          phone: students.phone,
+          passport: students.passport,
+          nationality: students.nationality,
+          notes: students.notes,
+        })
+        .from(students)
+        .where(eq(students.email, editEmail))
+        .limit(1)
+        .then((rs) => rs[0])
+    : undefined
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -135,7 +159,6 @@ export default async function StudentsPage({
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Passport</TableHead>
-                <TableHead>Nationality</TableHead>
                 <TableHead className="text-right">Memberships</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -143,7 +166,7 @@ export default async function StudentsPage({
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     {total === 0 ? "No students yet." : "No students match the filter."}
                   </TableCell>
                 </TableRow>
@@ -152,29 +175,15 @@ export default async function StudentsPage({
                   <TableRow key={r.email}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <EntityAvatar name={r.name} />
+                        <EntityAvatar
+                          name={r.name}
+                          flag={nationalityFlag(r.nationality) || null}
+                        />
                         <span>{r.name}</span>
                       </div>
                     </TableCell>
                     <TableCell>{r.email}</TableCell>
                     <TableCell>{r.passport ?? "—"}</TableCell>
-                    <TableCell>
-                      {r.nationality ? (
-                        <span className="inline-flex items-center gap-2">
-                          {nationalityFlag(r.nationality) && (
-                            <span
-                              className="text-base leading-none"
-                              aria-hidden
-                            >
-                              {nationalityFlag(r.nationality)}
-                            </span>
-                          )}
-                          <span>{r.nationality}</span>
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
                     <TableCell className="text-right">
                       <StudentMembershipsCell
                         studentEmail={r.email}
@@ -186,23 +195,19 @@ export default async function StudentsPage({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <StudentDialog
-                          mode="edit"
-                          values={{
-                            email: r.email,
-                            name: r.name,
-                            phone: r.phone,
-                            passport: r.passport,
-                            nationality: r.nationality,
-                            notes: r.notes,
-                          }}
-                          action={updateStudent.bind(null, r.email)}
-                          trigger={
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          }
-                        />
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                        >
+                          <Link
+                            href={hrefWith({ ...baseParams, editEmail: r.email })}
+                            aria-label={`Edit ${r.name}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
                         <DeleteRowButton
                           action={deleteStudent.bind(null, r.email)}
                           confirmText={`Delete "${r.name}"? Their memberships and attendance will also be removed.`}
@@ -222,6 +227,25 @@ export default async function StudentsPage({
           />
         </CardContent>
       </Card>
+
+      {editingStudent ? (
+        <StudentDialog
+          key={editingStudent.email}
+          mode="edit"
+          values={{
+            email: editingStudent.email,
+            name: editingStudent.name,
+            phone: editingStudent.phone,
+            passport: editingStudent.passport,
+            nationality: editingStudent.nationality,
+            notes: editingStudent.notes,
+          }}
+          action={updateStudent}
+          trigger={false}
+          defaultOpen
+          onCloseHref={hrefWith(baseParams)}
+        />
+      ) : null}
     </div>
   )
 }

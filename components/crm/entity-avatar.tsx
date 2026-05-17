@@ -16,17 +16,35 @@ export function EntityAvatar({
   name,
   image,
   className,
+  flag,
 }: {
   name: string
   image?: string | null
   className?: string
+  /** Flag emoji shown as a small badge in the bottom-right corner. */
+  flag?: string | null
 }) {
   return (
-    <Avatar className={cn("h-8 w-8 shrink-0", className)}>
-      {image && <AvatarImage src={image} alt={name} />}
-      <AvatarFallback className="bg-primary/10 text-[11px] font-semibold text-primary">
-        {getInitials(name)}
-      </AvatarFallback>
-    </Avatar>
+    <span className="relative inline-flex h-8 w-11 shrink-0 items-center">
+      {flag ? (
+        <span
+          className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted text-[1.25rem] leading-none"
+          aria-hidden
+        >
+          {flag}
+        </span>
+      ) : null}
+      <Avatar
+        className={cn(
+          "relative ml-auto h-8 w-8 shrink-0 ring-2 ring-background",
+          className,
+        )}
+      >
+        {image && <AvatarImage src={image} alt={name} />}
+        <AvatarFallback className="bg-muted text-[11px] font-semibold text-foreground">
+          {getInitials(name)}
+        </AvatarFallback>
+      </Avatar>
+    </span>
   )
 }

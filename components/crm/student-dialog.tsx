@@ -33,26 +33,37 @@ export function StudentDialog({
   values,
   action,
   trigger,
+  defaultOpen,
+  onCloseHref,
 }: {
   mode: "create" | "edit"
   values?: StudentDialogValues
   action: (formData: FormData) => Promise<void>
-  trigger?: React.ReactNode
+  trigger?: React.ReactNode | false
+  defaultOpen?: boolean
+  onCloseHref?: string
 }) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(defaultOpen ?? false)
   const [pending, startTransition] = React.useTransition()
   const router = useRouter()
 
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next)
+    if (!next && onCloseHref) router.replace(onCloseHref)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New student
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger !== false && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New student
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[480px]">
         <form
           action={(formData) => {
