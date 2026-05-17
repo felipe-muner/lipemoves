@@ -6,11 +6,16 @@ import {
   students,
   studentMemberships,
   classAttendance,
+  membershipCheckins,
+  expenses,
+  sales,
 } from "@/lib/db/schema"
 import { and, count, eq, gte, lte, sum } from "drizzle-orm"
 import {
   startOfMonth,
   endOfMonth,
+  startOfDay,
+  endOfDay,
   formatISO,
   subMonths,
   format,
@@ -24,6 +29,10 @@ import {
   Users,
   Wallet,
   TrendingUp,
+  Receipt,
+  UtensilsCrossed,
+  PiggyBank,
+  ScanLine,
 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -63,6 +72,10 @@ export default async function DashboardHome() {
   const monthStart = formatISO(startOfMonth(now))
 
   if (session.role === "admin" || session.role === "manager") {
+    const monthEnd = formatISO(endOfMonth(now))
+    const todayStart = formatISO(startOfDay(now))
+    const todayEnd = formatISO(endOfDay(now))
+
     const [teachersCount] = await db.select({ v: count() }).from(employees)
     const [studentsCount] = await db.select({ v: count() }).from(students)
     const [activeMembershipsCount] = await db
@@ -76,9 +89,41 @@ export default async function DashboardHome() {
       .select({ v: sum(studentMemberships.pricePaidThb) })
       .from(studentMemberships)
       .where(gte(studentMemberships.startsOn, monthStart))
+    const [expensesThisMonth] = await db
+      .select({ v: sum(expenses.amountThb) })
+      .from(expenses)
+      .where(
+        and(gte(expenses.incurredOn, monthStart), lte(expenses.incurredOn, monthEnd)),
+      )
+    const [restaurantRevenueThisMonth] = await db
+      .select({ v: sum(sales.totalThb) })
+      .from(sales)
+      .where(
+        and(
+          eq(sales.status, "paid"),
+          gte(sales.paidAt, monthStart),
+          lte(sales.paidAt, monthEnd),
+        ),
+      )
+    const [checkinsThisMonth] = await db
+      .select({ v: count() })
+      .from(membershipCheckins)
+      .where(gte(membershipCheckins.checkedInAt, monthStart))
+    const [checkinsToday] = await db
+      .select({ v: count() })
+      .from(membershipCheckins)
+      .where(
+        and(
+          gte(membershipCheckins.checkedInAt, todayStart),
+          lte(membershipCheckins.checkedInAt, todayEnd),
+        ),
+      )
 
     const series = await buildSeries()
     const revenue = Number(revenueThisMonth.v ?? 0)
+    const expensesAmount = Number(expensesThisMonth.v ?? 0)
+    const restaurantRevenue = Number(restaurantRevenueThisMonth.v ?? 0)
+    const netProfit = revenue + restaurantRevenue - expensesAmount
 
     return (
       <div className="space-y-6">
@@ -116,6 +161,35 @@ export default async function DashboardHome() {
             value={teachersCount.v}
             icon={GraduationCap}
             hint="Active on payroll"
+          />
+          <StatCard
+            label="Expenses"
+            value={<Money thb={expensesAmount} />}
+            icon={Receipt}
+            hint="Outgoing this month"
+          />
+          <StatCard
+            label="Net profit"
+            value={<Money thb={netProfit} />}
+            icon={PiggyBank}
+            hint="Revenue + restaurant − expenses"
+            valueClassName={
+              netProfit >= 0
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-red-600 dark:text-red-400"
+            }
+          />
+          <StatCard
+            label="Restaurant"
+            value={<Money thb={restaurantRevenue} />}
+            icon={UtensilsCrossed}
+            hint="Paid sales this month"
+          />
+          <StatCard
+            label="Check-ins"
+            value={checkinsThisMonth.v}
+            icon={ScanLine}
+            hint={`${checkinsToday.v} today`}
           />
         </div>
 

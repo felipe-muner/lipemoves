@@ -11,7 +11,8 @@ import {
   employeeRoles,
   roles,
 } from "@/lib/db/schema"
-import { and, eq, inArray, desc } from "drizzle-orm"
+import { and, eq, gte, inArray, desc, sql } from "drizzle-orm"
+import { subDays, formatISO } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -120,6 +121,24 @@ export default async function RestaurantPage({
     .where(eq(sales.status, "paid"))
     .orderBy(desc(sales.paidAt))
     .limit(5)
+
+  // Top sold items (last 30 days, by quantity)
+  const thirtyDaysAgo = formatISO(subDays(new Date(), 30))
+  const topItems = await db
+    .select({
+      productName: saleItems.productName,
+      qty: sql<number>`sum(${saleItems.quantity})::int`,
+      revenue: sql<number>`sum(${saleItems.totalThb})::int`,
+    })
+    .from(saleItems)
+    .innerJoin(sales, eq(sales.id, saleItems.saleId))
+    .where(
+      and(eq(sales.status, "paid"), gte(sales.paidAt, thirtyDaysAgo)),
+    )
+    .groupBy(saleItems.productName)
+    .orderBy(desc(sql`sum(${saleItems.quantity})`))
+    .limit(10)
+  const topQtyMax = topItems[0]?.qty ?? 0
 
   // Selected-table view
   if (selectedTableId) {
@@ -396,33 +415,69 @@ export default async function RestaurantPage({
         </CardContent>
       </Card>
 
-      {recentPaid.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent paid sales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1 text-sm">
-              {recentPaid.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center justify-between rounded-md border px-3 py-2"
-                >
-                  <span className="font-mono text-xs text-muted-foreground">
-                    #{s.id.slice(0, 8)}
-                  </span>
-                  <span className="text-xs capitalize text-muted-foreground">
-                    {s.paymentMethod ?? "—"}
-                  </span>
-                  <span className="font-medium">
-                    {s.totalThb.toLocaleString()} ฿
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {recentPaid.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent paid sales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1 text-sm">
+                {recentPaid.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between rounded-md border px-3 py-2"
+                  >
+                    <span className="font-mono text-xs text-muted-foreground">
+                      #{s.id.slice(0, 8)}
+                    </span>
+                    <span className="text-xs capitalize text-muted-foreground">
+                      {s.paymentMethod ?? "—"}
+                    </span>
+                    <span className="font-medium">
+                      {s.totalThb.toLocaleString()} ฿
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {topItems.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Top sold items</CardTitle>
+              <p className="text-sm text-muted-foreground">Last 30 days, by quantity sold.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {topItems.map((it) => (
+                  <div key={it.productName} className="space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate font-medium">{it.productName}</span>
+                      <span className="shrink-0 text-muted-foreground">
+                        <span className="font-semibold text-foreground">
+                          {it.qty}
+                        </span>{" "}
+                        sold · {it.revenue.toLocaleString()} ฿
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-emerald-500/70"
+                        style={{
+                          width: `${topQtyMax > 0 ? Math.round((it.qty / topQtyMax) * 100) : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
