@@ -61,6 +61,8 @@ export default async function CheckinPage() {
       id: membershipCheckins.id,
       checkedInAt: membershipCheckins.checkedInAt,
       decremented: membershipCheckins.decremented,
+      success: membershipCheckins.success,
+      failureReason: membershipCheckins.failureReason,
       studentEmail: membershipCheckins.studentEmail,
       studentName: students.name,
       planName: membershipPlans.name,
@@ -109,15 +111,15 @@ export default async function CheckinPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
+        <div className="md:col-span-2">
+          <CheckinPanel students={items} />
+        </div>
         <StatCard label="Entries today" value={todayTotal} icon={LogIn} />
         <StatCard
           label="Unique students today"
           value={todayUnique}
           icon={Users}
         />
-        <div className="md:col-span-2">
-          <CheckinPanel students={items} />
-        </div>
       </div>
 
       <Card>
@@ -166,32 +168,43 @@ export default async function CheckinPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-2 w-2 rounded-full"
-                          style={{ background: r.planColor ?? "#64748b" }}
-                        />
-                        <span className="text-sm">
-                          {r.planName ?? r.type ?? "—"}
+                      {r.success ? (
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-block h-2 w-2 rounded-full"
+                            style={{ background: r.planColor ?? "#64748b" }}
+                          />
+                          <span className="text-sm">
+                            {r.planName ?? r.type ?? "—"}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          {r.failureReason ?? "—"}
                         </span>
-                      </div>
+                      )}
                     </TableCell>
                     <TableCell>
-                      {r.decremented ? (
-                        <Badge variant="outline">−1 day</Badge>
+                      {!r.success ? (
+                        <Badge className="border-rose-500/40 bg-rose-500/15 text-rose-700 hover:bg-rose-500/15 dark:text-rose-400">
+                          failed
+                        </Badge>
+                      ) : r.decremented ? (
+                        <Badge className="border-emerald-500/40 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-400">
+                          −1 day
+                        </Badge>
                       ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-muted-foreground"
-                        >
+                        <Badge className="border-sky-500/40 bg-sky-500/15 text-sky-700 hover:bg-sky-500/15 dark:text-sky-400">
                           re-entry
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right text-sm">
-                      {r.classesRemaining == null
-                        ? "Unlimited"
-                        : `${r.classesRemaining} left`}
+                      {!r.success
+                        ? "—"
+                        : r.classesRemaining == null
+                          ? "Unlimited"
+                          : `${r.classesRemaining} left`}
                     </TableCell>
                     <TableCell className="text-right">
                       <StudentMembershipsCell
