@@ -25,10 +25,10 @@ export function EntityAvatar({
   flag?: string | null
 }) {
   return (
-    <span className="relative inline-flex h-8 w-11 shrink-0 items-center">
+    <span className="relative inline-flex h-10 w-16 shrink-0 items-center">
       {flag ? (
         <span
-          className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted text-[1.25rem] leading-none"
+          className="absolute left-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted text-[1.5rem] leading-none"
           aria-hidden
         >
           {flag}
@@ -36,7 +36,7 @@ export function EntityAvatar({
       ) : null}
       <Avatar
         className={cn(
-          "relative ml-auto h-8 w-8 shrink-0 ring-2 ring-background",
+          "relative ml-auto h-10 w-10 shrink-0 ring-2 ring-background",
           className,
         )}
       >
