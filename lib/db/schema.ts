@@ -446,10 +446,36 @@ export const classAttendance = pgTable("class_attendance", {
   membershipId: uuid("membership_id").references(() => studentMemberships.id, {
     onDelete: "set null",
   }),
-  checkedInAt: timestamp("checked_in_at", { mode: "string" }).defaultNow().notNull(),
+  checkedInAt: timestamp("checked_in_at", { mode: "string", withTimezone: true })
+    .defaultNow()
+    .notNull(),
   /** Cash a student paid for this single attendance (drop-in). 0 if covered by a membership. */
   pricePaidThb: integer("price_paid_thb").notNull().default(0),
   paymentMethod: paymentMethodEnum("payment_method"),
+})
+
+/**
+ * Reception entry log. Independent of class_attendance — students may enter
+ * the center without booking a specific class (gym access, open practice).
+ *
+ * Same-day rule: many rows per (membership, calendar day) are allowed, but
+ * `studentMemberships.classesRemaining` is decremented only on the first
+ * check-in of the day. Unlimited memberships (classesRemaining=null) never
+ * decrement; we still write the row for attendance history.
+ */
+export const membershipCheckins = pgTable("membership_checkins", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  membershipId: uuid("membership_id")
+    .notNull()
+    .references(() => studentMemberships.id, { onDelete: "cascade" }),
+  studentEmail: varchar("student_email", { length: 255 })
+    .notNull()
+    .references(() => students.email, { onDelete: "cascade" }),
+  checkedInAt: timestamp("checked_in_at", { mode: "string", withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  /** True if this entry decremented classesRemaining (i.e. first of the day). */
+  decremented: boolean("decremented").notNull().default(false),
 })
 
 export const emailSends = pgTable("email_sends", {

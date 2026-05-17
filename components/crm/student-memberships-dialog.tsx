@@ -4,7 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { format, parseISO } from "date-fns"
-import { Plus } from "lucide-react"
+import { ChevronDown, ChevronRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DeleteRowButton } from "./delete-row-button"
 import {
@@ -32,6 +32,12 @@ export interface PlanOption {
   color: string
 }
 
+export interface MembershipCheckinDay {
+  day: string
+  entries: number
+  decremented: boolean
+}
+
 export interface MembershipRow {
   id: string
   planId: string | null
@@ -44,6 +50,7 @@ export interface MembershipRow {
   pricePaidThb: number
   notes: string | null
   createdAt: string
+  checkins: MembershipCheckinDay[]
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -117,64 +124,13 @@ export function StudentMembershipsDialog({
             </p>
           ) : (
             <div className="space-y-2">
-              {memberships.map((m) => {
-                const expired =
-                  m.endsOn && parseISO(m.endsOn) < new Date()
-                return (
-                  <div
-                    key={m.id}
-                    className="flex items-center justify-between rounded-md border p-3"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-2 w-2 rounded-full"
-                          style={{
-                            background: m.planColor ?? "#64748b",
-                          }}
-                        />
-                        <span className="text-sm font-medium">
-                          {m.planName ?? TYPE_LABELS[m.type] ?? m.type}
-                        </span>
-                        <Badge variant="outline" className="text-[10px]">
-                          {TYPE_LABELS[m.type] ?? m.type}
-                        </Badge>
-                        {expired && (
-                          <Badge variant="outline" className="text-[10px] text-amber-600">
-                            Expired
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {format(parseISO(m.startsOn), "MMM dd, yyyy")}
-                        {m.endsOn && (
-                          <> → {format(parseISO(m.endsOn), "MMM dd, yyyy")}</>
-                        )}
-                        {m.classesRemaining != null && (
-                          <> · {m.classesRemaining} class
-                            {m.classesRemaining === 1 ? "" : "es"} left</>
-                        )}
-                      </div>
-                      {m.notes && (
-                        <div className="text-xs text-muted-foreground">
-                          {m.notes}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right text-sm font-medium">
-                        <Money thb={m.pricePaidThb} />
-                      </div>
-                      <DeleteRowButton
-                        action={() => deleteAction(m.id)}
-                        confirmText={`Delete this ${
-                          m.planName ?? m.type
-                        } membership? This won't refund the student.`}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
+              {memberships.map((m) => (
+                <MembershipCard
+                  key={m.id}
+                  membership={m}
+                  deleteAction={deleteAction}
+                />
+              ))}
             </div>
           )}
 
@@ -302,5 +258,134 @@ export function StudentMembershipsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function MembershipCard({
+  membership: m,
+  deleteAction,
+}: {
+  membership: MembershipRow
+  deleteAction: (id: string) => Promise<void>
+}) {
+  const [expanded, setExpanded] = React.useState(false)
+  const expired = m.endsOn ? parseISO(m.endsOn) < new Date() : false
+  const daysUsed = m.checkins.filter((c) => c.decremented).length
+  const totalEntries = m.checkins.reduce((sum, c) => sum + c.entries, 0)
+  // For class-pack plans we know the cap (used + remaining). For unlimited
+  // plans we just show entries.
+  const totalDays =
+    m.classesRemaining != null ? daysUsed + m.classesRemaining : null
+
+  return (
+    <div className="rounded-md border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ background: m.planColor ?? "#64748b" }}
+            />
+            <span className="text-sm font-medium">
+              {m.planName ?? TYPE_LABELS[m.type] ?? m.type}
+            </span>
+            <Badge variant="outline" className="text-[10px]">
+              {TYPE_LABELS[m.type] ?? m.type}
+            </Badge>
+            {expired && (
+              <Badge
+                variant="outline"
+                className="text-[10px] text-amber-600"
+              >
+                Expired
+              </Badge>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {format(parseISO(m.startsOn), "MMM dd, yyyy")}
+            {m.endsOn && (
+              <> → {format(parseISO(m.endsOn), "MMM dd, yyyy")}</>
+            )}
+          </div>
+          <div className="text-xs">
+            {totalDays != null ? (
+              <span className="font-medium">
+                {daysUsed} / {totalDays} days used
+              </span>
+            ) : (
+              <span className="font-medium">
+                {daysUsed} {daysUsed === 1 ? "day" : "days"} attended
+              </span>
+            )}
+            {totalEntries > daysUsed && (
+              <span className="text-muted-foreground">
+                {" "}
+                · {totalEntries} total entries
+              </span>
+            )}
+          </div>
+          {m.notes && (
+            <div className="text-xs text-muted-foreground">{m.notes}</div>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right text-sm font-medium">
+            <Money thb={m.pricePaidThb} />
+          </div>
+          <DeleteRowButton
+            action={() => deleteAction(m.id)}
+            confirmText={`Delete this ${
+              m.planName ?? m.type
+            } membership? This won't refund the student.`}
+          />
+        </div>
+      </div>
+
+      {m.checkins.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {expanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+            {expanded ? "Hide" : "Show"} check-in history
+          </button>
+          {expanded && (
+            <ul className="mt-2 space-y-1 border-t pt-2">
+              {m.checkins.map((c) => (
+                <li
+                  key={c.day}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span>{format(parseISO(c.day), "EEE, MMM dd, yyyy")}</span>
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <span>
+                      {c.entries} {c.entries === 1 ? "entry" : "entries"}
+                    </span>
+                    {c.decremented ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        −1 day
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] text-muted-foreground"
+                      >
+                        no charge
+                      </Badge>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
   )
 }

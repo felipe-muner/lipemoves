@@ -11,6 +11,7 @@ import {
   studentMemberships,
   membershipPlans,
   classAttendance,
+  membershipCheckins,
   locations,
   products,
   restaurantTables,
@@ -230,6 +231,7 @@ export async function seedCrm() {
   await db.delete(products)
   await db.delete(restaurantTables)
   await db.delete(classAttendance)
+  await db.delete(membershipCheckins)
   await db.delete(studentMemberships)
   await db.delete(membershipPlans)
   await db.delete(expenses)
@@ -486,25 +488,17 @@ export async function seedCrm() {
     ...poolStudents.map((s) => s.email),
   ]
 
-  console.log("→ Membership plans (Yoga / Pool / Ice Bath)...")
+  console.log("→ Membership plans (Day Pass + unlimited durations)...")
   const planRows = await db
     .insert(membershipPlans)
     .values([
-      // YOGA — purple, light → dark
-      { name: "Yoga — Drop In Class",             slug: "yoga_drop_in",         type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 450,  color: "#c084fc", description: "Single yoga class",                              sortOrder: 10 },
-      { name: "Yoga — 5 Classes Pass",            slug: "yoga_5_classes",       type: "class_pack", durationDays: 60, classesIncluded: 5,    priceThb: 2000, color: "#a855f7", description: "5 yoga classes",                                  sortOrder: 11 },
-      { name: "Yoga — 10 Classes Pass",           slug: "yoga_10_classes",      type: "class_pack", durationDays: 90, classesIncluded: 10,   priceThb: 3500, color: "#9333ea", description: "10 yoga classes",                                 sortOrder: 12 },
-      { name: "Yoga — 30 Days Unlimited",         slug: "yoga_30_unlimited",    type: "monthly",    durationDays: 30, classesIncluded: null, priceThb: 5000, color: "#7e22ce", description: "Three time slots/day, 30 days",                   sortOrder: 13 },
-
-      // POOL — saturated royal blue, light → dark
-      { name: "Pool — Daily Pass · Package 1",    slug: "pool_daily_p1",        type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 599,  color: "#3b82f6", description: "Daily pool pass (Package 1) · 10:30 – 19:30",      sortOrder: 20 },
-      { name: "Pool — Daily Pass · Package 2",    slug: "pool_daily_p2",        type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 999,  color: "#1d4ed8", description: "Daily pool pass (Package 2) · 10:30 – 19:30",      sortOrder: 21 },
-
-      // ICE BATH — icy / frost teal, light → dark
-      { name: "Ice Bath — Daily Pass",            slug: "ice_daily",            type: "drop_in",    durationDays: 1,  classesIncluded: 1,    priceThb: 200,  color: "#a5f3fc", description: "Single ice bath session",                          sortOrder: 30 },
-      { name: "Ice Bath — 5 Sessions Pass",       slug: "ice_5_sessions",       type: "class_pack", durationDays: 60, classesIncluded: 5,    priceThb: 900,  color: "#22d3ee", description: "5 ice bath sessions",                              sortOrder: 31 },
-      { name: "Ice Bath — 10 Sessions Pass",      slug: "ice_10_sessions",      type: "class_pack", durationDays: 90, classesIncluded: 10,   priceThb: 1500, color: "#0e9aa7", description: "10 ice bath sessions",                             sortOrder: 32 },
-      { name: "Ice Bath — 30 Days Unlimited",     slug: "ice_30_unlimited",     type: "monthly",    durationDays: 30, classesIncluded: null, priceThb: 2205, color: "#115e59", description: "Unlimited 30 days · Infrared Sauna & Herbal Steam", sortOrder: 33 },
+      { name: "Day Pass — 1 Day",    slug: "day_pass_1",        type: "drop_in",    durationDays: 1,   classesIncluded: 1,    priceThb: 500,   color: "#f59e0b", description: "Single-day access to all activities",            sortOrder: 10 },
+      { name: "Day Pass — 5 Days",   slug: "day_pass_5",        type: "class_pack", durationDays: 30,  classesIncluded: 5,    priceThb: 2200,  color: "#f97316", description: "5 day passes, use within 30 days",                sortOrder: 11 },
+      { name: "Day Pass — 10 Days",  slug: "day_pass_10",       type: "class_pack", durationDays: 90,  classesIncluded: 10,   priceThb: 4000,  color: "#ea580c", description: "10 day passes, use within 90 days",               sortOrder: 12 },
+      { name: "1 Month Unlimited",   slug: "month_1_unlimited", type: "monthly",    durationDays: 30,  classesIncluded: null, priceThb: 4500,  color: "#10b981", description: "Unlimited access to all activities for 30 days", sortOrder: 20 },
+      { name: "3 Months Unlimited",  slug: "month_3_unlimited", type: "monthly", durationDays: 90,  classesIncluded: null, priceThb: 12000, color: "#0ea5e9", description: "Unlimited access to all activities for 90 days",   sortOrder: 30 },
+      { name: "6 Months Unlimited",  slug: "month_6_unlimited", type: "monthly", durationDays: 180, classesIncluded: null, priceThb: 22000, color: "#6366f1", description: "Unlimited access to all activities for 180 days",  sortOrder: 40 },
+      { name: "1 Year Unlimited",    slug: "year_1_unlimited",  type: "monthly", durationDays: 365, classesIncluded: null, priceThb: 39000, color: "#a855f7", description: "Unlimited access to all activities for 365 days",  sortOrder: 50 },
     ])
     .returning()
   const planBySlug = new Map(planRows.map((p) => [p.slug, p]))
@@ -514,22 +508,34 @@ export async function seedCrm() {
   // Plan distribution: high-season favors drop-ins / day passes (tourists),
   // low-season favors longer commitments (residents stay).
   const planList = planRows
-  const dropInPlans = planList.filter((p) => p.type === "drop_in")
-  const packPlans = planList.filter((p) => p.type === "class_pack")
-  const monthlyPlans = planList.filter((p) => p.type === "monthly")
+  const dayPass1 = planList.find((p) => p.slug === "day_pass_1")!
+  const dayPass5 = planList.find((p) => p.slug === "day_pass_5")!
+  const dayPass10 = planList.find((p) => p.slug === "day_pass_10")!
+  const month1 = planList.find((p) => p.slug === "month_1_unlimited")!
+  const month3 = planList.find((p) => p.slug === "month_3_unlimited")!
+  const month6 = planList.find((p) => p.slug === "month_6_unlimited")!
+  const year1 = planList.find((p) => p.slug === "year_1_unlimited")!
 
   function pickPlan(factor: number) {
-    // High season => 60% drop-in, 25% pack, 15% monthly.
-    // Low season  => 25% drop-in, 35% pack, 40% monthly.
+    // High season (tourists) => mostly day passes + short unlimited.
+    // Low season (residents) => longer commitments.
     const r = Math.random()
     if (factor > 1) {
-      if (r < 0.6) return pick(dropInPlans)
-      if (r < 0.85) return pick(packPlans)
-      return pick(monthlyPlans)
+      if (r < 0.35) return dayPass1
+      if (r < 0.55) return dayPass5
+      if (r < 0.65) return dayPass10
+      if (r < 0.82) return month1
+      if (r < 0.93) return month3
+      if (r < 0.98) return month6
+      return year1
     }
-    if (r < 0.25) return pick(dropInPlans)
-    if (r < 0.6) return pick(packPlans)
-    return pick(monthlyPlans)
+    if (r < 0.10) return dayPass1
+    if (r < 0.20) return dayPass5
+    if (r < 0.30) return dayPass10
+    if (r < 0.50) return month1
+    if (r < 0.75) return month3
+    if (r < 0.92) return month6
+    return year1
   }
 
   const membershipValues: Array<{
@@ -566,6 +572,37 @@ export async function seedCrm() {
       })
     }
   }
+  // Guarantee a few currently-active memberships so reception check-in is
+  // easy to test for every plan type without manually adding rows.
+  const guaranteedEmails = [...allStudentEmails]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 7)
+  const guaranteedPlans = [
+    dayPass1,
+    dayPass5,
+    dayPass10,
+    month1,
+    month3,
+    month6,
+    year1,
+  ]
+  guaranteedEmails.forEach((email, idx) => {
+    const plan = guaranteedPlans[idx]
+    const startsOn = formatISO(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0))
+    const endsOn = plan.durationDays
+      ? formatISO(addDays(parseISO(startsOn), plan.durationDays))
+      : null
+    membershipValues.push({
+      studentEmail: email,
+      planId: plan.id,
+      type: plan.type,
+      startsOn,
+      endsOn,
+      classesRemaining: plan.classesIncluded,
+      pricePaidThb: plan.priceThb,
+    })
+  })
+
   if (membershipValues.length > 0) {
     const BATCH = 500
     for (let i = 0; i < membershipValues.length; i += BATCH) {
@@ -573,6 +610,104 @@ export async function seedCrm() {
         .insert(studentMemberships)
         .values(membershipValues.slice(i, i + BATCH))
     }
+  }
+  const guaranteedList = guaranteedEmails.map((email, idx) => ({
+    email,
+    plan: guaranteedPlans[idx]!.name,
+  }))
+  console.log("→ Guaranteed-active memberships for testing check-in:")
+  for (const g of guaranteedList) {
+    console.log(`   • ${g.plan.padEnd(22)} → ${g.email}`)
+  }
+
+  console.log("→ Reception check-ins (same-day rule: 1–4 entries/day)...")
+  const insertedMemberships = await db
+    .select({
+      id: studentMemberships.id,
+      studentEmail: studentMemberships.studentEmail,
+      startsOn: studentMemberships.startsOn,
+      endsOn: studentMemberships.endsOn,
+      classesRemaining: studentMemberships.classesRemaining,
+    })
+    .from(studentMemberships)
+
+  const checkinRows: Array<{
+    membershipId: string
+    studentEmail: string
+    checkedInAt: string
+    decremented: boolean
+  }> = []
+  // Track per-membership how many distinct days actually consumed a credit,
+  // so we can update classesRemaining to reflect realistic usage.
+  const daysUsedByMembership = new Map<string, number>()
+
+  for (const m of insertedMemberships) {
+    const starts = parseISO(m.startsOn)
+    const ends = m.endsOn ? parseISO(m.endsOn) : addDays(starts, 30)
+    const windowEnd = ends < now ? ends : now
+    if (windowEnd < starts) continue
+
+    const totalDays = Math.max(
+      1,
+      Math.floor((windowEnd.getTime() - starts.getTime()) / 86_400_000) + 1,
+    )
+    // How many calendar days they actually showed up. Cap by classesRemaining
+    // for class-pack plans so we don't go negative.
+    const cap = m.classesRemaining ?? Math.min(totalDays, 22)
+    const attendanceRate = 0.35 + Math.random() * 0.4
+    const targetDays = Math.min(
+      cap,
+      Math.max(0, Math.round(totalDays * attendanceRate)),
+    )
+    if (targetDays === 0) continue
+
+    // Pick distinct calendar days inside the window.
+    const dayOffsets = new Set<number>()
+    while (dayOffsets.size < targetDays) {
+      dayOffsets.add(Math.floor(Math.random() * totalDays))
+    }
+    let decrementedDays = 0
+    for (const offset of dayOffsets) {
+      const day = addDays(starts, offset)
+      // 1–4 entries that day; first decrements, rest are re-entries.
+      const entries = 1 + Math.floor(Math.random() * 4)
+      for (let i = 0; i < entries; i++) {
+        const hour = 7 + Math.floor(Math.random() * 13)
+        const minute = Math.floor(Math.random() * 60)
+        const when = setMinutes(setHours(day, hour), minute)
+        const isFirst = i === 0
+        const shouldDecrement = isFirst && m.classesRemaining != null
+        checkinRows.push({
+          membershipId: m.id,
+          studentEmail: m.studentEmail,
+          checkedInAt: formatISO(when),
+          decremented: shouldDecrement,
+        })
+        if (shouldDecrement) decrementedDays++
+      }
+    }
+    if (decrementedDays > 0) {
+      daysUsedByMembership.set(m.id, decrementedDays)
+    }
+  }
+
+  if (checkinRows.length > 0) {
+    const BATCH = 1000
+    for (let i = 0; i < checkinRows.length; i += BATCH) {
+      await db
+        .insert(membershipCheckins)
+        .values(checkinRows.slice(i, i + BATCH))
+    }
+  }
+  // Reflect usage back onto the membership balance.
+  for (const m of insertedMemberships) {
+    const used = daysUsedByMembership.get(m.id) ?? 0
+    if (used === 0 || m.classesRemaining == null) continue
+    const newRemaining = Math.max(0, m.classesRemaining - used)
+    await db
+      .update(studentMemberships)
+      .set({ classesRemaining: newRemaining })
+      .where(eq(studentMemberships.id, m.id))
   }
 
   console.log("→ Class attendance (seasonal: high season 8–14, low season 1–4)...")
