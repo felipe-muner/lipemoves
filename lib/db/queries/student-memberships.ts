@@ -127,6 +127,7 @@ export async function loadStudentMembershipsData(emails: string[] | null) {
 
   const checkinsByMembership = new Map<string, CheckinDay[]>()
   for (const c of checkinDayRows) {
+    if (!c.membershipId) continue
     const list = checkinsByMembership.get(c.membershipId) ?? []
     list.push({ day: c.day, entries: c.entries, decremented: c.decrementedAny })
     checkinsByMembership.set(c.membershipId, list)

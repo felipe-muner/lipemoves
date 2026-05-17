@@ -465,9 +465,10 @@ export const classAttendance = pgTable("class_attendance", {
  */
 export const membershipCheckins = pgTable("membership_checkins", {
   id: uuid("id").defaultRandom().primaryKey(),
-  membershipId: uuid("membership_id")
-    .notNull()
-    .references(() => studentMemberships.id, { onDelete: "cascade" }),
+  /** Nullable for failed attempts where no active membership was found. */
+  membershipId: uuid("membership_id").references(() => studentMemberships.id, {
+    onDelete: "cascade",
+  }),
   studentEmail: varchar("student_email", { length: 255 })
     .notNull()
     .references(() => students.email, { onDelete: "cascade" }),
@@ -476,6 +477,10 @@ export const membershipCheckins = pgTable("membership_checkins", {
     .notNull(),
   /** True if this entry decremented classesRemaining (i.e. first of the day). */
   decremented: boolean("decremented").notNull().default(false),
+  /** False means the check-in failed (e.g. no active membership). */
+  success: boolean("success").notNull().default(true),
+  /** Human-readable reason when success=false. */
+  failureReason: text("failure_reason"),
 })
 
 export const emailSends = pgTable("email_sends", {
