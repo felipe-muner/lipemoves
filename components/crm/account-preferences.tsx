@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useTheme } from "next-themes"
 import { Moon, Sun, Monitor } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +10,8 @@ import { useCurrency } from "@/components/crm/currency-provider"
 export function AccountPreferences() {
   const { theme, setTheme } = useTheme()
   const { currency, setCurrency, usdToThb } = useCurrency()
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
 
   const themeOptions = [
     { value: "light", label: "Light", icon: Sun },
@@ -26,7 +29,7 @@ export function AccountPreferences() {
           <div className="inline-flex rounded-md border p-0.5">
             {themeOptions.map((opt) => {
               const Icon = opt.icon
-              const active = theme === opt.value
+              const active = mounted && theme === opt.value
               return (
                 <Button
                   key={opt.value}
@@ -52,7 +55,7 @@ export function AccountPreferences() {
             <Button
               type="button"
               size="sm"
-              variant={currency === "thb" ? "default" : "ghost"}
+              variant={mounted && currency === "thb" ? "default" : "ghost"}
               onClick={() => setCurrency("thb")}
               className="h-8 gap-1.5 px-2.5"
             >
@@ -62,7 +65,7 @@ export function AccountPreferences() {
             <Button
               type="button"
               size="sm"
-              variant={currency === "usd" ? "default" : "ghost"}
+              variant={mounted && currency === "usd" ? "default" : "ghost"}
               onClick={() => setCurrency("usd")}
               className="h-8 gap-1.5 px-2.5"
             >
