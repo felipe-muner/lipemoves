@@ -7,7 +7,7 @@ import {
   studentMemberships,
   students,
 } from "@/lib/db/schema"
-import { and, eq, gte, lte, sql } from "drizzle-orm"
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { endOfDay, parseISO, startOfDay } from "date-fns"
@@ -46,6 +46,7 @@ interface ActiveCandidate {
 function pickActiveMembership(
   memberships: ActiveCandidate[],
   today: Date,
+  usedTodayIds: Set<string>,
 ): ActiveCandidate | null {
   const dayStart = startOfDay(today)
   const active = memberships.filter((m) => {
@@ -54,6 +55,11 @@ function pickActiveMembership(
     if (m.endsOn && parseISO(m.endsOn) < dayStart) return false
     return true
   })
+  // Re-use a class-pack / drop-in already used today (no extra decrement).
+  const reusable = active
+    .filter((m) => m.classesRemaining != null && usedTodayIds.has(m.id))
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn))
+  if (reusable[0]) return reusable[0]
   const withCredits = active
     .filter((m) => m.classesRemaining != null && m.classesRemaining > 0)
     .sort((a, b) => a.startsOn.localeCompare(b.startsOn))
@@ -91,26 +97,33 @@ export async function checkInStudent(
     )
     .where(eq(studentMemberships.studentEmail, email))
 
-  const chosen = pickActiveMembership(rows, new Date())
+  const today = new Date()
+  const dayStart = startOfDay(today).toISOString()
+  const dayEnd = endOfDay(today).toISOString()
+
+  const usedTodayRows = rows.length
+    ? await db
+        .selectDistinct({ membershipId: membershipCheckins.membershipId })
+        .from(membershipCheckins)
+        .where(
+          and(
+            inArray(
+              membershipCheckins.membershipId,
+              rows.map((r) => r.id),
+            ),
+            gte(membershipCheckins.checkedInAt, dayStart),
+            lte(membershipCheckins.checkedInAt, dayEnd),
+          ),
+        )
+    : []
+  const usedTodayIds = new Set(usedTodayRows.map((r) => r.membershipId))
+
+  const chosen = pickActiveMembership(rows, today, usedTodayIds)
   if (!chosen) {
     return { ok: false, reason: "No active membership" }
   }
 
-  const today = new Date()
-  const dayStart = startOfDay(today).toISOString()
-  const dayEnd = endOfDay(today).toISOString()
-  const [{ count: todayCount }] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(membershipCheckins)
-    .where(
-      and(
-        eq(membershipCheckins.membershipId, chosen.id),
-        gte(membershipCheckins.checkedInAt, dayStart),
-        lte(membershipCheckins.checkedInAt, dayEnd),
-      ),
-    )
-
-  const usedToday = todayCount > 0
+  const usedToday = usedTodayIds.has(chosen.id)
   const shouldDecrement =
     !usedToday &&
     chosen.classesRemaining != null &&
