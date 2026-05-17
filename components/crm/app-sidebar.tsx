@@ -22,6 +22,7 @@ import {
   PieChart,
   Tags,
   Ticket,
+  DoorOpen,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -116,6 +117,7 @@ const FINANCE_GROUP: NavGroup = {
 const NAV: Record<Role, NavItem[]> = {
   admin: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/dashboard/checkin", label: "Check-in", icon: DoorOpen },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/locations", label: "Locations", icon: MapPin },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },
@@ -128,6 +130,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   manager: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/dashboard/checkin", label: "Check-in", icon: DoorOpen },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/locations", label: "Locations", icon: MapPin },
     { href: "/dashboard/teachers", label: "Teachers", icon: GraduationCap },

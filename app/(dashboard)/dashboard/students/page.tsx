@@ -1,11 +1,7 @@
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { db } from "@/lib/db"
-import {
-  students,
-  studentMemberships,
-  membershipPlans,
-} from "@/lib/db/schema"
-import { desc, eq, inArray, sql } from "drizzle-orm"
+import { students, studentMemberships } from "@/lib/db/schema"
+import { eq, inArray, sql } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -23,7 +19,8 @@ import { StudentDialog } from "@/components/crm/student-dialog"
 import { EntityAvatar } from "@/components/crm/entity-avatar"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
-import { StudentMembershipsDialog } from "@/components/crm/student-memberships-dialog"
+import { StudentMembershipsCell } from "@/components/crm/student-memberships-cell"
+import { loadStudentMembershipsData } from "@/lib/db/queries/student-memberships"
 import { parseIdsParam } from "@/lib/utils/url-params"
 import { nationalityFlag } from "@/lib/utils/country-flag"
 import {
@@ -31,10 +28,6 @@ import {
   updateStudent,
   deleteStudent,
 } from "@/lib/actions/students"
-import {
-  recordStudentMembership,
-  deleteStudentMembership,
-} from "@/lib/actions/student-memberships"
 import { ensureDefaultMembershipPlans } from "@/lib/actions/membership-plans"
 import { parsePagination } from "@/lib/utils/pagination"
 import { DataTablePagination } from "@/components/crm/data-table-pagination"
@@ -60,50 +53,8 @@ export default async function StudentsPage({
 
   await ensureDefaultMembershipPlans()
 
-  const plans = await db
-    .select()
-    .from(membershipPlans)
-    .where(eq(membershipPlans.isActive, true))
-    .orderBy(membershipPlans.sortOrder, membershipPlans.name)
-
-  const allMemberships = await db
-    .select({
-      id: studentMemberships.id,
-      studentEmail: studentMemberships.studentEmail,
-      planId: studentMemberships.planId,
-      planName: membershipPlans.name,
-      planColor: membershipPlans.color,
-      type: studentMemberships.type,
-      startsOn: studentMemberships.startsOn,
-      endsOn: studentMemberships.endsOn,
-      classesRemaining: studentMemberships.classesRemaining,
-      pricePaidThb: studentMemberships.pricePaidThb,
-      notes: studentMemberships.notes,
-      createdAt: studentMemberships.createdAt,
-    })
-    .from(studentMemberships)
-    .leftJoin(
-      membershipPlans,
-      eq(membershipPlans.id, studentMemberships.planId),
-    )
-    .orderBy(desc(studentMemberships.createdAt))
-
-  const membershipsByStudent = new Map<string, typeof allMemberships>()
-  for (const m of allMemberships) {
-    const list = membershipsByStudent.get(m.studentEmail) ?? []
-    list.push(m)
-    membershipsByStudent.set(m.studentEmail, list)
-  }
-
-  const planOptions = plans.map((p) => ({
-    id: p.id,
-    name: p.name,
-    type: p.type,
-    priceThb: p.priceThb,
-    durationDays: p.durationDays,
-    classesIncluded: p.classesIncluded,
-    color: p.color,
-  }))
+  const { planOptions, membershipsByStudent, checkinsByMembership } =
+    await loadStudentMembershipsData(null)
 
   // Light query: just name+email for the filter combobox (cheap even at 1000+ rows).
   const allForFilter = await db
@@ -225,37 +176,12 @@ export default async function StudentsPage({
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <StudentMembershipsDialog
+                      <StudentMembershipsCell
                         studentEmail={r.email}
                         studentName={r.name}
-                        memberships={(membershipsByStudent.get(r.email) ?? []).map(
-                          (m) => ({
-                            id: m.id,
-                            planId: m.planId,
-                            planName: m.planName,
-                            planColor: m.planColor,
-                            type: m.type,
-                            startsOn: m.startsOn,
-                            endsOn: m.endsOn,
-                            classesRemaining: m.classesRemaining,
-                            pricePaidThb: m.pricePaidThb,
-                            notes: m.notes,
-                            createdAt: m.createdAt,
-                          }),
-                        )}
+                        memberships={membershipsByStudent.get(r.email) ?? []}
                         plans={planOptions}
-                        recordAction={recordStudentMembership}
-                        deleteAction={deleteStudentMembership}
-                        trigger={
-                          <button className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs hover:bg-secondary/80">
-                            <span className="font-medium">
-                              {r.membershipCount}
-                            </span>
-                            <span className="text-muted-foreground">
-                              {r.membershipCount === 1 ? "plan" : "plans"}
-                            </span>
-                          </button>
-                        }
+                        checkinsByMembership={checkinsByMembership}
                       />
                     </TableCell>
                     <TableCell>
