@@ -23,6 +23,7 @@ import {
   Tags,
   Ticket,
   DoorOpen,
+  Bell,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -117,6 +118,7 @@ const FINANCE_GROUP: NavGroup = {
 const NAV: Record<Role, NavItem[]> = {
   admin: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
     { href: "/dashboard/checkin", label: "Check-in", icon: DoorOpen },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/locations", label: "Locations", icon: MapPin },
@@ -130,6 +132,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   manager: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
     { href: "/dashboard/checkin", label: "Check-in", icon: DoorOpen },
     { href: "/dashboard/classes", label: "Classes", icon: CalendarDays },
     { href: "/dashboard/locations", label: "Locations", icon: MapPin },
