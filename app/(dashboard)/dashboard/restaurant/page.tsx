@@ -21,6 +21,7 @@ import { PosPayDialog } from "@/components/crm/pos-pay-dialog"
 import { CloseTabButton } from "@/components/crm/close-tab-button"
 import { PosProductGrid } from "@/components/crm/pos-product-grid"
 import { PosCartItem } from "@/components/crm/pos-cart-item"
+import { PageHeader } from "@/components/crm/page-header"
 import {
   openOrCreateTab,
   addItemToSale,
@@ -217,19 +218,19 @@ export default async function RestaurantPage({
                 Back to tables
               </Link>
             </Button>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                Table {table.tableNumber}
-                {table.room && (
-                  <span className="ml-2 text-base text-muted-foreground">
-                    · {table.room}
-                  </span>
-                )}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Open tab — items go on the bill until you take payment.
-              </p>
-            </div>
+            <PageHeader
+              title={
+                <>
+                  Table {table.tableNumber}
+                  {table.room && (
+                    <span className="ml-2 text-base text-muted-foreground">
+                      · {table.room}
+                    </span>
+                  )}
+                </>
+              }
+              subtitle="Open tab — items go on the bill until you take payment."
+            />
           </div>
           <CloseTabButton
             itemCount={items.length}
@@ -354,13 +355,10 @@ export default async function RestaurantPage({
   // Table picker view
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Restaurant</h1>
-        <p className="text-sm text-muted-foreground">
-          Pick a table to open a tab. Tap products to add them, take payment
-          when ready. Stock is decremented at checkout.
-        </p>
-      </div>
+      <PageHeader
+        title="Restaurant"
+        subtitle="Pick a table to open a tab. Tap products to add them, take payment when ready. Stock is decremented at checkout."
+      />
 
       <Card>
         <CardHeader>

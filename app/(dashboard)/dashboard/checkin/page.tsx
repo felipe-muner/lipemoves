@@ -32,6 +32,7 @@ import { LogIn, Users } from "lucide-react"
 import { StudentMembershipsCell } from "@/components/crm/student-memberships-cell"
 import { ensureDefaultMembershipPlans } from "@/lib/actions/membership-plans"
 import { loadStudentMembershipsData } from "@/lib/db/queries/student-memberships"
+import { PageHeader } from "@/components/crm/page-header"
 
 export const dynamic = "force-dynamic"
 
@@ -102,13 +103,10 @@ export default async function CheckinPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Check-in</h1>
-        <p className="text-sm text-muted-foreground">
-          Validate a student&apos;s membership and log their entry. Same-day
-          re-entries don&apos;t consume an extra day.
-        </p>
-      </div>
+      <PageHeader
+        title="Check-in"
+        subtitle="Validate a student's membership and log their entry. Same-day re-entries don't consume an extra day."
+      />
 
       <div className="grid gap-4 md:grid-cols-4">
         <div className="md:col-span-2">

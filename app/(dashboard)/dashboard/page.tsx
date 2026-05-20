@@ -23,6 +23,7 @@ import {
 import { StatCard } from "@/components/crm/stat-card"
 import { ActivityChart, ActivityPoint } from "@/components/crm/activity-chart"
 import { Money } from "@/components/crm/money"
+import { PageHeader } from "@/components/crm/page-header"
 import {
   CalendarDays,
   GraduationCap,
@@ -127,14 +128,10 @@ export default async function DashboardHome() {
 
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome back, {session.name?.split(" ")[0] ?? "there"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Here&apos;s what&apos;s happening at the studio this month.
-          </p>
-        </div>
+        <PageHeader
+          title={`Welcome back, ${session.name?.split(" ")[0] ?? "there"}`}
+          subtitle="Here's what's happening at the studio this month."
+        />
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
@@ -233,14 +230,10 @@ export default async function DashboardHome() {
 
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Hi, {session.name?.split(" ")[0] ?? "teacher"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {format(now, "MMMM yyyy")}
-          </p>
-        </div>
+        <PageHeader
+          title={`Hi, ${session.name?.split(" ")[0] ?? "teacher"}`}
+          subtitle={format(now, "MMMM yyyy")}
+        />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <StatCard

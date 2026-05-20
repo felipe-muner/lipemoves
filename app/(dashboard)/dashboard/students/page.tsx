@@ -32,6 +32,7 @@ import {
 import { ensureDefaultMembershipPlans } from "@/lib/actions/membership-plans"
 import { parsePagination } from "@/lib/utils/pagination"
 import { DataTablePagination } from "@/components/crm/data-table-pagination"
+import { PageHeader } from "@/components/crm/page-header"
 
 export const dynamic = "force-dynamic"
 
@@ -125,15 +126,11 @@ export default async function StudentsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
-          <p className="text-sm text-muted-foreground">
-            All students enrolled at the studio.
-          </p>
-        </div>
-        <StudentDialog mode="create" action={createStudent} />
-      </div>
+      <PageHeader
+        title="Students"
+        subtitle="All students enrolled at the studio."
+        actions={<StudentDialog mode="create" action={createStudent} />}
+      />
 
       <div className="md:max-w-md">
         <EntitySearchFilter

@@ -21,6 +21,7 @@ import { StatCard } from "@/components/crm/stat-card"
 import { CalendarDays, Users, Coins, Wallet } from "lucide-react"
 import { parsePagination } from "@/lib/utils/pagination"
 import { DataTablePagination } from "@/components/crm/data-table-pagination"
+import { PageHeader } from "@/components/crm/page-header"
 import {
   markClassesPaid,
   markTeacherUnpaidPaid,
@@ -151,15 +152,16 @@ export default async function PaymentsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {isTeacher ? "My payments" : "Payroll"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {format(fromDate, "MMM dd, yyyy")} → {format(toDate, "MMM dd, yyyy")}{" "}
-          · payout = attendees × price × share %
-        </p>
-      </div>
+      <PageHeader
+        title={isTeacher ? "My payments" : "Payroll"}
+        subtitle={
+          <>
+            {format(fromDate, "MMM dd, yyyy")} →{" "}
+            {format(toDate, "MMM dd, yyyy")} · payout = attendees × price ×
+            share %
+          </>
+        }
+      />
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 pt-6">

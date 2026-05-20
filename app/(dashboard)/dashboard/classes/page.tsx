@@ -32,6 +32,7 @@ import { Pencil } from "lucide-react"
 import { CalendarGrid } from "@/components/crm/calendar-grid"
 import { ClassDialog } from "@/components/crm/class-dialog"
 import { ImportClassesDialog } from "@/components/crm/import-classes-dialog"
+import { PageHeader } from "@/components/crm/page-header"
 import { CopyWeekDialog } from "@/components/crm/copy-week-dialog"
 import { WeekNav } from "@/components/crm/week-nav"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
@@ -130,23 +131,21 @@ export default async function ClassesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Classes</h1>
-          <p className="text-sm text-muted-foreground">
-            Schedule, edit and import classes. Set price and assign a teacher.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ImportClassesDialog />
-          <ClassDialog
-            mode="create"
-            action={createClass}
-            employees={teacherOptions}
-            locations={locationOptions}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Classes"
+        subtitle="Schedule, edit and import classes. Set price and assign a teacher."
+        actions={
+          <>
+            <ImportClassesDialog />
+            <ClassDialog
+              mode="create"
+              action={createClass}
+              employees={teacherOptions}
+              locations={locationOptions}
+            />
+          </>
+        }
+      />
 
       <Tabs defaultValue={defaultView}>
         <TabsList>

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { PageHeader } from "@/components/crm/page-header"
 
 export const dynamic = "force-dynamic"
 
@@ -43,7 +44,7 @@ export default async function CampaignDetail({
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="space-y-2">
         <Link
           href="/dashboard/emails"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -51,15 +52,17 @@ export default async function CampaignDetail({
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to emails
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          {campaign.subject}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {campaign.sentAt
-            ? format(new Date(campaign.sentAt), "MMM dd, yyyy HH:mm")
-            : "Not sent yet"}{" "}
-          · {campaign.audienceSummary}
-        </p>
+        <PageHeader
+          title={campaign.subject}
+          subtitle={
+            <>
+              {campaign.sentAt
+                ? format(new Date(campaign.sentAt), "MMM dd, yyyy HH:mm")
+                : "Not sent yet"}{" "}
+              · {campaign.audienceSummary}
+            </>
+          }
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">

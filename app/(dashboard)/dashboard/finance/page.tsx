@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import { PageHeader } from "@/components/crm/page-header"
 import { Money } from "@/components/crm/money"
 import { StatCard } from "@/components/crm/stat-card"
 import {
@@ -55,26 +56,28 @@ export default async function FinanceOverviewPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Finance</h1>
-          <p className="text-sm text-muted-foreground">
+      <PageHeader
+        title="Finance"
+        subtitle={
+          <>
             {format(from, "MMM dd, yyyy")} → {format(to, "MMM dd, yyyy")} ·
             money in vs money out, at a glance.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/finance/income">Income detail</Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/finance/expenses">Expenses</Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/finance/reports">Reports</Link>
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/finance/income">Income detail</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/finance/expenses">Expenses</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/finance/reports">Reports</Link>
+            </Button>
+          </>
+        }
+      />
 
       <Card>
         <CardContent className="pt-6">

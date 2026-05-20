@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Pencil } from "lucide-react"
+import { PageHeader } from "@/components/crm/page-header"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -115,29 +116,31 @@ export default async function ExpensesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Expenses</h1>
-          <p className="text-sm text-muted-foreground">
+      <PageHeader
+        title="Expenses"
+        subtitle={
+          <>
             All money out: manual expenses + teacher payouts (auto from{" "}
             <Link href="/dashboard/payments" className="underline">
               payroll
             </Link>
             , cash-basis).
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/finance/categories">Categories</Link>
-          </Button>
-          <ExpenseDialog
-            mode="create"
-            categories={dialogCategories}
-            employees={employeeRows}
-            action={createExpense}
-          />
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/finance/categories">Categories</Link>
+            </Button>
+            <ExpenseDialog
+              mode="create"
+              categories={dialogCategories}
+              employees={employeeRows}
+              action={createExpense}
+            />
+          </>
+        }
+      />
 
       <Tabs defaultValue={activeTab} className="space-y-4">
         <TabsList>

@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ExpenseCategoryDialog } from "@/components/crm/expense-category-dialog"
+import { PageHeader } from "@/components/crm/page-header"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import {
   createExpenseCategory,
@@ -33,18 +34,13 @@ export default async function ExpenseCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Expense categories
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Buckets used when classifying expenses. Add your own — system
-            categories can be deactivated but not deleted.
-          </p>
-        </div>
-        <ExpenseCategoryDialog mode="create" action={createExpenseCategory} />
-      </div>
+      <PageHeader
+        title="Expense categories"
+        subtitle="Buckets used when classifying expenses. Add your own — system categories can be deactivated but not deleted."
+        actions={
+          <ExpenseCategoryDialog mode="create" action={createExpenseCategory} />
+        }
+      />
 
       <Card>
         <CardHeader>

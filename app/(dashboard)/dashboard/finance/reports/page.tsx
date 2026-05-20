@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, ArrowRight } from "lucide-react"
+import { PageHeader } from "@/components/crm/page-header"
 
 export const dynamic = "force-dynamic"
 
@@ -45,15 +46,17 @@ export default async function FinanceReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">PDF reports</h1>
-        <p className="text-sm text-muted-foreground">
-          Pick a report. Each opens a print-ready page — use{" "}
-          <kbd className="rounded border px-1.5 text-xs">⌘P</kbd> /{" "}
-          <kbd className="rounded border px-1.5 text-xs">Ctrl+P</kbd> →{" "}
-          <em>Save as PDF</em> for a clean export.
-        </p>
-      </div>
+      <PageHeader
+        title="PDF reports"
+        subtitle={
+          <>
+            Pick a report. Each opens a print-ready page — use{" "}
+            <kbd className="rounded border px-1.5 text-xs">⌘P</kbd> /{" "}
+            <kbd className="rounded border px-1.5 text-xs">Ctrl+P</kbd> →{" "}
+            <em>Save as PDF</em> for a clean export.
+          </>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         {reports.map((r) => (

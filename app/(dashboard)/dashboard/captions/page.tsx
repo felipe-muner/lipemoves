@@ -10,6 +10,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 
+import { PageHeader } from "@/components/crm/page-header"
+
 import { CopyButton } from "./_components/CopyButton"
 
 export const metadata: Metadata = {
@@ -76,16 +78,16 @@ export default function CaptionsPage() {
   ) as Record<Source, Entry[]>
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Caption Library
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tap <span className="text-emerald-400">Copy</span> on any block — paste
-          into Instagram, TikTok, or YouTube.
-        </p>
-      </header>
+    <main className="space-y-6">
+      <PageHeader
+        title="Caption Library"
+        subtitle={
+          <>
+            Tap <span className="text-emerald-500">Copy</span> on any block —
+            paste into Instagram, TikTok, or YouTube.
+          </>
+        }
+      />
 
       <Tabs defaultValue="movement" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">

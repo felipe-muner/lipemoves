@@ -21,6 +21,7 @@ import { RoleTeamDialog } from "@/components/crm/role-team-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { ReactivateRowButton } from "@/components/crm/reactivate-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { PageHeader } from "@/components/crm/page-header"
 import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createEmployee,
@@ -71,15 +72,10 @@ export default async function EmployeesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Employees</h1>
-          <p className="text-sm text-muted-foreground">
-            Everyone who works here. Roles and teams are reusable across the
-            CRM (yoga, restaurant, ...).
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Employees"
+        subtitle="Everyone who works here. Roles and teams are reusable across the CRM (yoga, restaurant, ...)."
+      />
 
       <Tabs defaultValue="employees">
         <TabsList>
