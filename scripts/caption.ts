@@ -15,7 +15,17 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-type Pattern = "movement" | "protocol";
+type Pattern =
+  | "movement"
+  | "protocol"
+  | "hashtags-kettlebell"
+  | "hashtags-yoga";
+const PATTERNS: Pattern[] = [
+  "movement",
+  "protocol",
+  "hashtags-kettlebell",
+  "hashtags-yoga",
+];
 
 interface Entry {
   pattern: Pattern;
@@ -58,7 +68,7 @@ function main() {
   const args = process.argv.slice(2);
 
   if (args.includes("--list")) {
-    for (const p of ["movement", "protocol"] as Pattern[]) {
+    for (const p of PATTERNS) {
       console.log(`\n[${p}]`);
       for (const e of parseFile(p)) {
         console.log(`  ${e.number}. ${e.title}`);
@@ -67,9 +77,11 @@ function main() {
     return;
   }
 
-  const pattern = (args[0] as Pattern) ?? pickRandom(["movement", "protocol"]);
-  if (pattern !== "movement" && pattern !== "protocol") {
-    console.error(`Unknown pattern: ${pattern}. Use "movement" or "protocol".`);
+  const pattern = (args[0] as Pattern) ?? pickRandom(PATTERNS);
+  if (!PATTERNS.includes(pattern)) {
+    console.error(
+      `Unknown pattern: ${pattern}. Use one of: ${PATTERNS.join(", ")}.`,
+    );
     process.exit(1);
   }
 
