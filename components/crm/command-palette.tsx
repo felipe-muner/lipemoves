@@ -23,6 +23,9 @@ import {
   Search,
   ArrowRight,
   PlusCircle,
+  Bell,
+  DoorOpen,
+  Hash,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -62,6 +65,18 @@ const NAV_GROUPS: Group[] = [
         href: "/dashboard",
         icon: LayoutDashboard,
         keywords: "home dashboard summary",
+      },
+      {
+        label: "Notifications",
+        href: "/dashboard/notifications",
+        icon: Bell,
+        keywords: "alerts inbox feed reminders low stock expiring",
+      },
+      {
+        label: "Check-in",
+        href: "/dashboard/checkin",
+        icon: DoorOpen,
+        keywords: "reception entry door arrive attend",
       },
       {
         label: "My account",
@@ -201,6 +216,14 @@ const NAV_GROUPS: Group[] = [
         href: "/dashboard/emails",
         icon: Mail,
         keywords: "campaign newsletter broadcast",
+        roles: ["admin", "manager"],
+      },
+      {
+        label: "Captions",
+        href: "/dashboard/captions",
+        icon: Hash,
+        keywords:
+          "hashtags instagram tiktok youtube social posts copy library kettlebell yoga",
         roles: ["admin", "manager"],
       },
     ],
