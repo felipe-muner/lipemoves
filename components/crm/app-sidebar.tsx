@@ -24,6 +24,7 @@ import {
   Ticket,
   DoorOpen,
   Bell,
+  Hash,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -128,6 +129,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/memberships", label: "Memberships", icon: Ticket },
     FINANCE_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
+    { href: "/dashboard/captions", label: "Captions", icon: Hash },
     RESTAURANT_GROUP,
   ],
   manager: [
@@ -142,6 +144,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/memberships", label: "Memberships", icon: Ticket },
     FINANCE_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
+    { href: "/dashboard/captions", label: "Captions", icon: Hash },
     RESTAURANT_GROUP,
   ],
   teacher: [
