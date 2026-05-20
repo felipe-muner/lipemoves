@@ -17,6 +17,7 @@ import {
 import { MembershipPlanDialog } from "@/components/crm/membership-plan-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { Money } from "@/components/crm/money"
+import { PageHeader } from "@/components/crm/page-header"
 import {
   createMembershipPlan,
   updateMembershipPlan,
@@ -47,18 +48,13 @@ export default async function MembershipsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Memberships
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Plan templates students can purchase: drop-in, class packs, monthly
-            unlimited, free intro, ...
-          </p>
-        </div>
-        <MembershipPlanDialog mode="create" action={createMembershipPlan} />
-      </div>
+      <PageHeader
+        title="Memberships"
+        subtitle="Plan templates students can purchase: drop-in, class packs, monthly unlimited, free intro, ..."
+        actions={
+          <MembershipPlanDialog mode="create" action={createMembershipPlan} />
+        }
+      />
 
       <Card>
         <CardHeader>

@@ -18,6 +18,7 @@ import { ProductDialog } from "@/components/crm/product-dialog"
 import { StockAdjustDialog } from "@/components/crm/stock-adjust-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { PageHeader } from "@/components/crm/page-header"
 import { parseIdsParam } from "@/lib/utils/url-params"
 import { Money } from "@/components/crm/money"
 import { ProductAvatar } from "@/components/crm/product-avatar"
@@ -46,16 +47,11 @@ export default async function ProductsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
-          <p className="text-sm text-muted-foreground">
-            Sellable items + stock. Split items (1 kg whey → 30 g shakes) work
-            via base unit + serving size.
-          </p>
-        </div>
-        <ProductDialog mode="create" action={createProduct} />
-      </div>
+      <PageHeader
+        title="Products"
+        subtitle="Sellable items + stock. Split items (1 kg whey → 30 g shakes) work via base unit + serving size."
+        actions={<ProductDialog mode="create" action={createProduct} />}
+      />
 
       <div className="md:max-w-md">
         <EntitySearchFilter

@@ -20,6 +20,7 @@ import { Pencil } from "lucide-react"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { ReactivateRowButton } from "@/components/crm/reactivate-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { PageHeader } from "@/components/crm/page-header"
 import { hrefWith, parseIdsParam } from "@/lib/utils/url-params"
 import Link from "next/link"
 import {
@@ -92,15 +93,11 @@ export default async function TeachersPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Teachers</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage teachers. Each class has its own per-teacher pay.
-          </p>
-        </div>
-        <TeacherDialog mode="create" action={createTeacher} />
-      </div>
+      <PageHeader
+        title="Teachers"
+        subtitle="Manage teachers. Each class has its own per-teacher pay."
+        actions={<TeacherDialog mode="create" action={createTeacher} />}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="md:max-w-md flex-1 min-w-[260px]">

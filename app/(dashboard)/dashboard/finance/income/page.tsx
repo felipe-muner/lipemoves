@@ -8,6 +8,7 @@ import {
   endOfDay,
 } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/crm/page-header"
 import {
   Table,
   TableBody,
@@ -71,13 +72,15 @@ export default async function FinanceIncomePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Income</h1>
-        <p className="text-sm text-muted-foreground">
-          {format(from, "MMM dd, yyyy")} → {format(to, "MMM dd, yyyy")} ·
-          every IN from the period.
-        </p>
-      </div>
+      <PageHeader
+        title="Income"
+        subtitle={
+          <>
+            {format(from, "MMM dd, yyyy")} → {format(to, "MMM dd, yyyy")} ·
+            every IN from the period.
+          </>
+        }
+      />
 
       <Card>
         <CardContent className="pt-6">

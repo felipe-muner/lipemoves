@@ -17,6 +17,7 @@ import { Pencil } from "lucide-react"
 import { RestaurantTableDialog } from "@/components/crm/restaurant-table-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { PageHeader } from "@/components/crm/page-header"
 import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createRestaurantTable,
@@ -49,15 +50,13 @@ export default async function RestaurantTablesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Restaurant tables</h1>
-          <p className="text-sm text-muted-foreground">
-            Tables, booths, rooms. Used when taking a sale on the restaurant page.
-          </p>
-        </div>
-        <RestaurantTableDialog mode="create" action={createRestaurantTable} />
-      </div>
+      <PageHeader
+        title="Restaurant tables"
+        subtitle="Tables, booths, rooms. Used when taking a sale on the restaurant page."
+        actions={
+          <RestaurantTableDialog mode="create" action={createRestaurantTable} />
+        }
+      />
 
       <div className="md:max-w-md">
         <EntitySearchFilter

@@ -29,6 +29,7 @@ import {
   Ticket,
   AlertTriangle,
 } from "lucide-react"
+import { PageHeader } from "@/components/crm/page-header"
 
 export const dynamic = "force-dynamic"
 
@@ -106,21 +107,21 @@ export default async function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Bell className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Bell className="h-5 w-5" />
+            </span>
             Notifications
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {totalCount === 0
-              ? "All clear — nothing needs your attention right now."
-              : `${totalCount} items across classes, stock, and memberships.`}
-          </p>
-        </div>
-      </div>
+          </span>
+        }
+        subtitle={
+          totalCount === 0
+            ? "All clear — nothing needs your attention right now."
+            : `${totalCount} items across classes, stock, and memberships.`
+        }
+      />
 
       <Tabs defaultValue="classes" className="space-y-4">
         <TabsList>

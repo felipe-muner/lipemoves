@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EmailComposer } from "@/components/crm/email-composer"
+import { PageHeader } from "@/components/crm/page-header"
 
 export const dynamic = "force-dynamic"
 
@@ -59,12 +60,10 @@ export default async function EmailsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Emails</h1>
-        <p className="text-sm text-muted-foreground">
-          Compose a message, pick an audience, and send.
-        </p>
-      </div>
+      <PageHeader
+        title="Emails"
+        subtitle="Compose a message, pick an audience, and send."
+      />
 
       <EmailComposer classes={classes} />
 

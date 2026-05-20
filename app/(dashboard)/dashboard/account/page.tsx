@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { AccountPreferences } from "@/components/crm/account-preferences"
 import { SignOutButton } from "@/components/crm/sign-out-button"
+import { PageHeader } from "@/components/crm/page-header"
 import { WeatherCard } from "@/components/crm/weather-card"
 import { getKohPhanganWeather } from "@/lib/weather/koh-phangan"
 
@@ -28,12 +29,10 @@ export default async function AccountPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">My account</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your profile and preferences.
-        </p>
-      </div>
+      <PageHeader
+        title="My account"
+        subtitle="Manage your profile and preferences."
+      />
 
       <Card>
         <CardHeader>

@@ -18,6 +18,7 @@ import { Pencil } from "lucide-react"
 import { LocationDialog } from "@/components/crm/location-dialog"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { PageHeader } from "@/components/crm/page-header"
 import { parseIdsParam } from "@/lib/utils/url-params"
 import {
   createLocation,
@@ -50,16 +51,11 @@ export default async function LocationsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Locations</h1>
-          <p className="text-sm text-muted-foreground">
-            Shalas, rooms, outdoor spaces — anywhere a class can run. Color
-            shows up on the calendar.
-          </p>
-        </div>
-        <LocationDialog mode="create" action={createLocation} />
-      </div>
+      <PageHeader
+        title="Locations"
+        subtitle="Shalas, rooms, outdoor spaces — anywhere a class can run. Color shows up on the calendar."
+        actions={<LocationDialog mode="create" action={createLocation} />}
+      />
 
       <div className="md:max-w-md">
         <EntitySearchFilter
