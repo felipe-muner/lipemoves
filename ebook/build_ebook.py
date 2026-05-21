@@ -21,7 +21,7 @@ CONTENT = {
         "chapter_label": "Capítulo",
         "cover_blurb": "Depois de anos em movimento, cheguei a uma fórmula simples que funciona pra mim. Aqui está, sem rodeios.",
         "manifesto": "Coma menos vezes.\nMova-se todo dia.\nRespire devagar.",
-        "manifesto_caption": "O essencial cabe em quatro linhas.",
+        "manifesto_caption": "O essencial cabe em três linhas.",
         "toc_title": "O que tem aqui",
         "toc_subtitle": "Um guia curto e direto — leia em 20 minutos, aplique pelo resto da vida.",
         "chapters": [
@@ -106,7 +106,7 @@ CONTENT = {
         "chapter_label": "Chapter",
         "cover_blurb": "After years in motion, I arrived at a simple formula that works for me. Here it is, no fluff.",
         "manifesto": "Eat fewer times.\nMove every day.\nBreathe slowly.",
-        "manifesto_caption": "The essential fits in four lines.",
+        "manifesto_caption": "The essential fits in three lines.",
         "toc_title": "What's inside",
         "toc_subtitle": "A short, direct guide — read in 20 minutes, apply for the rest of your life.",
         "chapters": [
@@ -329,7 +329,7 @@ def esc(s): return html.escape(s)
 LAYOUTS = ["a", "b", "c", "a", "b", "c", "a", "b", "c", "a", "b", "c", "a"]
 
 def cover(c):
-    slots = "".join(f'<div class="slot"><img src="{P[i]}"/></div>' for i in [0,1,2,3])
+    slots = "".join(f'<div class="slot"><img src="{P[i]}"/></div>' for i in [3,2,1,0])
     return f"""
     <section class="page cover">
       <div class="cover-text">
