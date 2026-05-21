@@ -4,7 +4,9 @@ import subprocess, html
 from pathlib import Path
 
 PHOTO_DIR = Path(__file__).resolve().parent
-OUT_DIR = PHOTO_DIR
+# Output to /public/ebooks so Next.js serves PDFs at /ebooks/*.pdf
+OUT_DIR = PHOTO_DIR.parent / "public" / "ebooks"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 PHOTOS = sorted([p for p in PHOTO_DIR.glob("*.jpg")])
 P = [f"file://{p}" for p in PHOTOS]
 assert len(P) >= 11
@@ -483,7 +485,7 @@ def main():
     for lang in ("en",):
         html_path = Path(f"/tmp/lipemoves_{lang}.html")
         html_path.write_text(build_html(lang, "final"))
-        pdf_path = OUT_DIR / f"Move-Better-{lang.upper()}.pdf"
+        pdf_path = OUT_DIR / f"move-better-{lang}.pdf"
         subprocess.run([
             chrome, "--headless", "--disable-gpu", "--no-pdf-header-footer",
             f"--print-to-pdf={pdf_path}", f"file://{html_path}"
