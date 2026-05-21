@@ -27,6 +27,8 @@ import { MovementDialog } from "@/components/crm/movement-dialog"
 import { MovementMonthGrid } from "@/components/crm/movement-month-grid"
 import { DeleteRowButton } from "@/components/crm/delete-row-button"
 import { CategoriesManagerDialog } from "@/components/crm/categories-manager-dialog"
+import { SharePublicLink } from "@/components/crm/share-public-link"
+import { users } from "@/lib/db/schema"
 import {
   createMovementEntry,
   updateMovementEntry,
@@ -48,7 +50,7 @@ export default async function MovementPage() {
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
 
-  const [categories, rows] = await Promise.all([
+  const [categories, rows, [me]] = await Promise.all([
     listMovementCategories(session.userId),
     db
       .select({
@@ -73,6 +75,11 @@ export default async function MovementPage() {
         ),
       )
       .orderBy(desc(movementEntries.performedOn)),
+    db
+      .select({ publicSlug: users.publicSlug })
+      .from(users)
+      .where(eq(users.id, session.userId))
+      .limit(1),
   ])
 
   const weekStart = startOfWeek(now, { weekStartsOn: 1 })
@@ -100,6 +107,9 @@ export default async function MovementPage() {
         subtitle={`Your training log for ${format(now, "MMMM yyyy")}.`}
         actions={
           <>
+            {me?.publicSlug && (
+              <SharePublicLink path={`/training/${me.publicSlug}`} />
+            )}
             <CategoriesManagerDialog
               title="Movement categories"
               categories={categories.map((c) => ({
