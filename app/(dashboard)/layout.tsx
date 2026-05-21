@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { CurrencySwitch } from "@/components/crm/currency-switch"
 import { HeaderUserMenu } from "@/components/crm/header-user-menu"
 import { CommandPalette } from "@/components/crm/command-palette"
+import { AutoRefresh } from "@/components/auto-refresh"
 
 export default async function DashboardLayout({
   children,
@@ -66,6 +67,7 @@ export default async function DashboardLayout({
         <main className="flex-1 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {children}
         </main>
+        <AutoRefresh intervalMs={30000} />
       </SidebarInset>
     </SidebarProvider>
   )
