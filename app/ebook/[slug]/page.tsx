@@ -48,7 +48,7 @@ export default async function EbookLandingPage({
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           {/* Cover */}
           <div className="order-2 lg:order-1">
-            <div className="relative mx-auto aspect-[2/3] max-w-sm overflow-hidden rounded-xl shadow-2xl ring-1 ring-black/10">
+            <div className="relative mx-auto aspect-[210/297] max-w-sm overflow-hidden rounded-xl shadow-2xl ring-1 ring-black/10">
               <Image
                 src={ebook.cover}
                 alt={`${ebook.title} cover`}
