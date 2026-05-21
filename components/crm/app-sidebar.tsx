@@ -25,6 +25,9 @@ import {
   DoorOpen,
   Bell,
   Hash,
+  Heart,
+  Activity,
+  Coins,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -90,6 +93,24 @@ const RESTAURANT_GROUP: NavGroup = {
   ],
 }
 
+const PERSONAL_GROUP: NavGroup = {
+  label: "Personal",
+  icon: Heart,
+  basePath: "/dashboard/personal",
+  children: [
+    {
+      href: "/dashboard/personal/expenses",
+      label: "Expenses",
+      icon: Coins,
+    },
+    {
+      href: "/dashboard/personal/movement",
+      label: "Movement",
+      icon: Activity,
+    },
+  ],
+}
+
 const FINANCE_GROUP: NavGroup = {
   label: "Finance",
   icon: PieChart,
@@ -128,6 +149,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/memberships", label: "Memberships", icon: Ticket },
     FINANCE_GROUP,
+    PERSONAL_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     { href: "/dashboard/captions", label: "Captions", icon: Hash },
     RESTAURANT_GROUP,
