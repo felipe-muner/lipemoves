@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { CurrencyProvider } from "@/components/crm/currency-provider"
+import { PWARegister } from "@/components/pwa-register"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <CurrencyProvider>
           <TooltipProvider>
             {children}
+            <PWARegister />
             <Toaster richColors position="top-right" />
           </TooltipProvider>
         </CurrencyProvider>

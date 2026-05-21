@@ -661,3 +661,61 @@ export const expenses = pgTable("expenses", {
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
+
+// ─── Personal: daily expenses (Felipe's life, separate from business) ───
+export const personalExpenseCategories = pgTable("personal_expense_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull(),
+  color: varchar("color", { length: 16 }).notNull().default("#64748b"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const personalExpenses = pgTable("personal_expenses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => personalExpenseCategories.id, { onDelete: "restrict" }),
+  amountThb: integer("amount_thb").notNull(),
+  spentOn: timestamp("spent_on", { mode: "string" }).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+// ─── Personal: movement log ──────────────────────────────
+export const movementCategories = pgTable("movement_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull(),
+  color: varchar("color", { length: 16 }).notNull().default("#22c55e"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
+
+export const movementEntries = pgTable("movement_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => movementCategories.id, { onDelete: "restrict" }),
+  performedOn: timestamp("performed_on", { mode: "string" }).notNull(),
+  durationMin: integer("duration_min"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+})
