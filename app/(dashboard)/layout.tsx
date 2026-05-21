@@ -45,7 +45,7 @@ export default async function DashboardLayout({
         }}
       />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:rounded-tl-xl md:rounded-tr-xl">
+        <header className="sticky top-0 z-10 flex min-h-14 shrink-0 items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)] md:rounded-tl-xl md:rounded-tr-xl">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-1 justify-center px-2">
@@ -63,7 +63,9 @@ export default async function DashboardLayout({
             }}
           />
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   )
