@@ -104,6 +104,10 @@ export const users = pgTable("users", {
   hashedPassword: text("hashed_password"),
   image: text("image"),
   role: userRoleEnum("role"),
+  /** Public handle for shareable pages like /training/<slug>. Null = private. */
+  publicSlug: varchar("public_slug", { length: 60 }).unique(),
+  /** Short bio shown on the public training page. */
+  publicBio: text("public_bio"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
