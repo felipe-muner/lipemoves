@@ -28,6 +28,7 @@ import {
   Heart,
   Activity,
   Coins,
+  BookOpen,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -152,6 +153,7 @@ const NAV: Record<Role, NavItem[]> = {
     PERSONAL_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     { href: "/dashboard/captions", label: "Captions", icon: Hash },
+    { href: "/dashboard/ebooks", label: "Ebooks", icon: BookOpen },
     RESTAURANT_GROUP,
   ],
   manager: [
@@ -167,6 +169,7 @@ const NAV: Record<Role, NavItem[]> = {
     FINANCE_GROUP,
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     { href: "/dashboard/captions", label: "Captions", icon: Hash },
+    { href: "/dashboard/ebooks", label: "Ebooks", icon: BookOpen },
     RESTAURANT_GROUP,
   ],
   teacher: [
