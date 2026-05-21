@@ -38,17 +38,17 @@ export default async function EbooksPage() {
             ).length
             return (
               <Card key={book.slug} className="overflow-hidden">
-                <div className="grid gap-0 sm:grid-cols-[200px_1fr]">
-                  <div className="relative aspect-[2/3] bg-muted sm:aspect-auto">
+                <div className="grid gap-0 p-5 sm:grid-cols-[170px_1fr] sm:gap-5">
+                  <div className="relative mx-auto aspect-[210/297] w-40 overflow-hidden rounded-md bg-muted shadow-sm ring-1 ring-black/5 sm:mx-0 sm:w-full">
                     <Image
                       src={book.cover}
                       alt={`${book.title} cover`}
                       fill
-                      sizes="200px"
+                      sizes="170px"
                       className="object-cover"
                     />
                   </div>
-                  <CardContent className="space-y-4 p-5">
+                  <CardContent className="space-y-4 p-0">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
                         <h2 className="text-xl font-semibold">{book.title}</h2>
