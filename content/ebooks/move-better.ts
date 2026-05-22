@@ -124,7 +124,7 @@ export const moveBetter: EbookContent = {
     },
     {
       title: "Simple protein",
-      dek: "Chicken, fish, eggs.",
+      dek: "Recovery. Rebuild the fibers.",
       lead: "Last, the protein: grilled, steamed or boiled. Never fried, never with industrial sauces or packaged seasonings.",
       body: "The flavor comes from the food itself, not what you put on top.",
     },
@@ -132,7 +132,7 @@ export const moveBetter: EbookContent = {
       title: "Kettlebell",
       dek: "One weight, the whole body.",
       lead: "Kettlebells are amazing to train your body for real life — functional strength that shows up in your daily activities. The biggest benefit comes from rotational, ballistic, pendulum-like moves: the whole body has to work stability, balance, and switch sides under load.",
-      body: "I've had enough of static machines. They're great to isolate muscles, but personally I don't want a lot of muscle if I can't use it properly.",
+      body: "I've had enough of static machines. They're great to isolate muscles, but personally I don't want a lot of muscle if I'm not flexible enough to use it properly. Since I switched to kettlebells, I gained way more stability and definition — the rotational, ballistic moves fire up every small stabilizer the machines never touch.",
     },
     {
       title: "Breath + muscle",
