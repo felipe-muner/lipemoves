@@ -48,7 +48,7 @@ export const EBOOKS: Ebook[] = [
     title: "Move Better",
     subtitle: "An eating & movement routine",
     description:
-      "After years in motion, I arrived at a simple formula that works for me. Here it is, no fluff — read in 20 minutes, apply for the rest of your life.",
+      "After years in motion, I arrived at a simple formula that works for me. Here it is — read in 20 minutes, apply for the rest of your life.",
     cover: "/ebooks/move-better-en-cover.jpg",
     editions: [
       {

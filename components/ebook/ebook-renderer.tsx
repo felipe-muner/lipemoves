@@ -19,7 +19,7 @@ const EBOOK_CSS = `
 .ebook-root .cover-text .brand-mark { margin-bottom: 16px; letter-spacing: 9px; }
 .ebook-root .cover-text h1 { font-size: 54pt; line-height: 1.0; margin-bottom: 10px; letter-spacing: -1.5px; font-weight: 200; }
 .ebook-root .cover-text .sub { font-size: 14pt; color: var(--muted); margin-bottom: 16px; font-style: italic; }
-.ebook-root .cover-text .blurb { font-size: 11pt; line-height: 1.65; color: var(--text); max-width: 78%; }
+.ebook-root .cover-text .blurb { font-size: 11pt; line-height: 1.65; color: var(--text); max-width: 78%; white-space: pre-line; }
 .ebook-root .cover-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 14mm; height: 120mm; margin-top: 100px; overflow: visible; }
 .ebook-root .cover-photos .slot { border-radius: 16px; overflow: hidden; background: var(--placeholder); height: 100%; }
 .ebook-root .cover-photos .slot:nth-child(2), .ebook-root .cover-photos .slot:nth-child(4) { transform: translateY(12mm); }

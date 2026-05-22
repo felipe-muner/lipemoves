@@ -70,7 +70,7 @@ export const moveBetter: EbookContent = {
   edition: "Edition 01 · 2026",
   chapterLabel: "Chapter",
   coverBlurb:
-    "After years in motion, I arrived at a simple formula that works for me. Here it is, no fluff.",
+    "After years in motion, I arrived at a simple formula that works for me.\nHere it is.",
 
   manifesto: "Eat fewer times.\nMove every day.\nBreathe slowly.",
   manifestoCaption: "The essential fits in three lines.",
