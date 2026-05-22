@@ -29,6 +29,7 @@ import {
   Activity,
   Coins,
   BookOpen,
+  Inbox,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -154,6 +155,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     { href: "/dashboard/captions", label: "Captions", icon: Hash },
     { href: "/dashboard/ebooks", label: "Ebooks", icon: BookOpen },
+    { href: "/dashboard/subscribers", label: "Subscribers", icon: Inbox },
     RESTAURANT_GROUP,
   ],
   manager: [
@@ -170,6 +172,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/emails", label: "Emails", icon: Mail },
     { href: "/dashboard/captions", label: "Captions", icon: Hash },
     { href: "/dashboard/ebooks", label: "Ebooks", icon: BookOpen },
+    { href: "/dashboard/subscribers", label: "Subscribers", icon: Inbox },
     RESTAURANT_GROUP,
   ],
   teacher: [
