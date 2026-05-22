@@ -64,8 +64,8 @@ CONTENT = {
 
             ("Kettlebell",
              "Um peso, o corpo todo.",
-             "Meu treino principal: kettlebell. Swing, clean, snatch, get-up. Pouco equipamento, máximo resultado.",
-             "Cinco a vinte minutos, três a cinco vezes por semana. Não precisa de mais."),
+             "Kettlebell é incrível pra treinar o corpo pra vida real — força funcional que aparece nas atividades do dia a dia. O maior benefício vem dos movimentos rotacionais, balísticos, tipo pêndulo: o corpo inteiro precisa trabalhar estabilidade, equilíbrio e trocar de lado sob carga.",
+             "Já tive o bastante de máquinas estáticas. Elas servem pra isolar músculo, mas pessoalmente não quero ter muito músculo se não consigo usar direito."),
 
             ("Respiração + músculo",
              "O segredo não é o peso.",
@@ -114,8 +114,8 @@ CONTENT = {
         "chapters": [
             ("Who I am",
              "",
-             "I'm Felipe. This guide is born from a personal search: how to feel strong, flexible and jacked all year round — so every day brings more energy to enjoy life. It's not a diet. It's what I do — and how I got here after years of trying, failing and adjusting.",
-             "There's no secret. Just consistency."),
+             "I'm Felipe. I was stuck in the same western loop — 8h sleeping, 8h at the office, chasing the pump just for social validation. Strong upper body, weak legs, horrible mobility... a body built for the mirror, useless for life. Sound familiar?",
+             "In 2018 I left my country, and since then I've been specializing my life in movement across different countries — stuck during covid with flexibility legends from Vietnam and India. That's when it hit me: each nationality sets the body. There, people live in bakasana — hips always working, ready for anything. The western chair destroyed ours and made us weak — not just physically, but mentally and spiritually too. We've also forgotten how our ancestors moved — we can't stay this disconnected from something so fundamental. We sit, we shrink, we age fast. They sit low, they stay open, they age slow.\n\nI rebuilt myself from the ground up. Mobility first. Flexibility next. Stability and balance after. Only then I let myself chase muscle — and now the muscle actually works. I wake up loose. I sit on the floor without thinking. I lift, twist, run, fall, get back up. Body that looks good and moves better — every day, all year round.\n\nThat's what this guide is. Not a diet. Not a hack. The exact thing I do, after years of trying, failing and adjusting. Read it in 20 minutes. Apply it for the rest of your life.\n\nShare it with the people you love. And if you want me to walk this path with you directly, I'll be waiting for you at the end of the book."),
 
             ("The formula",
              "Everything in one paragraph.",
@@ -154,8 +154,8 @@ CONTENT = {
 
             ("Kettlebell",
              "One weight, the whole body.",
-             "My main training: kettlebell. Swing, clean, snatch, get-up. Minimal equipment, maximum results.",
-             "Five to twenty minutes, three to five times a week. No more needed."),
+             "Kettlebells are amazing to train your body for real life — functional strength that shows up in your daily activities. The biggest benefit comes from rotational, ballistic, pendulum-like moves: the whole body has to work stability, balance, and switch sides under load.",
+             "I've had enough of static machines. They're great to isolate muscles, but personally I don't want a lot of muscle if I can't use it properly."),
 
             ("Breath + muscle",
              "The secret isn't the weight.",
@@ -183,7 +183,11 @@ CONTENT = {
         "cta_text": "If this guide helped you, let me know. Reach me on Instagram or by email — I love hearing your story.",
         "offer_eyebrow": "1:1 Coaching",
         "offer_title": "Work with me directly",
-        "offer_text": "I take a small number of 1:1 clients each month. Together we build your full plan — movement, food, fasting rhythm, breath and mindset — adapted to your body, your routine and your goals. Remote calls, weekly check-ins, real accountability. Send me a message and I'll tell you if it's a fit.",
+        "offer_text": "I take a few 1:1 clients each month. We build your full plan — movement, nutrition, fasting, rest, breath and mindset — adapted to your body and goals. You also get my own platform to track your movement daily, so we both see what's happening. Message me and I'll tell you if it's a fit.",
+        "offer2_eyebrow": "Live my lifestyle",
+        "offer2_title": "Movement on the road",
+        "offer2_text": "8 years traveling the planet and I never broke my routine — not once. If you're a digital nomad or just love to travel, I build your trip around movement, nutrition and rest: where to train, what to eat in each country, how to sleep and recover across time zones, simple daily practice that fits hotels, beaches, jungles, airports. Travel without losing yourself.",
+        "offer2_cta": "Plan my trip on WhatsApp →",
         "cta_links": [
             ("WhatsApp · +55 21 98485-2802", "https://wa.me/5521984852802"),
             ("Instagram · @felipeenjoylife", "https://instagram.com/felipeenjoylife"),
@@ -233,7 +237,8 @@ img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .manifesto { position: relative; height: 100%; }
 .manifesto .bg { position: absolute; inset: 0; }
 .manifesto .bg img { object-position: center top; }
-.manifesto .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.85) 100%); }
+.manifesto .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.55) 55%, rgba(0,0,0,.95) 88%, rgba(0,0,0,1) 100%); }
+.manifesto .foot { position: absolute; bottom: 10mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 8pt; letter-spacing: 4px; color: #fff; text-transform: uppercase; z-index: 2; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
 .manifesto .text { position: absolute; left: 20mm; right: 20mm; bottom: 24mm; color: #fff; }
 .manifesto .eyebrow { color: rgba(255,255,255,.7); margin-bottom: 12px; }
 .manifesto .display { color: #fff; font-size: 36pt; line-height: 1.15; white-space: pre-line; font-weight: 300; letter-spacing: -0.5px; }
@@ -262,6 +267,17 @@ a { color: inherit; }
 .ch-a h2 { font-size: 30pt; line-height: 1.05; margin-bottom: 4px; }
 .ch-a .dek { font-size: 13pt; color: var(--muted); font-style: italic; margin-bottom: 14px; }
 .ch-a p { font-size: 11.5pt; line-height: 1.75; margin-bottom: 10px; }
+.ch-b .photo, .ch-c .photo { position: relative; }
+.ch-b .photo::after, .ch-c .photo::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 32mm;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.5) 45%, rgba(0,0,0,.92) 85%, rgba(0,0,0,.98) 100%);
+  pointer-events: none;
+}
+.ch-b .foot span:first-child, .ch-c .foot span:last-child { color: #fff; z-index: 2; position: relative; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+#ch-1 .ch-a { grid-template-rows: 42% auto; }
+#ch-1 .ch-a .body { padding: 8mm 20mm 12mm; }
+#ch-1 .ch-a p { font-size: 10pt; line-height: 1.55; margin-bottom: 7px; }
+#ch-1 .ch-a h2 { font-size: 26pt; margin-bottom: 2px; }
 
 /* Layout B: side-by-side, photo left, text right */
 .ch-b { display: grid; grid-template-columns: 45% 55%; height: 100%; }
@@ -295,11 +311,12 @@ a { color: inherit; }
 .cta ul { list-style: none; }
 .cta li { font-size: 13pt; padding: 12px 0; border-top: 1px solid var(--rule); color: var(--accent); font-family: var(--head); letter-spacing: 0.5px; }
 .cta li:last-child { border-bottom: 1px solid var(--rule); }
-.cta .offer { margin-top: 22mm; padding: 10mm 10mm 11mm; background: var(--accent); color: var(--bg); border-radius: 14px; }
-.cta .offer .eyebrow { color: var(--bg); opacity: 0.7; margin-bottom: 6px; }
-.cta .offer h3 { font-family: var(--head); font-size: 22pt; font-weight: 300; line-height: 1.1; margin-bottom: 10px; letter-spacing: -0.3px; }
-.cta .offer p { color: var(--bg); opacity: 0.9; font-size: 11pt; line-height: 1.6; max-width: 100%; margin-bottom: 14px; }
-.cta .offer .offer-cta { display: inline-block; font-size: 11pt; letter-spacing: 2px; text-transform: uppercase; color: var(--bg); text-decoration: none; border-bottom: 1px solid var(--bg); padding-bottom: 2px; }
+.cta .offers { margin-top: 14mm; display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+.cta .offer { padding: 8mm 8mm 9mm; background: var(--accent); color: var(--bg); border-radius: 14px; display: flex; flex-direction: column; min-height: 105mm; }
+.cta .offer .eyebrow { color: var(--bg); opacity: 0.7; margin-bottom: 6px; font-size: 8pt; letter-spacing: 4px; }
+.cta .offer h3 { font-family: var(--head); font-size: 18pt; font-weight: 300; line-height: 1.1; margin-bottom: 10px; letter-spacing: -0.3px; }
+.cta .offer p { color: var(--bg); opacity: 0.9; font-size: 9.5pt; line-height: 1.55; max-width: 100%; margin-bottom: 14px; }
+.cta .offer .offer-cta { display: inline-block; font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: var(--bg); text-decoration: none; border-bottom: 1px solid var(--bg); padding-bottom: 2px; margin-top: auto; align-self: flex-start; }
 
 /* ===== CLOSING ===== */
 .closing { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; padding: 0 26mm; }
@@ -354,6 +371,7 @@ def manifesto(c, photo_idx=5):
           <div class="display">{esc(c['manifesto'])}</div>
           <div class="caption">{esc(c['manifesto_caption'])}</div>
         </div>
+        <div class="foot"><span>{esc(c['brand'])}</span><span>02</span></div>
       </div>
     </section>"""
 
@@ -435,13 +453,22 @@ def cta(c):
     links = "".join(f'<li><a href="{href}">{esc(label)}</a></li>' for label, href in c['cta_links'])
     offer = ""
     if c.get('offer_title'):
-        offer = f"""
-        <div class="offer">
-          <div class="eyebrow">{esc(c.get('offer_eyebrow', '1:1 Coaching'))}</div>
-          <h3>{esc(c['offer_title'])}</h3>
-          <p>{esc(c['offer_text'])}</p>
-          <a class="offer-cta" href="https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%201%3A1%20coaching">Apply for 1:1 on WhatsApp →</a>
-        </div>"""
+        cards = f"""
+          <div class="offer">
+            <div class="eyebrow">{esc(c.get('offer_eyebrow', '1:1 Coaching'))}</div>
+            <h3>{esc(c['offer_title'])}</h3>
+            <p>{esc(c['offer_text'])}</p>
+            <a class="offer-cta" href="https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%201%3A1%20coaching">Apply for 1:1 on WhatsApp →</a>
+          </div>"""
+        if c.get('offer2_title'):
+            cards += f"""
+          <div class="offer">
+            <div class="eyebrow">{esc(c['offer2_eyebrow'])}</div>
+            <h3>{esc(c['offer2_title'])}</h3>
+            <p>{esc(c['offer2_text'])}</p>
+            <a class="offer-cta" href="https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%20a%20travel%20movement%20plan">{esc(c['offer2_cta'])}</a>
+          </div>"""
+        offer = f'<div class="offers">{cards}</div>'
     return f"""
     <section class="page">
       <div class="cta">
