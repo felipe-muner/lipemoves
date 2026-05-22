@@ -72,7 +72,7 @@ export const moveBetter: EbookContent = {
   coverBlurb:
     "After years in motion, I arrived at a simple formula that works for me.\nHere it is.",
 
-  manifesto: "Eat fewer times.\nMove every day.\nBreathe slowly.",
+  manifesto: "Move every day.\nBreath is everything.\nEat like your ancestors.",
   manifestoCaption: "The essential fits in three lines.",
 
   tocTitle: "What's inside",
