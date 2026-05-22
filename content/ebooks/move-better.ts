@@ -143,7 +143,7 @@ export const moveBetter: EbookContent = {
     {
       title: "Eyes focused",
       dek: "Where the eyes go, the body follows.",
-      lead: "Train your gaze like you train your body. Fix your eyes on a single point during a kettlebell swing, on the horizon during a get-up, on the hand that moves during a clean. The eyes anchor the nervous system — they tell the body it is safe, focused, and in control.",
+      lead: "Train your gaze like you train your body. Fix your eyes on a single point during a kettlebell swing, on the horizon during a get-up, on the hand that moves during a clean. The eyes anchor the nervous system — they tell the body it is safe, focused, and in control — that's where balance comes from.",
       body: "Soft gaze, hard intention. No darting around, no checking the mirror, no looking at the phone. When the eyes settle, the breath settles, and the movement becomes precise. Keep the prana flowing.",
     },
     {
