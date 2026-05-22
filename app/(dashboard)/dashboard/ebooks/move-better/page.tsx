@@ -1,0 +1,26 @@
+import { requireDashboardSession } from "@/lib/auth/dashboard"
+import { moveBetter } from "@/content/ebooks/move-better"
+import { EbookRenderer } from "@/components/ebook/ebook-renderer"
+import { PrintButton } from "@/components/ebook/print-button"
+
+export const dynamic = "force-dynamic"
+
+export default async function MoveBetterEditorPage() {
+  await requireDashboardSession()
+
+  return (
+    <div className="space-y-4">
+      <div className="no-print flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">{moveBetter.title}</h1>
+          <p className="text-sm text-muted-foreground">
+            Edit <code>content/ebooks/move-better.ts</code> in VS Code, then{" "}
+            <strong>Cmd+P → Save as PDF</strong> from here.
+          </p>
+        </div>
+        <PrintButton />
+      </div>
+      <EbookRenderer content={moveBetter} />
+    </div>
+  )
+}
