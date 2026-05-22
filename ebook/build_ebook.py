@@ -196,7 +196,7 @@ CONTENT = {
 }
 
 # Photo assignment per chapter (index into P)
-CH_PHOTO = [4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5]
+CH_PHOTO = [4, 5, 6, 7, 8, 12, 10, 0, 11, 2, 3, 4, 5]
 # Object-position default (focus toward upper body for portrait crops)
 OBJ_POS = "center top"
 
