@@ -44,8 +44,8 @@ CONTENT = {
 
             ("Limão + sal himalaia",
              "Meu café da manhã.",
-             "Pela manhã: um copo de água, suco de limão, uma pitada generosa de sal rosa do Himalaia.",
-             "Hidrata, mineraliza, acorda o corpo. Sem cafeína, sem açúcar, sem digestão pesada. Simples e poderoso.\n\nPor que não café? A cafeína pega emprestado energia do resto do dia — você sobe, cai e busca outra. Limão e sal repõem o que o corpo perdeu durante a noite e deixam você acordar no próprio ritmo. Sem dependência, sem tremor, sem queda à tarde.\n\nManhã fria? Esquente água e infusione gengibre, cúrcuma, pimenta, canela, algumas gotas de própolis. Anti-inflamatório, aquece. Mesma ideia — alimentar o corpo, não estimular."),
+             "Pela manhã: um copo de água, suco de limão, uma pitada generosa de sal rosa do Himalaia. Hidrata, mineraliza, acorda o corpo. Sem cafeína, sem açúcar, sem digestão pesada. Simples e poderoso.",
+             "Por que não café? A cafeína pega emprestado energia do resto do dia — você sobe, cai e busca outra. Limão e sal repõem o que o corpo perdeu durante a noite e deixam você acordar no próprio ritmo. Sem dependência, sem tremor, sem queda à tarde.\n\nManhã fria? Esquente água e infusione gengibre, cúrcuma, pimenta, canela, algumas gotas de própolis. Anti-inflamatório, aquece. Mesma ideia — alimentar o corpo, não estimular."),
 
             ("Frutas, e muitas",
              "Tem dia que como 10.",
@@ -129,8 +129,8 @@ CONTENT = {
 
             ("Lemon + Himalayan salt",
              "My breakfast.",
-             "In the morning: a glass of water (sometimes none), lemon juice, a generous pinch of pink Himalayan salt.",
-             "Hydrates, mineralizes, wakes the body. No caffeine, no sugar, no heavy digestion. Simple and powerful.\n\nWhy not coffee? Caffeine borrows energy from later — you spike, crash, reach for another. Lemon and salt replace what you lost overnight and let the body wake on its own clock. No dependency, no jitters, no afternoon dip.\n\nCold morning? Heat water and steep ginger, turmeric, black pepper, cinnamon, a few drops of propolis. Anti-inflammatory, warming. Same idea — feed the body, don't stimulate it."),
+             "In the morning: a glass of water (sometimes none), lemon juice, a generous pinch of pink Himalayan salt. Hydrates, mineralizes, wakes the body. No caffeine, no sugar, no heavy digestion. Simple and powerful.",
+             "Why not coffee? Caffeine borrows energy from later — you spike, crash, reach for another. Lemon and salt replace what you lost overnight and let the body wake on its own clock. No dependency, no jitters, no afternoon dip.\n\nCold morning? Heat water and steep ginger, turmeric, black pepper, cinnamon, a few drops of propolis. Anti-inflammatory, warming. Same idea — feed the body, don't stimulate it."),
 
             ("Fruit, and lots of it",
              "Some days I eat 10.",
