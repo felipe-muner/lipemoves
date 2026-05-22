@@ -138,7 +138,7 @@ export const moveBetter: EbookContent = {
       title: "Breath + muscle",
       dek: "The secret isn't the weight.",
       lead: "It's how you move. Squeeze the muscle, contract with intention, sync your breath and your gaze with the movement. Each motion is a conversation between mind and body.",
-      body: "Fast movement without awareness is just burning calories. Slow, attentive movement builds real strength and balance.",
+      body: "Don't isolate, integrate. Move the whole body as one — that's where real strength and balance live.",
     },
     {
       title: "Eyes focused",
@@ -149,14 +149,14 @@ export const moveBetter: EbookContent = {
     {
       title: "Mindfulness in motion",
       dek: "To train is to meditate.",
-      lead: "When I train, I train. No phone, no loud music, no sitting, no rush. I feel each movement, fully.",
+      lead: "When I train, I train. Outdoors when possible, sunrise if I can — no phone, no music, no AC or fan, no sitting, no rush. I feel each movement, fully.",
       body: "Training becomes active meditation. You leave better than you came in — and not just physically.",
     },
     {
       title: "How to start",
       dek: "Slow and steady.",
-      lead: "Extend the fast gradually: skip breakfast first, then push lunch. In a few weeks, 5pm becomes easy.",
-      body: "Move every day, even if just 5 minutes. Consistency beats intensity. This is my path — find yours.",
+      lead: "Train fasted. Skip breakfast first, then push lunch later. Cut late-night carbs as you go. In a few weeks, 5pm becomes doable.",
+      body: "Consistency beats intensity. Move every day, even if just 5 minutes. Stay with your breath, anchor your eyes. This is my path — find yours.",
     },
   ],
 
