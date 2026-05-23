@@ -82,10 +82,15 @@ export default async function EbooksPage() {
                             </span>
                             {ed.available ? (
                               <span className="text-xs text-muted-foreground">
-                                {ed.pages}p · {ed.sizeMb}MB ·{" "}
-                                {ed.publishedOn
-                                  ? format(parseISO(ed.publishedOn), "MMM yyyy")
-                                  : ""}
+                                {[
+                                  ed.pages ? `${ed.pages}p` : null,
+                                  ed.sizeMb ? `${ed.sizeMb}MB` : null,
+                                  ed.publishedOn
+                                    ? format(parseISO(ed.publishedOn), "MMM yyyy")
+                                    : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
                               </span>
                             ) : (
                               <Badge variant="outline" className="text-[10px]">
@@ -93,28 +98,33 @@ export default async function EbooksPage() {
                               </Badge>
                             )}
                           </div>
-                          {ed.available && ed.file && (
+                          {ed.available && (ed.readPath || ed.file) && (
                             <div className="flex items-center gap-1">
-                              <Button asChild variant="ghost" size="sm">
-                                <Link
-                                  href={ed.file}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                              {ed.readPath && (
+                                <Button asChild variant="ghost" size="sm">
+                                  <Link
+                                    href={ed.readPath}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Eye className="mr-1 h-3.5 w-3.5" />
+                                    Open
+                                  </Link>
+                                </Button>
+                              )}
+                              {ed.file && (
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Download PDF"
                                 >
-                                  <Eye className="mr-1 h-3.5 w-3.5" />
-                                  Open
-                                </Link>
-                              </Button>
-                              <Button
-                                asChild
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <a href={ed.file} download>
-                                  <Download className="h-3.5 w-3.5" />
-                                </a>
-                              </Button>
+                                  <a href={ed.file} download>
+                                    <Download className="h-3.5 w-3.5" />
+                                  </a>
+                                </Button>
+                              )}
                             </div>
                           )}
                         </div>
