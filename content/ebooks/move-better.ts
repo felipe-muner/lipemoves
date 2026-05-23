@@ -84,7 +84,7 @@ export const moveBetter: EbookContent = {
       title: "Who I am",
       dek: "Built for life, not for the mirror.",
       lead: "I'm Felipe. I lived the western loop — 8h sleep, 8h office, chasing the pump for social validation. Strong upper body, weak legs, horrible mobility — a body built for the mirror, useless for life.",
-      body: "In 2018 I left and started specializing my life in movement across different countries. The goal is simple: never have a problem with my body, and live this experience fully. Stuck during covid with flexibility legends from Vietnam and India, I saw it clearly — each nation shapes the body of its people. There, people live in bakasana, hips always working. The western chair destroyed ours and made us weak, physically and mentally. We've forgotten how our ancestors moved. We sit, we shrink, we age fast. They sit low, stay open, age slow.\n\nI rebuilt from the ground up. Mobility first. Flexibility next. Stability and balance after. Only then muscle — and now it actually works. I sit on the floor without thinking. I lift, twist, run, fall, get back up.\n\nThat's what this guide is. Not a diet, not a hack — the exact thing I do, after years of trying, failing and adjusting. Read it in 20 minutes. Apply it for the rest of your life. Share it with the people you love, and if you want me to walk this path with you, I'll be waiting at the end of the book.",
+      body: "In 2018 I left and started specializing my life in movement across different countries. The goal is simple: never have a problem with my body, and live this experience fully. Stuck during covid with flexibility legends from Vietnam and India, I saw it clearly — each nation shapes the body of its people. There, people live in a deep squat, hips always working.\n\nThe western chair destroyed ours and made us weak, physically and mentally. We've forgotten how our ancestors moved. We sit, we shrink, we age fast. They sit low, stay open, age slow.\n\nI rebuilt from the ground up. Mobility first. Flexibility next. Stability and balance after. Only then muscle — and now it actually works. I sit on the floor without thinking. I lift, twist, run, fall, get back up.\n\nThat's what this guide is. Not a diet, not a hack — the exact thing I do, after years of trying, failing and adjusting. Read it in 20 minutes. Apply it for the rest of your life. Share it with the people you love, and if you want me to walk this path with you, I'll be waiting at the end of the book.",
     },
     {
       title: "The formula",
@@ -201,7 +201,7 @@ export const moveBetter: EbookContent = {
 
   closingTitle: "Thank you",
   closingText:
-    "This guide is an honest summary of what I do. It is not medical advice and not a promise. It's an invitation for you to experiment, listen to your body and build your own formula.\n\nIf this guide helped you, let me know. Reach me on WhatsApp, Instagram or email — whichever feels easiest.",
+    "This guide is an honest summary of what I do. It is not medical advice and not a promise. It's an invitation for you to experiment, listen to your body and build your own formula.",
   closingSign: "With gratitude,\nFelipe Muner",
 
   // Photo files in /public/ebooks/photos (alphabetical order matches old Python indices)
