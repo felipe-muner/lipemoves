@@ -65,7 +65,7 @@ export type EbookContent = {
 export const moveBetter: EbookContent = {
   brand: "FELIPE MUNER",
   title: "Move Better",
-  subtitle: "Food and movement routine",
+  subtitle: "Food, movement, breath — a body built for life",
   author: "Felipe Muner",
   edition: "Edition 01 · 2026",
   chapterLabel: "Chapter",
@@ -90,13 +90,19 @@ export const moveBetter: EbookContent = {
       title: "The formula",
       dek: "Everything in one paragraph.",
       lead: "In the morning, lemon with Himalayan salt. During the day, breath and controlled mindful movement: yoga, calisthenics, kettlebell. After food+sunset, turn off artificial lights and sleep as early as you can. Personally, I aim for longevity — I'd rather play with free weights, bodyweight and balance than sit on a gym machine. One meal a day (sunset time), abundant and simple: fruit, vegetables and protein.",
-      body: "That's it. The rest of this guide is about the why and the how.\n\nHonestly: I don't do this every day. But the more I do it, the better I feel — and no other approach I've tried comes close.",
+      body: "That's it. The rest of this guide is about the why and the how.\n\nYes — this is one meal a day (OMAD). You won't starve. The body adapts faster than you think, and the next chapter shows you how to ease in.\n\nHonestly: I don't do this every day. But the more I do it, the better I feel — and no other approach I've tried comes close.",
+    },
+    {
+      title: "How to start",
+      dek: "Three weeks. Slow and steady.",
+      lead: "You don't change overnight. The body adapts in waves — push too hard, you quit. Push slowly, it sticks. Here's the path I'd give a friend.",
+      body: "Week 1 — Skip breakfast. Lemon and salt in the morning instead. Move 5 minutes a day, anywhere: a few squats, a stretch, a walk. That's it.\n\nWeek 2 — Push lunch later, hour by hour. Drink water and tea during the day. Add one real session — kettlebell, yoga, calisthenics — twice this week. Sleep earlier.\n\nWeek 3 — 5pm starts to feel natural. Train daily, even if it's 10 minutes. Stay with your breath. Anchor your eyes. Notice how you feel — that's the proof, not the scale.\n\nConsistency beats intensity. Move every day, even if just 5 minutes. This is my path — find yours.",
     },
     {
       title: "Fasting until 5pm",
       dek: "The body thanks you.",
       lead: "No solid food during the day. Water, water with lemon and salt, tea. The body settles into a calm, focused state — no spikes, no weight of digestion. All effort/focus activities should be done before the fast is broken. With time, it will sharpen your life positively.",
-      body: "To ease in, push your last meal 15 minutes later each day. The body needs time to adjust — forcing it all at once just creates anxious hunger and you quit. Move at your own pace, stay honest with your goal, and 5pm starts to feel natural.\n\nA great way to think about it: our ancestors went days without food. Today we live with the biggest food availability in human history — feeling a little hunger isn't an emergency, it's a return to normal.\n\nIf you do break the fast, lean toward protein and light food — avoid loading the body with heavy carbs before sleep. It changes your sleep, your recovery, and how you wake up the next day.",
+      body: "To ease in, push your last meal 15 minutes later each day. The body needs time to adjust — forcing it all at once just creates anxious hunger and you quit. Move at your own pace, stay honest with your goal, and 5pm starts to feel natural.\n\nA great way to think about it: our ancestors went days without food. Today we live with the biggest food availability in human history — feeling a little hunger isn't an emergency, it's a return to normal.\n\nIf you do break the fast, lean toward protein and light food — avoid loading the body with heavy carbs before sleep. It changes your sleep, your recovery, and how you wake up the next day.\n\nThis is not for everyone. If you're pregnant, breastfeeding, underweight, on medication, or have a history of disordered eating — talk to a doctor first or skip this part. The movement and food principles work without the fasting.",
     },
     {
       title: "Lemon + Himalayan salt",
@@ -119,7 +125,7 @@ export const moveBetter: EbookContent = {
     {
       title: "Smart carbs",
       dek: "Slow-burning fuel.",
-      lead: "Living on the island, fresh produce is everywhere. My go-to carbs: sweet potato, pumpkin (fak thong) and papaya — green or ripe. Ripe papaya is great for digestion and gives quick carbs plus enzymes; green papaya turns into som tam, the savory side. Pumpkin shows up in Thai curries and stir-fries; roasted sweet potato is sold at every market.",
+      lead: "My go-to carbs: sweet potato, rice and cassava. Sweet potato — roasted or steamed — brings vitamin A, fiber and slow energy. Rice: brown or pigmented when I can, jasmine or sticky when I can't. Cassava is dense, slow-burning fuel, simple and ancestral.",
       body: "I blend raw or steamed sweet potato into my juices — it thickens the drink and stretches the energy for hours. Slow-digesting, rich in fiber and micronutrients, perfect on kettlebell training days.",
     },
     {
@@ -152,16 +158,10 @@ export const moveBetter: EbookContent = {
       lead: "When I train, I train. Outdoors when possible, sunrise if I can — no phone, no music, no AC or fan, no sitting, no rush. I feel each movement, fully.",
       body: "Training becomes active meditation. You leave better than you came in — and not just physically.",
     },
-    {
-      title: "How to start",
-      dek: "Slow and steady.",
-      lead: "Train fasted. Skip breakfast first, then push lunch later. Cut late-night carbs as you go. In a few weeks, 5pm becomes doable.",
-      body: "Consistency beats intensity. Move every day, even if just 5 minutes. Stay with your breath, anchor your eyes. This is my path — find yours.",
-    },
   ],
 
-  quote1: "“The essential is\nto eat fewer times\nand move better.”",
-  quote2: "“Slow attentive\nmovement builds\nreal strength.”",
+  quote1: "“Build a body\nfor life,\nnot the mirror.”",
+  quote2: "“Controlled\nmovement builds\nreal strength.”",
 
   ctaEyebrow: "Next step",
   ctaTitle: "Stay in touch",
@@ -219,10 +219,14 @@ export const moveBetter: EbookContent = {
     "2SN09729.jpg",
     "z_kettlebell_rack.jpg",
     "z_thai_vegetables.jpg",
+    "z_carbs.jpg",
+    "z_fruits.jpg",
+    "z_lemon.jpg",
+    "z_protein.jpg",
   ],
-  chapterPhoto: [4, 5, 6, 7, 8, 12, 10, 0, 11, 2, 3, 10, 5],
+  chapterPhoto: [4, 5, 9, 6, 15, 14, 12, 13, 16, 11, 2, 3, 10],
   layouts: ["a", "b", "c", "a", "b", "c", "a", "b", "c", "a", "b", "c", "a"],
   manifestoPhoto: 5,
   coverSlots: [3, 1, 0, 6],
-  quoteAfter: { 1: 3, 2: 8 },
+  quoteAfter: { 1: 4, 2: 9 },
 }

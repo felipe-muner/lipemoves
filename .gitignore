@@ -53,3 +53,4 @@ scripts/paint-contributions.sh
 # IG reel staging — only the dir is committed (via .gitkeep), not the videos
 /public/reels/*
 !/public/reels/.gitkeep
+public/ebooks/photos/_originals/
