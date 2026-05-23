@@ -181,12 +181,18 @@ export function EbookRenderer({ content: c }: { content: EbookContent }) {
         <ol>
           {c.chapters.map((ch, i) => (
             <li key={i}>
-              <a>
+              <a href={`#chapter-${i + 1}`}>
                 <span className="t">{ch.title}</span>
                 <span className="dots" />
               </a>
             </li>
           ))}
+          <li>
+            <a href="#stay-in-touch">
+              <span className="t">{c.ctaTitle}</span>
+              <span className="dots" />
+            </a>
+          </li>
         </ol>
       </div>
     </section>,
@@ -222,7 +228,7 @@ export function EbookRenderer({ content: c }: { content: EbookContent }) {
     )
 
     pages.push(
-      <section key={`ch-${idx}`} className={`page ch-${idx + 1}`}>
+      <section key={`ch-${idx}`} id={`chapter-${idx + 1}`} className={`page ch-${idx + 1}`}>
         {layout === "a" && (
           <div className="ch-a">
             {photoDiv}
@@ -269,7 +275,7 @@ export function EbookRenderer({ content: c }: { content: EbookContent }) {
 
   // CTA
   pages.push(
-    <section key="cta" className="page">
+    <section key="cta" id="stay-in-touch" className="page">
       <div className="cta">
         <div className="eyebrow">{c.ctaEyebrow}</div>
         <h2>{c.ctaTitle}</h2>
@@ -303,7 +309,7 @@ export function EbookRenderer({ content: c }: { content: EbookContent }) {
       <div className="closing">
         <div className="eyebrow">{c.brand}</div>
         <h2>{c.closingTitle}</h2>
-        <p>{c.closingText}</p>
+        {paragraphs(c.closingText)}
         <div className="sign">{c.closingSign}</div>
       </div>
     </section>,

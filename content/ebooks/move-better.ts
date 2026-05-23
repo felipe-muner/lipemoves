@@ -84,7 +84,7 @@ export const moveBetter: EbookContent = {
       title: "Who I am",
       dek: "Built for life, not for the mirror.",
       lead: "I'm Felipe. I was stuck in the same western loop — 8h sleeping, 8h at the office, chasing the pump just for social validation. Strong upper body, weak legs, horrible mobility... a body built for the mirror, useless for life. Sound familiar?",
-      body: "In 2018 I left my country, and since then I've been traveling the globe and specializing my life in movement across different countries — the goal is simple: never have a problem with my body, and live this experience as fully as I can. Stuck during covid with flexibility legends from Vietnam and India, that's when it hit me: each nationality sets the body. There, people live in bakasana — hips always working, ready for anything. The western chair destroyed ours and made us weak — not just physically, but mentally and spiritually too. We've also forgotten how our ancestors moved — we can't stay this disconnected from something so fundamental. We sit, we shrink, we age fast. They sit low, they stay open, they age slow.\n\nI rebuilt myself from the ground up. Mobility first. Flexibility next. Stability and balance after. Only then I let myself chase muscle — and now the muscle actually works. I sit on the floor without thinking. I lift, twist, run, fall, get back up. Body that looks good and moves better — every day, all year round.\n\nThat's what this guide is. Not a diet. Not a hack. The exact thing I do, after years of trying, failing and adjusting. Read it in 20 minutes. Apply it for the rest of your life.\n\nShare it with the people you love. And if you want me to walk this path with you directly, I'll be waiting for you at the end of the book.",
+      body: "In 2018 I left my country, and since then I've been traveling the globe and specializing my life in movement across different countries — the goal is simple: never have a problem with my body, and live this experience as fully as I can. Stuck during covid with flexibility legends from Vietnam and India, that's when I saw it clearly: how each nation shapes the body of its people. There, people live in bakasana — hips always working, ready for anything. The western chair destroyed ours and made us weak — not just physically, but mentally and spiritually too. We've also forgotten how our ancestors moved — we can't stay this disconnected from something so fundamental. We sit, we shrink, we age fast. They sit low, they stay open, they age slow.\n\nI rebuilt myself from the ground up. Mobility first. Flexibility next. Stability and balance after. Only then I let myself chase muscle — and now the muscle actually works. I sit on the floor without thinking. I lift, twist, run, fall, get back up. Body that looks good and moves better — every day, all year round.\n\nThat's what this guide is. Not a diet. Not a hack. The exact thing I do, after years of trying, failing and adjusting. Read it in 20 minutes. Apply it for the rest of your life.\n\nShare it with the people you love. And if you want me to walk this path with you directly, I'll be waiting for you at the end of the book.",
     },
     {
       title: "The formula",
@@ -132,7 +132,7 @@ export const moveBetter: EbookContent = {
       title: "Kettlebell",
       dek: "One weight, the whole body.",
       lead: "Kettlebells are amazing to train your body for real life — functional strength that shows up in your daily activities. The biggest benefit comes from rotational, ballistic, pendulum-like moves: the whole body has to work stability, balance, and switch sides under load.",
-      body: "I've had enough of static machines. They're great to isolate muscles, but personally I don't want a lot of muscle if I'm not flexible enough to use it properly. Since I switched to kettlebells, I gained way more stability and definition — the rotational, ballistic moves fire up every small stabilizer the machines never touch.",
+      body: "I've had enough of static machines. They're great to isolate muscles, but personally I don't want a lot of muscle if I'm not flexible enough to use it properly. Since I switched to kettlebells, I gained way more stability and definition — the rotational, ballistic moves fire up every small stabilizer the machines never touch. If you train for longevity, this is the work: a body ready to catch a slip, absorb a fall, recover from the unexpected — that's where serious injuries start, and that's where this training pays off.",
     },
     {
       title: "Breath + muscle",
@@ -166,7 +166,7 @@ export const moveBetter: EbookContent = {
   ctaEyebrow: "Next step",
   ctaTitle: "Stay in touch",
   ctaText:
-    "If this guide helped you, let me know. Reach me on Instagram or by email — I love hearing your story.",
+    "If this guide helped you, let me know. Reach me on one of the contacts below — I love hearing your story.",
 
   offers: [
     {
@@ -201,7 +201,7 @@ export const moveBetter: EbookContent = {
 
   closingTitle: "Thank you",
   closingText:
-    "This guide is an honest summary of what I do. It is not medical advice and not a promise. It's an invitation for you to experiment, listen to your body and build your own formula.",
+    "This guide is an honest summary of what I do. It is not medical advice and not a promise. It's an invitation for you to experiment, listen to your body and build your own formula.\n\nIf this guide helped you, let me know. Reach me on WhatsApp, Instagram or email — whichever feels easiest.",
   closingSign: "With gratitude,\nFelipe Muner",
 
   // Photo files in /public/ebooks/photos (alphabetical order matches old Python indices)
@@ -220,9 +220,9 @@ export const moveBetter: EbookContent = {
     "z_kettlebell_rack.jpg",
     "z_thai_vegetables.jpg",
   ],
-  chapterPhoto: [4, 5, 6, 7, 8, 12, 10, 0, 11, 2, 3, 4, 5],
+  chapterPhoto: [4, 5, 6, 7, 8, 12, 10, 0, 11, 2, 3, 10, 5],
   layouts: ["a", "b", "c", "a", "b", "c", "a", "b", "c", "a", "b", "c", "a"],
   manifestoPhoto: 5,
-  coverSlots: [3, 2, 1, 0],
+  coverSlots: [3, 1, 0, 6],
   quoteAfter: { 1: 3, 2: 8 },
 }
