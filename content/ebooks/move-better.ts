@@ -67,10 +67,10 @@ export const moveBetter: EbookContent = {
   title: "Move Better",
   subtitle: "Food, movement, breath — a body built for life",
   author: "Felipe Muner",
-  edition: "Edition 01 · 2026",
+  edition: "May 2026",
   chapterLabel: "Chapter",
   coverBlurb:
-    "After years in motion, I arrived at a simple formula that works for me.\nHere it is.",
+    "Years in motion. One simple formula.\nHere it is.",
 
   manifesto: "Move every day.\nBreath is everything.\nEat like your ancestors.",
   manifestoCaption: "The essential fits in three lines.",
@@ -101,8 +101,8 @@ export const moveBetter: EbookContent = {
     {
       title: "Fasting until 5pm",
       dek: "The body thanks you.",
-      lead: "No solid food during the day. Water, water with lemon and salt, tea. The body settles into a calm, focused state — no spikes, no weight of digestion. All effort/focus activities should be done before the fast is broken. With time, it will sharpen your life positively.",
-      body: "To ease in, push your last meal 15 minutes later each day. The body needs time to adjust — forcing it all at once just creates anxious hunger and you quit. Move at your own pace, stay honest with your goal, and 5pm starts to feel natural.\n\nA great way to think about it: our ancestors went days without food. Today we live with the biggest food availability in human history — feeling a little hunger isn't an emergency, it's a return to normal.\n\nIf you do break the fast, lean toward protein and light food — avoid loading the body with heavy carbs before sleep. It changes your sleep, your recovery, and how you wake up the next day.\n\nThis is not for everyone. If you're pregnant, breastfeeding, underweight, on medication, or have a history of disordered eating — talk to a doctor first or skip this part. The movement and food principles work without the fasting.",
+      lead: "Our ancestors went days without food. Today we live with the biggest food availability in human history — a little hunger isn't an emergency, it's normal. The body settles — no spikes, no weight of digestion.",
+      body: "I aim for one meal a day at 5pm. Honestly, I often break earlier — a smoothie around 2pm, some fruit, something light. The point isn't to be rigid, it's to give the body long stretches without digestion. Ease in: push your last meal 15 minutes later each day.\n\nThis is not for everyone. If you're pregnant, breastfeeding, underweight, on medication, or have a history of disordered eating — talk to a doctor first or skip this part. The movement and food principles work without the fasting.",
     },
     {
       title: "Lemon + Himalayan salt",
