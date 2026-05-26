@@ -117,6 +117,12 @@ export const moveBetter: EbookContent = {
       body: "Build it in this order: fruit, vegetables, slow carbs, protein. Each layer does a job — quick energy, fiber, slow fuel, repair.\n\nI add almost every day: oats, chia, flaxseed, cinnamon, turmeric, ginger, and nutritional yeast. Cheap, simple, packed with what the body actually needs.",
     },
     {
+      title: "Yoga",
+      dek: "The foundation.",
+      lead: "Yoga is the first door. It changed everything for me. The asanas are just the entry — the real work is the breath inside them, and it's a practice you refine until your last day.",
+      body: "Before yoga I was a stiff gym-bro with weak legs and a body I couldn't really use. Yoga is how I reclaim the movements I had as a child — open hips, a long spine, joints that work with me, not against me. And once the joints are healthy and spacious, the muscle you build finally has somewhere to go.\n\nI practice almost every day. Sometimes 10 minutes, sometimes an hour. Outdoors when I can. Flexibility, calm, focus, sleep — all side effects of just showing up.",
+    },
+    {
       title: "Kettlebell",
       dek: "One weight, the whole body.",
       lead: "Kettlebells are the closest thing I've found to training for real life. The reason is simple: they move through a much bigger range of motion than any static machine, so you build strength, mobility, and balance all at once.",
@@ -197,9 +203,9 @@ export const moveBetter: EbookContent = {
     "z_breath.jpg",
     "z_fasting.jpg",
   ],
-  chapterPhoto: [4, 5, 17, 19, 15, 14, 11, 18],
-  layouts: ["a", "b", "c", "a", "b", "c", "a", "b"],
+  chapterPhoto: [4, 5, 17, 19, 15, 14, 8, 11, 18],
+  layouts: ["a", "b", "c", "a", "b", "c", "a", "b", "c"],
   manifestoPhoto: 5,
   coverSlots: [3, 1, 0, 6],
-  quoteAfter: { 1: 4, 2: 6 },
+  quoteAfter: { 1: 4, 2: 7 },
 }
