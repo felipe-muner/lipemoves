@@ -95,8 +95,8 @@ export const moveBetter: EbookContent = {
     {
       title: "How to start",
       dek: "Three weeks. Slow and steady.",
-      lead: "You don't change overnight. The body adapts in waves — push too hard, you quit. Push slowly, it sticks. Here's the path I'd give a friend.",
-      body: "Week 1 — Skip breakfast. Lemon and salt in the morning instead. Move 5 minutes a day, anywhere: a few squats, a stretch, a walk. That's it.\n\nWeek 2 — Push lunch later, hour by hour. Drink water and tea during the day. Add one real session — kettlebell, yoga, calisthenics — twice this week. Sleep earlier.\n\nWeek 3 — 5pm starts to feel natural. Train daily, even if it's 10 minutes. Stay with your breath. Anchor your eyes. Notice how you feel — that's the proof, not the scale.\n\nConsistency beats intensity. Move every day, even if just 5 minutes. This is my path — find yours.",
+      lead: "You're not going to flip overnight. Push too hard and you'll quit in a week. Push slow and it sticks. Here's the path I'd give a friend.",
+      body: "Week 1. Skip breakfast. Lemon and salt instead. Move 5 minutes a day, anywhere. A few squats, a stretch, a walk. That's it.\n\nWeek 2. Push lunch later, hour by hour. Water and tea through the day. Add one real session twice this week (kettlebell, yoga, or calisthenics). Start sleeping earlier.\n\nWeek 3. 5pm starts to feel normal. Train every day, even if it's just 10 minutes. Stay with your breath. Notice how you feel, because that's the real proof, not the scale.\n\nConsistency beats intensity. This is my path. Find yours.",
     },
     {
       title: "Fasting until 5pm",
