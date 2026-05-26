@@ -101,7 +101,7 @@ export const moveBetter: EbookContent = {
     {
       title: "Fasting until 5pm",
       dek: "The body thanks you.",
-      lead: "Our ancestors went days without food. A little hunger isn't an emergency, it's how the body is supposed to feel most of the day.",
+      lead: "Our ancestors went days without food. We live in the most food-saturated moment in human history, so a little hunger isn't an emergency, it's how the body is supposed to feel most of the day.",
       body: "Digestion is heavy work. When you're not doing it, the body cleans up, repairs, and burns what it has stored. Energy stays steady, the mind sharpens, sleep deepens.\n\nNot for everyone. If you're pregnant, breastfeeding, underweight, on medication, or have a history of disordered eating, talk to a doctor or skip this part.",
     },
     {
