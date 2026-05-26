@@ -107,14 +107,14 @@ export const moveBetter: EbookContent = {
     {
       title: "Lemon + Himalayan salt",
       dek: "My breakfast.",
-      lead: "In the morning: a glass of water (sometimes none), lemon juice, a generous pinch of pink Himalayan salt. Hydrates, mineralizes, wakes the body. No caffeine, no sugar, no heavy digestion. Simple and powerful.",
-      body: "Why not coffee? Caffeine borrows energy from later — you spike, crash, reach for another. Lemon and salt replace what you lost overnight and let the body wake on its own clock. No dependency, no jitters, no afternoon dip.\n\nCold morning? Heat water and steep ginger, turmeric, black pepper, cinnamon, a few drops of propolis. Anti-inflammatory, warming. Same idea — feed the body, don't stimulate it.",
+      lead: "A glass of water, fresh lemon juice, a good pinch of pink Himalayan salt. That's my morning. It hydrates, it mineralizes, and it wakes the body up without caffeine or sugar.",
+      body: "Coffee borrows energy from later in the day. You spike, you crash, you reach for another. Lemon and salt just replace what you lost overnight and let you wake up on your own clock.\n\nSometimes I steep ginger, turmeric, black pepper, cinnamon, and a few drops of propolis in hot water. Same idea: feed the body, don't stimulate it.",
     },
     {
       title: "Food",
       dek: "The one meal, built right.",
-      lead: "When you eat once a day, the plate matters. Build it in this order — fruit first, then vegetables, then slow carbs, then protein. Each layer does a job: quick energy, fiber, slow fuel, repair.",
-      body: "Fruit, and lots of it. The best move is a juice at 5pm — variety always. Mango, papaya, banana, watermelon, coconut water, pineapple. Blend in ginger, turmeric, cinnamon, oats, chia, flaxseed, cherries, goji. Fruit sugar with fiber and water is clean fuel: instant energy, no inflammation. Some days I eat ten pieces.\n\nVegetables — volume without weight. Greens, cucumber, tomato, carrot, lettuce, sprouts. Olive oil, lemon, salt, herbs — never heavy dressings. Fiber, minerals, fullness. The heavy plate, but light in the body.\n\nSlow-burning carbs. Sweet potato, rice, cassava. Sweet potato (roasted or steamed) brings vitamin A, fiber, slow energy. Rice: brown or pigmented when I can. Cassava is dense and ancestral — perfect on training days.\n\nSimple protein, last. Grilled, steamed, or boiled. Never fried, never industrial sauces. When you eat once a day, this is what rebuilds you — don't skimp. The flavor comes from the food itself, not what you put on top.",
+      lead: "Eat as clean as you can. The less processed and industrial it is, the better your body will run. When you only eat once a day, the plate really matters.",
+      body: "Build it in this order: fruit, vegetables, slow carbs, protein. Each layer does a job — quick energy, fiber, slow fuel, repair.\n\nI add almost every day: oats, chia, flaxseed, cinnamon, turmeric, ginger, and nutritional yeast. Cheap, simple, packed with what the body actually needs.",
     },
     {
       title: "Kettlebell",
