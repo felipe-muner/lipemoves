@@ -89,8 +89,8 @@ export const moveBetter: EbookContent = {
     {
       title: "The formula",
       dek: "Everything in one paragraph.",
-      lead: "In the morning, lemon with Himalayan salt. During the day, breath and controlled mindful movement: yoga, calisthenics, kettlebell. After food+sunset, turn off artificial lights and sleep as early as you can. Personally, I aim for longevity — I'd rather play with free weights, bodyweight and balance than sit on a gym machine. One meal a day (sunset time), abundant and simple: fruit, vegetables and protein.",
-      body: "That's it. The rest of this guide is about the why and the how.\n\nYes — this is one meal a day (OMAD). You won't starve. The body adapts faster than you think, and the next chapter shows you how to ease in.\n\nHonestly: I don't do this every day. But the more I do it, the better I feel — and no other approach I've tried comes close.",
+      lead: "I do all my focus work fasted, before food. The body burns fat and isn't busy digesting. Skip the coffee, go for lemon with Himalayan salt. Move through the day: yoga, calisthenics, kettlebell. Eat once, at sunset — fruit, vegetables, protein. Sleep early.",
+      body: "That's the whole thing. The rest is just the why and the how.\n\nYes, it's one meal a day (OMAD). You won't starve. The body adapts faster than you'd think, and the next chapter shows you how to ease in.\n\nI don't do this every day either. But the more I lean in, the better I feel.",
     },
     {
       title: "How to start",
