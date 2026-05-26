@@ -131,7 +131,7 @@ export const moveBetter: EbookContent = {
     {
       title: "Mindfulness in motion",
       dek: "To train is to meditate.",
-      lead: "When I train, I train. Give love or waste time, no pain no gain. Outdoors when possible, sunrise if I can — no phone, no music, no AC or fan, no talking, no sitting, no rush. Live each movement, fully.",
+      lead: "When I train, I train. Bring love, or you're wasting time. No pain, no gain. Outdoors when possible, sunrise if I can — no phone, no music, no AC or fan, no talking, no sitting, no rush. Live each movement, fully.",
       body: "Even between sets, stay with the breath. That's where the practice really lives — not just during the rep, but in the pause too. Don't reach for the phone, don't break the thread. This is real Prana.\n\nTraining becomes active meditation. You leave better than you came in — and not just physically.",
     },
   ],
