@@ -101,8 +101,8 @@ export const moveBetter: EbookContent = {
     {
       title: "Fasting until 5pm",
       dek: "The body thanks you.",
-      lead: "Our ancestors went days without food. Today we live with the biggest food availability in human history — a little hunger isn't an emergency, it's normal. The body settles — no spikes, no weight of digestion.",
-      body: "I aim for one meal a day at 5pm. Honestly, I often break earlier — a smoothie around 2pm, some fruit, something light. The point isn't to be rigid, it's to give the body long stretches without digestion. Ease in: push your last meal 15 minutes later each day.\n\nThis is not for everyone. If you're pregnant, breastfeeding, underweight, on medication, or have a history of disordered eating — talk to a doctor first or skip this part. The movement and food principles work without the fasting.",
+      lead: "Our ancestors went days without food. A little hunger isn't an emergency, it's how the body is supposed to feel most of the day.",
+      body: "Digestion is heavy work. When you're not doing it, the body cleans up, repairs, and burns what it has stored. Energy stays steady, the mind sharpens, sleep deepens.\n\nNot for everyone. If you're pregnant, breastfeeding, underweight, on medication, or have a history of disordered eating, talk to a doctor or skip this part.",
     },
     {
       title: "Lemon + Himalayan salt",
