@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Download, Eye, BookOpen } from "lucide-react"
 import { EBOOKS, LANG_FLAG, LANG_LABEL } from "@/lib/ebooks"
+import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { parseIdsParam } from "@/lib/utils/url-params"
+import { EbooksSubscribeForm } from "@/components/ebook/ebooks-subscribe-form"
 
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Ebooks — Lipe Moves",
@@ -16,7 +19,14 @@ export const metadata: Metadata = {
     "Free ebooks by Felipe Muner. Pick your language and start moving better.",
 }
 
-export default function PublicEbooksPage() {
+export default async function PublicEbooksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>
+}) {
+  const { lang = "" } = await searchParams
+  const selectedLangs = parseIdsParam(lang)
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <div className="mx-auto max-w-5xl px-4 py-10 sm:py-16">
@@ -39,6 +49,10 @@ export default function PublicEbooksPage() {
         ) : (
           <div className="space-y-6">
             {EBOOKS.map((book) => {
+              const visibleEditions =
+                selectedLangs.size > 0
+                  ? book.editions.filter((e) => selectedLangs.has(e.lang))
+                  : book.editions
               const availableCount = book.editions.filter(
                 (e) => e.available,
               ).length
@@ -70,9 +84,25 @@ export default function PublicEbooksPage() {
                         {availableCount} of {book.editions.length} languages
                         live
                       </div>
+                      <div className="w-full max-w-[240px]">
+                        <EntitySearchFilter
+                          items={book.editions.map((ed) => ({
+                            id: ed.lang,
+                            label: LANG_LABEL[ed.lang],
+                            emoji: LANG_FLAG[ed.lang],
+                          }))}
+                          multiple
+                          paramName="lang"
+                          value={lang}
+                          placeholder="Filter by language..."
+                          searchPlaceholder="Search language..."
+                          emptyText="No matches."
+                          allLabel="All languages"
+                        />
+                      </div>
 
                       <div className="divide-y border-t">
-                        {book.editions.map((ed) => (
+                        {visibleEditions.map((ed) => (
                           <div
                             key={ed.lang}
                             className="flex items-center justify-between gap-3 py-2"
@@ -136,6 +166,8 @@ export default function PublicEbooksPage() {
                           </div>
                         ))}
                       </div>
+
+                      <EbooksSubscribeForm />
                     </CardContent>
                   </div>
                 </Card>

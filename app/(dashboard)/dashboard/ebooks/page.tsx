@@ -5,15 +5,23 @@ import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Download, Eye, BookOpen, ExternalLink } from "lucide-react"
+import { Download, Eye, BookOpen } from "lucide-react"
 import { PageHeader } from "@/components/crm/page-header"
 import { EBOOKS, LANG_FLAG, LANG_LABEL } from "@/lib/ebooks"
 import { SharePublicLink } from "@/components/crm/share-public-link"
+import { EntitySearchFilter } from "@/components/crm/entity-search-filter"
+import { parseIdsParam } from "@/lib/utils/url-params"
 
 export const dynamic = "force-dynamic"
 
-export default async function EbooksPage() {
+export default async function EbooksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>
+}) {
   await requireDashboardSession()
+  const { lang = "" } = await searchParams
+  const selectedLangs = parseIdsParam(lang)
 
   return (
     <div className="space-y-6">
@@ -33,6 +41,10 @@ export default async function EbooksPage() {
       ) : (
         <div className="space-y-6">
           {EBOOKS.map((book) => {
+            const visibleEditions =
+              selectedLangs.size > 0
+                ? book.editions.filter((e) => selectedLangs.has(e.lang))
+                : book.editions
             const availableCount = book.editions.filter(
               (e) => e.available,
             ).length
@@ -66,9 +78,25 @@ export default async function EbooksPage() {
                     <div className="text-xs text-muted-foreground">
                       {availableCount} of {book.editions.length} languages live
                     </div>
+                    <div className="w-full max-w-[240px]">
+                      <EntitySearchFilter
+                        items={book.editions.map((ed) => ({
+                          id: ed.lang,
+                          label: LANG_LABEL[ed.lang],
+                          emoji: LANG_FLAG[ed.lang],
+                        }))}
+                        multiple
+                        paramName="lang"
+                        value={lang}
+                        placeholder="Filter by language..."
+                        searchPlaceholder="Search language..."
+                        emptyText="No matches."
+                        allLabel="All languages"
+                      />
+                    </div>
 
                     <div className="divide-y border-t">
-                      {book.editions.map((ed) => (
+                      {visibleEditions.map((ed) => (
                         <div
                           key={ed.lang}
                           className="flex items-center justify-between gap-3 py-2"
