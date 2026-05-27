@@ -51,6 +51,7 @@ const EBOOK_CSS = `
 .ebook-root .ch-a { display: grid; grid-template-rows: 55% auto; height: 100%; }
 .ebook-root .ch-a .photo { overflow: hidden; }
 .ebook-root .ch-a .photo img { object-position: center top; }
+.ebook-root .ch-4 .ch-a .photo img { object-position: 70% center; }
 .ebook-root .ch-a .body { padding: 12mm 20mm 16mm; }
 .ebook-root .ch-a .eyebrow { margin-bottom: 6px; }
 .ebook-root .ch-a h2 { font-size: 30pt; line-height: 1.05; margin-bottom: 4px; }
