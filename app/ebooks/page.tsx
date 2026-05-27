@@ -156,7 +156,10 @@ export default async function PublicEbooksPage({
                                     className="h-8 w-8"
                                     title="Download PDF"
                                   >
-                                    <a href={ed.file} download>
+                                    <a
+                                      href={ed.file}
+                                      download={`felipe-muner-${book.slug}-${ed.lang}.pdf`}
+                                    >
                                       <Download className="h-3.5 w-3.5" />
                                     </a>
                                   </Button>
