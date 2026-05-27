@@ -72,7 +72,7 @@ export const moveBetter: EbookContent = {
   coverBlurb:
     "Years in motion. One simple formula.\nHere it is.",
 
-  manifesto: "Move every day.\nBreath is everything.\nEat like your ancestors.",
+  manifesto: "Move every day.\nStay with the breath.\nEat like your ancestors.",
   manifestoCaption: "The essential fits in three lines.",
 
   tocTitle: "What's inside",
@@ -90,7 +90,7 @@ export const moveBetter: EbookContent = {
       title: "The formula",
       dek: "Everything in one paragraph.",
       lead: "I do all my focus work fasted, before food. The body burns fat and isn't busy digesting. Skip the coffee, go for lemon with Himalayan salt. Move through the day: yoga, calisthenics, kettlebell. Eat once, at sunset — fruit, vegetables, protein. Sleep early.",
-      body: "That's the whole thing. The rest is just the why and the how.\n\nYes, it's one meal a day (OMAD). You won't starve. The body adapts faster than you'd think, and the next chapter shows you how to ease in.\n\nI don't do this every day either. But the more I lean in, the better I feel.",
+      body: "That's the whole thing. The rest is just the why and the how.\n\nYes, it's one meal a day (OMAD). You won't starve. The body adapts faster than you'd think, and the next chapter shows you how to ease in.\n\nIf you need more than one meal, eat between midday and 5pm — and put the carbs as early as you can. The body uses them better when there's still daylight.\n\nI don't do this every day either. But the more I lean in, the better I feel.",
     },
     {
       title: "How to start",
@@ -177,7 +177,7 @@ export const moveBetter: EbookContent = {
 
   closingTitle: "Thank you",
   closingText:
-    "This guide is an honest summary of what I do. It is not medical advice and not a promise. It's an invitation for you to experiment, listen to your body and build your own formula.",
+    "This guide is a summary of what I do. It is not medical advice and not a promise. It's an invitation for you to experiment, listen to your body and build your own formula.",
   closingSign: "With gratitude,\nFelipe Muner",
 
   // Photo files in /public/ebooks/photos (alphabetical order matches old Python indices)

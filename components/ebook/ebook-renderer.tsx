@@ -99,6 +99,7 @@ const EBOOK_CSS = `
 .ebook-root .cta .offer h3 { font-family: var(--head); font-size: 18pt; font-weight: 300; line-height: 1.1; margin-bottom: 10px; letter-spacing: -0.3px; }
 .ebook-root .cta .offer p { color: var(--bg); opacity: 0.9; font-size: 9.5pt; line-height: 1.55; margin-bottom: 14px; }
 .ebook-root .cta .offer .offer-cta { display: inline-block; font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: var(--bg); border-bottom: 1px solid var(--bg); padding-bottom: 2px; margin-top: auto; align-self: flex-start; }
+.ebook-root .cta .disclaimer { margin-top: 14mm; font-size: 9pt; line-height: 1.6; color: var(--muted); font-style: italic; max-width: 90%; }
 
 /* CLOSING */
 .ebook-root .closing { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; padding: 0 26mm; }
@@ -300,18 +301,7 @@ export function EbookRenderer({ content: c }: { content: EbookContent }) {
             </div>
           ))}
         </div>
-      </div>
-    </section>,
-  )
-
-  // Closing
-  pages.push(
-    <section key="closing" className="page">
-      <div className="closing">
-        <div className="eyebrow">{c.brand}</div>
-        <h2>{c.closingTitle}</h2>
-        {paragraphs(c.closingText)}
-        <div className="sign">{c.closingSign}</div>
+        <div className="disclaimer">{c.closingText}</div>
       </div>
     </section>,
   )
