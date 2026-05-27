@@ -65,7 +65,7 @@ export type EbookContent = {
 export const moveBetter: EbookContent = {
   brand: "FELIPE MUNER",
   title: "Move Better",
-  subtitle: "Food, movement, breath — a body built for life",
+  subtitle: "Breath, food, movement, rest — a body built for life",
   author: "Felipe Muner",
   edition: "May 2026",
   chapterLabel: "Chapter",
@@ -147,16 +147,16 @@ export const moveBetter: EbookContent = {
   offers: [
     {
       eyebrow: "1:1 Coaching",
-      title: "Work with me directly",
-      text: "I take a few 1:1 clients each month. We build your full plan — movement, nutrition, fasting, rest, breath and mindset — adapted to your body and goals. You also get my own platform to track your movement daily, so we both see what's happening. Message me and I'll tell you if it's a fit.",
+      title: "Your full plan, built with me",
+      text: "A few clients each month. We build your movement, nutrition, fasting, rest and breath into one plan that fits your body and goals — then I track it with you daily through a private dashboard. Message me and I'll tell you if it's a fit.",
       ctaLabel: "Apply for 1:1 on WhatsApp →",
       ctaHref:
         "https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%201%3A1%20coaching",
     },
     {
-      eyebrow: "Live my lifestyle",
-      title: "Movement on the road",
-      text: "8 years traveling the planet and I never broke my routine — not once. If you're a digital nomad or just love to travel, I build your trip around movement, nutrition and rest: where to train, what to eat in each country, how to sleep and recover across time zones, simple daily practice that fits hotels, beaches, jungles, airports. Travel without losing yourself.",
+      eyebrow: "Travel · On the road",
+      title: "Travel without losing yourself",
+      text: "8 years on the road, routine never broken. I build your next trip around movement, nutrition and rest — where to train, what to eat in each country, how to sleep across time zones. A simple daily practice that fits hotels, beaches, jungles, airports.",
       ctaLabel: "Plan my trip on WhatsApp →",
       ctaHref:
         "https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%20a%20travel%20movement%20plan",
@@ -203,8 +203,9 @@ export const moveBetter: EbookContent = {
     "z_breath.jpg",
     "z_fasting.jpg",
     "z_start.jpg",
+    "z_yoga.jpg",
   ],
-  chapterPhoto: [4, 5, 20, 19, 15, 14, 8, 11, 18],
+  chapterPhoto: [4, 5, 20, 19, 15, 14, 21, 11, 18],
   layouts: ["a", "b", "c", "a", "b", "c", "a", "b", "c"],
   manifestoPhoto: 5,
   coverSlots: [3, 1, 0, 6],

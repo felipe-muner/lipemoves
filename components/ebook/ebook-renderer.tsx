@@ -52,6 +52,7 @@ const EBOOK_CSS = `
 .ebook-root .ch-a .photo { overflow: hidden; }
 .ebook-root .ch-a .photo img { object-position: center top; }
 .ebook-root .ch-4 .ch-a .photo img { object-position: 70% center; }
+.ebook-root .ch-7 .ch-a .photo img { object-position: 50% 70%; }
 .ebook-root .ch-a .body { padding: 12mm 20mm 16mm; }
 .ebook-root .ch-a .eyebrow { margin-bottom: 6px; }
 .ebook-root .ch-a h2 { font-size: 30pt; line-height: 1.05; margin-bottom: 4px; }
@@ -96,9 +97,14 @@ const EBOOK_CSS = `
 .ebook-root .cta .offers { margin-top: 14mm; display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
 .ebook-root .cta .offer { padding: 8mm 8mm 9mm; background: var(--accent); color: var(--bg); border-radius: 14px; display: flex; flex-direction: column; min-height: 105mm; }
 .ebook-root .cta .offer .eyebrow { color: var(--bg); opacity: 0.7; margin-bottom: 6px; font-size: 8pt; letter-spacing: 4px; }
-.ebook-root .cta .offer h3 { font-family: var(--head); font-size: 18pt; font-weight: 300; line-height: 1.1; margin-bottom: 10px; letter-spacing: -0.3px; }
+.ebook-root .cta .offer h3 { color: var(--bg); font-family: var(--head); font-size: 18pt; font-weight: 300; line-height: 1.1; margin-bottom: 10px; letter-spacing: -0.3px; }
 .ebook-root .cta .offer p { color: var(--bg); opacity: 0.9; font-size: 9.5pt; line-height: 1.55; margin-bottom: 14px; }
 .ebook-root .cta .offer .offer-cta { display: inline-block; font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: var(--bg); border-bottom: 1px solid var(--bg); padding-bottom: 2px; margin-top: auto; align-self: flex-start; }
+.ebook-root .cta .offer:nth-child(2) { background: transparent; border: 1.5px solid var(--accent); color: var(--accent); }
+.ebook-root .cta .offer:nth-child(2) .eyebrow { color: var(--accent); opacity: 0.7; }
+.ebook-root .cta .offer:nth-child(2) h3 { color: var(--accent); }
+.ebook-root .cta .offer:nth-child(2) p { color: var(--text); opacity: 1; }
+.ebook-root .cta .offer:nth-child(2) .offer-cta { color: var(--accent); border-bottom-color: var(--accent); }
 .ebook-root .cta .disclaimer { margin-top: 14mm; font-size: 9pt; line-height: 1.6; color: var(--muted); font-style: italic; max-width: 90%; }
 
 /* CLOSING */
