@@ -118,9 +118,9 @@ export const moveBetter: EbookContent = {
     },
     {
       title: "Yoga",
-      dek: "The foundation.",
-      lead: "Yoga is the first door. It changed everything for me. The asanas are just the entry — the real work is the breath inside them, and it's a practice you refine until your last day.",
-      body: "Before yoga I was a stiff gym-bro with weak legs and a body I couldn't really use. Yoga is how I reclaim the movements I had as a child — open hips, a long spine, joints that work with me, not against me. And once the joints are healthy and spacious, the muscle you build finally has somewhere to go.\n\nI practice almost every day. Sometimes 10 minutes, sometimes an hour. Outdoors when I can. Flexibility, calm, focus, sleep — all side effects of just showing up.",
+      dek: "A 24-hour practice, for life.",
+      lead: "Before 30 I had already lost the basics — I couldn't fold forward, couldn't squat, couldn't really use the range of motion I was born with. Yoga is how I calm my nervous system down and get those movements back: a long spine, open shoulders, open hips, ankles that bend, joints that work with me. And once they're healthier, the muscle has somewhere to go.",
+      body: "But this isn't only about stretching. The postures (asanas) are just the entry.\n\nThe real yoga is finding your most balanced version — honest and humble — and working on it every day. A practice to keep alive until your last day.",
     },
     {
       title: "Kettlebell",
@@ -202,8 +202,9 @@ export const moveBetter: EbookContent = {
     "z_planning.jpg",
     "z_breath.jpg",
     "z_fasting.jpg",
+    "z_start.jpg",
   ],
-  chapterPhoto: [4, 5, 17, 19, 15, 14, 8, 11, 18],
+  chapterPhoto: [4, 5, 20, 19, 15, 14, 8, 11, 18],
   layouts: ["a", "b", "c", "a", "b", "c", "a", "b", "c"],
   manifestoPhoto: 5,
   coverSlots: [3, 1, 0, 6],
