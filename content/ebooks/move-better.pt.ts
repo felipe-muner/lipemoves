@@ -26,13 +26,13 @@ export const moveBetterPt: EbookContent = {
     {
       title: "A fórmula",
       dek: "Tudo em um parágrafo.",
-      lead: "Todo trabalho que exige foco eu faço em jejum, antes de comer. O corpo queima gordura e não tá ocupado digerindo. Esquece o café, vai de limão com sal do Himalaia. Movimento durante o dia: yoga, calistenia, kettlebell. Come uma vez, no pôr do sol — fruta, vegetal, proteína. Dorme cedo.",
-      body: "É só isso. O resto é o porquê e o como.\n\nSim, é uma refeição por dia (OMAD). Você não vai morrer de fome. O corpo se adapta mais rápido do que você imagina, e o próximo capítulo mostra como entrar devagar.\n\nSe precisar comer mais de uma vez, come entre meio-dia e 5 da tarde — e bota o carboidrato o mais cedo possível. O corpo usa melhor enquanto ainda tem sol.\n\nEu também não faço isso todo dia. Mas quanto mais eu entro nisso, melhor eu me sinto.",
+      lead: "Todo trabalho que exige foco eu faço em jejum, antes de comer. O corpo queima gordura e não tá ocupado digerindo. Abandonei o café e hoje prefiro limão e sal do Himalaia. Movimento durante o dia: yoga, calistenia, kettlebell. Come uma vez, no pôr do sol — fruta, vegetal, proteína. Dorme cedo.",
+      body: "É só isso. O resto é o porquê e o como.\n\nSim, é uma refeição por dia (OMAD). Você não vai morrer de fome. O corpo se adapta mais rápido do que você imagina, e o próximo capítulo mostra como começar.\n\nSe precisar comer mais de uma vez, come entre meio-dia e 5 da tarde — e bota o carboidrato o mais cedo possível. O corpo usa melhor enquanto ainda tem sol.\n\nHonestamente, não sigo isso todo dia. Mas quanto mais sigo, melhor fico.",
     },
     {
       title: "Como começar",
       dek: "Três semanas. Devagar e firme.",
-      lead: "Você não vai virar a chave da noite pro dia. Empurra demais, larga em uma semana. Empurra devagar, vira hábito. Esse é o caminho que eu daria pra um amigo.",
+      lead: "Não dá pra virar a chave da noite pro dia. Quem força demais, larga em uma semana. Quem vai com calma, cria o hábito. Essa é a melhor maneira de ir.",
       body: "Semana 1. Pula o café da manhã. Limão e sal no lugar. Movimento, 5 minutinhos por dia, em qualquer lugar. Uns agachamentos, um alongamento, uma caminhada. Só isso.\n\nSemana 2. Empurra o almoço pra mais tarde, uma hora por vez. Água e chá no resto do dia. Encaixa duas sessões de verdade nessa semana — kettlebell, yoga ou calistenia. Começa a dormir mais cedo.\n\nSemana 3. As 5 da tarde já parecem normal. Treina todo dia, mesmo que sejam 10 minutos. Fica na respiração. Repara em como você se sente — essa é a prova real, não a balança.\n\nConsistência ganha de intensidade. Esse é o meu caminho. Acha o seu.",
     },
     {
