@@ -39,53 +39,53 @@ export const moveBetterPt: EbookContent = {
       title: "Jejum até as 5 da tarde",
       dek: "O corpo agradece.",
       lead: "Nossos ancestrais ficavam dias sem comer. Hoje a gente vive no momento mais saturado de comida da história, então um pouco de fome não é emergência — é como o corpo deveria se sentir na maior parte do dia.",
-      body: "Digerir dá um trabalhão. Quando você não tá digerindo, o corpo aproveita pra limpar, reparar e queimar o que tem guardado. A energia estabiliza, a mente afia, o sono aprofunda.\n\nNão é pra todo mundo. Se você tá grávida, amamentando, abaixo do peso, tomando remédio ou tem histórico de transtorno alimentar, fala com um médico ou pula essa parte.",
+      body: "Digerir requer energia. Quando você não tá digerindo, o corpo aproveita pra limpar, reparar e queimar o que tem guardado. A energia estabiliza, a mente afia, o sono aprofunda.\n\nNão é pra todo mundo. Se você tá grávida, amamentando, abaixo do peso, tomando remédio ou tem histórico de transtorno alimentar, fala com um médico ou pula essa parte.",
     },
     {
       title: "Limão + sal do Himalaia",
       dek: "Meu café da manhã.",
       lead: "Um copo d'água, suco de limão fresco, uma boa pitada de sal rosa do Himalaia. É a minha manhã. Hidrata, mineraliza e acorda o corpo sem cafeína nem açúcar.",
-      body: "Café pega emprestada energia do final do dia. Você sobe, cai, vai atrás de outro. Limão e sal só repõem o que você perdeu durante a noite e deixam o corpo acordar no próprio tempo.\n\nÀs vezes deixo gengibre, cúrcuma, pimenta-do-reino, canela e umas gotinhas de própolis em infusão na água quente. Mesma ideia: alimenta o corpo, não estimula.",
+      body: "Café pega emprestada energia do final do dia. Você sobe, cai, vai atrás de outro. Limão e sal só repõem o que você perdeu durante a noite e deixam o corpo acordar no próprio tempo.\n\nOutra boa opção é gengibre, cúrcuma, pimenta em pó, canela e própolis. A ideia é a mesma: nutrir o corpo, sem estimular.",
     },
     {
       title: "Alimentação",
       dek: "A refeição única, montada certo.",
-      lead: "Come o mais limpo que conseguir. Quanto menos processado e industrial, melhor o corpo roda. Quando você come uma vez por dia só, o prato pesa de verdade.",
-      body: "Monta nessa ordem: fruta, vegetal, carboidrato lento, proteína. Cada camada tem um papel — energia rápida, fibra, combustível lento, reparo.\n\nQuase todo dia eu adiciono: aveia, chia, linhaça, canela, cúrcuma, gengibre e levedura nutricional. Barato, simples, cheio do que o corpo precisa.",
+      lead: "Come o mais limpo que conseguir. Quanto menos processado e industrial, melhor o corpo funciona. Quando você come uma vez por dia só, o prato pesa de verdade.",
+      body: "Fruta, vegetal, carboidrato lento, proteína. Cada camada tem um papel — energia rápida, fibra, combustível lento, reparo.\n\nQuase todo dia eu adiciono: aveia, chia, linhaça, canela, cúrcuma, gengibre e levedura nutricional. Barato, simples, cheio do que o corpo precisa.",
     },
     {
       title: "Yoga",
       dek: "Uma prática de 24 horas, pra vida toda.",
-      lead: "Antes dos 30 eu já tinha perdido o básico — não conseguia me dobrar pra frente, não conseguia agachar, não conseguia usar a amplitude com que nasci. A yoga é como eu acalmo meu sistema nervoso e recupero esses movimentos: coluna longa, ombro aberto, quadril aberto, tornozelo que dobra, articulação que trabalha comigo. E quando elas estão mais saudáveis, o músculo tem pra onde ir.",
+      lead: "Antes dos 30 eu já tinha perdido o básico — não conseguia me dobrar pra frente, não conseguia agachar, tinha perdido a amplitude que toda criança tem de natureza. A yoga é como eu acalmo meu sistema nervoso e recupero esses movimentos: coluna longa, ombro aberto, quadril aberto, tornozelo que dobra, articulação que trabalha comigo. E quando elas estão mais saudáveis, o músculo tem pra onde ir.",
       body: "Mas não é só sobre alongamento. As posturas (asanas) são só a porta de entrada.\n\nA yoga de verdade é encontrar sua versão mais equilibrada — honesta e humilde — e trabalhar nela todo dia. Uma prática pra manter viva até o último dia.",
     },
     {
       title: "Kettlebell",
       dek: "Um peso, o corpo todo.",
-      lead: "Pra mim, o kettlebell é o que mais se aproxima de treinar pra vida real. O motivo é simples: ele se move numa amplitude muito maior do que qualquer máquina, então você ganha força, mobilidade e equilíbrio ao mesmo tempo.",
-      body: "Cansei de máquina. Isola músculo, beleza, mas eu não quero músculo que eu não consigo usar. Os movimentos rotacionais, balísticos, em forma de pêndulo, ativam cada estabilizador pequeno que a máquina nunca toca, e obrigam os dois lados do corpo a trabalhar sob carga.\n\nSe você treina pensando em longevidade, é esse o trabalho. Um corpo que segura um escorregão, absorve uma queda, e volta inteiro do inesperado.",
+      lead: "Pra mim, o kettlebell é o que mais se aproxima de treinar pra vida real. O motivo é simples: ele se move numa amplitude muito maior do que qualquer máquina de academia, então você ganha força, mobilidade e equilíbrio ao mesmo tempo.",
+      body: "Não quero músculo que eu não consigo usar. Os movimentos rotacionais, balísticos, em forma de pêndulo, ativam cada estabilizador pequeno que a máquina nunca toca, e obrigam os dois lados do corpo a trabalhar sob carga.\n\nSe você treina pensando em longevidade, é esse o trabalho. Um corpo que segura um escorregão, absorve uma queda, e volta inteiro do inesperado.",
     },
     {
       title: "Atenção em movimento",
-      dek: "Respiração, olhar, depois movimento.",
-      lead: "Quando eu treino, eu treino. Traz amor, ou tá perdendo tempo. No pain, no gain. Ao ar livre quando dá, no nascer do sol se possível — sem celular, sem música, sem ar condicionado nem ventilador, sem conversa, sem sentar, sem pressa. Vive cada movimento, por inteiro.",
-      body: "Respiração primeiro, olhar depois, aí o movimento segue. Olhar suave, intenção firme — quando o olho fica fixo, o corpo entende que tá seguro.\n\nMesmo entre as séries, fica na respiração. É aí que a prática mora de verdade — não só no movimento, mas na pausa também. Não quebra o fio. Isso é Prana de verdade.\n\nO treino vira meditação ativa. Você sai melhor do que entrou — e não só fisicamente.",
+      dek: "Respiração, olhar, movimento.",
+      lead: "Quando eu treino, eu treino. Faça com amor, ou perca tempo. Ao ar livre quando dá, no nascer do sol se possível — sem celular, sem música, sem ar condicionado nem ventilador, sem conversa, sem sentar, sem pressa. Vive cada movimento, por inteiro.",
+      body: "Respiração primeiro, olhar depois, aí o movimento segue. Olhar suave, intenção firme — Olhar fixo e o corpo entende que tá seguro.\n\nMesmo entre as séries, presta atenção na respiração. É aí que a prática mora de verdade — não só no movimento, mas na pausa também. Isso é Prana de verdade.\n\nO treino vira meditação ativa. Você sai melhor do que entrou — e não só fisicamente.",
     },
   ],
 
-  quote1: "“Constrói um corpo\npra vida,\nnão pro espelho.”",
+  quote1: "“Um corpo\npra vida,\nnão pro espelho.”",
   quote2: "“Movimento\ncontrolado constrói\nforça real.”",
 
   ctaEyebrow: "Próximo passo",
   ctaTitle: "Contato",
   ctaText:
-    "Se esse guia te ajudou, me conta. Me chama por um dos contatos abaixo — adoro ouvir sua história.",
+    "Se esse guia te ajudou, entra em contato. Me chama por um dos contatos abaixo.",
 
   offers: [
     {
       eyebrow: "Coaching 1:1",
       title: "Seu plano completo, feito comigo",
-      text: "Pego poucos clientes por mês. Montamos seu movimento, alimentação, jejum, descanso e respiração num plano que serve pro seu corpo e pros seus objetivos — e eu te acompanho todo dia por uma plataforma privada. Me manda mensagem e eu te falo se faz sentido.",
+      text: "Poucos clientes por mês. Montamos seu plano de exercício, alimentação, jejum, descanso e respiração num plano que serve pro seu corpo e pros seus objetivos — e eu te acompanho todo dia por uma plataforma privada. Me manda mensagem e eu te falo se faz sentido.",
       ctaLabel: "Aplicar pelo WhatsApp →",
       ctaHref:
         "https://wa.me/5521984852802?text=Oi%20Felipe%2C%20tenho%20interesse%20no%20coaching%201%3A1",
