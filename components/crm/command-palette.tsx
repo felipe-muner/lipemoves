@@ -26,6 +26,10 @@ import {
   Bell,
   DoorOpen,
   Hash,
+  BookOpen,
+  Inbox,
+  Heart,
+  Footprints,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -224,6 +228,39 @@ const NAV_GROUPS: Group[] = [
         icon: Hash,
         keywords:
           "hashtags instagram tiktok youtube social posts copy library kettlebell yoga",
+        roles: ["admin", "manager"],
+      },
+      {
+        label: "Ebooks",
+        href: "/dashboard/ebooks",
+        icon: BookOpen,
+        keywords: "pdf guides books move better download lead magnet",
+        roles: ["admin", "manager"],
+      },
+      {
+        label: "Subscribers",
+        href: "/dashboard/subscribers",
+        icon: Inbox,
+        keywords: "email list newsletter leads contacts audience",
+        roles: ["admin", "manager"],
+      },
+    ],
+  },
+  {
+    heading: "Personal",
+    items: [
+      {
+        label: "Personal expenses",
+        href: "/dashboard/personal/expenses",
+        icon: Heart,
+        keywords: "private spending personal budget",
+        roles: ["admin", "manager"],
+      },
+      {
+        label: "Movement",
+        href: "/dashboard/personal/movement",
+        icon: Footprints,
+        keywords: "training workout log yoga kettlebell personal",
         roles: ["admin", "manager"],
       },
     ],
