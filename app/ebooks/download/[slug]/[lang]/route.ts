@@ -1,12 +1,8 @@
-import { readFile } from "node:fs/promises"
-import { join } from "node:path"
 import { NextResponse } from "next/server"
 import { EBOOKS } from "@/lib/ebooks"
 
-export const dynamic = "force-static"
-
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ slug: string; lang: string }> },
 ) {
   const { slug, lang } = await params
@@ -16,11 +12,14 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  const filePath = join(process.cwd(), "public", edition.file.replace(/^\//, ""))
-  const buffer = await readFile(filePath)
-  const filename = `felipe-muner-${slug}-${lang}.pdf`
+  const origin = new URL(req.url).origin
+  const upstream = await fetch(`${origin}${edition.file}`)
+  if (!upstream.ok || !upstream.body) {
+    return NextResponse.json({ error: "Upstream missing" }, { status: 502 })
+  }
 
-  return new NextResponse(new Uint8Array(buffer), {
+  const filename = `felipe-muner-${slug}-${lang}.pdf`
+  return new NextResponse(upstream.body, {
     headers: {
       "content-type": "application/pdf",
       "content-disposition": `attachment; filename="${filename}"`,
