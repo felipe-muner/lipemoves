@@ -69,8 +69,7 @@ export const moveBetter: EbookContent = {
   author: "Felipe Muner",
   edition: "May 2026",
   chapterLabel: "Chapter",
-  coverBlurb:
-    "Years in motion. One simple formula.\nHere it is.",
+  coverBlurb: "Years in motion. One simple formula.",
 
   manifesto: "Move every day.\nStay with the breath.\nEat like your ancestors.",
   manifestoCaption: "The essential fits in three lines.",

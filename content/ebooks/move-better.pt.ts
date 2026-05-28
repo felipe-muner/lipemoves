@@ -3,25 +3,25 @@ import type { EbookContent } from "./move-better"
 export const moveBetterPt: EbookContent = {
   brand: "FELIPE MUNER",
   title: "Mova-se Melhor",
-  subtitle: "Respiração, comida, movimento, descanso — um corpo feito pra vida",
+  subtitle: "Respiração, alimentação, movimento, descanso — um corpo feito pra vida",
   author: "Felipe Muner",
   edition: "Maio 2026",
   chapterLabel: "Capítulo",
-  coverBlurb: "Anos em movimento. Uma fórmula simples.\nTá aqui.",
+  coverBlurb: "Anos em movimento. Uma fórmula simples.",
 
   manifesto: "Se mexa todo dia.\nFique na respiração.\nComa como seus ancestrais.",
   manifestoCaption: "O essencial cabe em três linhas.",
 
   tocTitle: "O que tem aqui",
   tocSubtitle:
-    "Um guia curto e direto — lê em 20 minutos, aplica pelo resto da vida.",
+    "Um guia curto e direto — 20 minutos, use pelo resto da vida.",
 
   chapters: [
     {
       title: "Quem eu sou",
-      dek: "Feito pra vida, não pro espelho.",
+      dek: "Treinado pra vida, não pro espelho.",
       lead: "Sou o Felipe. Até os 28 vivi o ciclo ocidental clássico: 8 horas de sono, 8 horas no escritório, 3 refeições por dia, uma hora de academia. Perna fraca, mobilidade zero, um corpo que aparecia no espelho mas não fazia nada na vida real. O pior nem é a aparência — é o quão frágil isso te deixa. Quanto mais desequilibrado o corpo, mais fácil se machucar.",
-      body: "Em 2018 larguei tudo e fui rodar o mundo, e enquanto tentava aproveitar, meu corpo desmoronava. Na covid fiquei preso no Vietnã, e ali, pela primeira vez, virei de verdade na yoga — treinando todo dia com os locais, aprendendo com mestres indianos.\n\nFoi quando comecei a me reconstruir do zero, e o interessante é que tudo aconteceu depois dos 30. Primeiro mobilidade, depois flexibilidade, depois estabilidade e equilíbrio. Só depois disso entrei no músculo — e dessa vez funciona de verdade. Sento no chão sem pensar. Levanto, giro, corro, caio e levanto de novo. Sinceramente, vou chegar nos 40 me sentindo melhor do que aos 20. E quero te ajudar a chegar lá também.\n\nÉ disso que esse guia se trata. Não é dieta, não é truque. É exatamente o que eu faço, depois de anos tentando, errando e ajustando. Você lê em uns 20 minutos e aplica pelo resto da vida. Compartilha com quem você ama. E se quiser que eu caminhe junto contigo, te espero no fim do livro.",
+      body: "Em 2018 deixei tudo pra trás e saí pelo mundo. Queria viver, mas o corpo já não me deixava. Quando a covid chegou, estava no Vietnã, e foi ali que a Yoga deixou de ser de vez em quando e virou prática diária: corpo, mente, respiração. Todo dia com os locais, aprendendo com mestres indianos.\n\nMe reconstruí do zero. Tudo aconteceu depois dos 30. Mobilidade, Flexibilidade, Equilíbrio e Músculo, e dessa vez funcionou de verdade. Levanto, giro, corro, caio, levanto de novo. Chegarei aos 40 me sentindo melhor do que aos 20, sem dúvidas. E quero te ajudar a chegar lá.\n\nÉ disso que esse guia se trata. Não é dieta, não é truque. É exatamente o que eu faço, depois de anos tentando, errando e ajustando. Você lê em uns 20 minutos e usa pelo resto da vida. Compartilha com quem você ama. E se quiser que eu caminhe junto contigo, te espero no fim do livro.",
     },
     {
       title: "A fórmula",
@@ -48,7 +48,7 @@ export const moveBetterPt: EbookContent = {
       body: "Café pega emprestada energia do final do dia. Você sobe, cai, vai atrás de outro. Limão e sal só repõem o que você perdeu durante a noite e deixam o corpo acordar no próprio tempo.\n\nÀs vezes deixo gengibre, cúrcuma, pimenta-do-reino, canela e umas gotinhas de própolis em infusão na água quente. Mesma ideia: alimenta o corpo, não estimula.",
     },
     {
-      title: "Comida",
+      title: "Alimentação",
       dek: "A refeição única, montada certo.",
       lead: "Come o mais limpo que conseguir. Quanto menos processado e industrial, melhor o corpo roda. Quando você come uma vez por dia só, o prato pesa de verdade.",
       body: "Monta nessa ordem: fruta, vegetal, carboidrato lento, proteína. Cada camada tem um papel — energia rápida, fibra, combustível lento, reparo.\n\nQuase todo dia eu adiciono: aveia, chia, linhaça, canela, cúrcuma, gengibre e levedura nutricional. Barato, simples, cheio do que o corpo precisa.",
@@ -77,7 +77,7 @@ export const moveBetterPt: EbookContent = {
   quote2: "“Movimento\ncontrolado constrói\nforça real.”",
 
   ctaEyebrow: "Próximo passo",
-  ctaTitle: "Bora ficar em contato",
+  ctaTitle: "Contato",
   ctaText:
     "Se esse guia te ajudou, me conta. Me chama por um dos contatos abaixo — adoro ouvir sua história.",
 
