@@ -5,7 +5,7 @@ import { requireDashboardSession } from "@/lib/auth/dashboard"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Eye, BookOpen } from "lucide-react"
+import { Download, Eye, BookOpen } from "lucide-react"
 import { PageHeader } from "@/components/crm/page-header"
 import { EBOOKS, LANG_FLAG, LANG_LABEL } from "@/lib/ebooks"
 import { SharePublicLink } from "@/components/crm/share-public-link"
@@ -138,6 +138,22 @@ export default async function EbooksPage({
                                     <Eye className="mr-1 h-3.5 w-3.5" />
                                     Open
                                   </Link>
+                                </Button>
+                              )}
+                              {ed.file && (
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Download PDF"
+                                >
+                                  <a
+                                    href={ed.file}
+                                    download={`felipe-muner-${book.slug}-${ed.lang}.pdf`}
+                                  >
+                                    <Download className="h-3.5 w-3.5" />
+                                  </a>
                                 </Button>
                               )}
                             </div>
