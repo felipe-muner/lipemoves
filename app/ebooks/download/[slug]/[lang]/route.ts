@@ -14,12 +14,13 @@ export async function GET(
 
   const origin = new URL(req.url).origin
   const upstream = await fetch(`${origin}${edition.file}`)
-  if (!upstream.ok || !upstream.body) {
+  if (!upstream.ok) {
     return NextResponse.json({ error: "Upstream missing" }, { status: 502 })
   }
+  const buffer = await upstream.arrayBuffer()
 
   const filename = `felipe-muner-${slug}-${lang}.pdf`
-  return new NextResponse(upstream.body, {
+  return new NextResponse(buffer, {
     headers: {
       "content-type": "application/pdf",
       "content-disposition": `attachment; filename="${filename}"`,
