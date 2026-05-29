@@ -7,7 +7,6 @@ import {
   uuid,
   varchar,
   pgEnum,
-  jsonb,
 } from "drizzle-orm/pg-core"
 
 // ─── Enums ───────────────────────────────────────────────
@@ -31,26 +30,6 @@ export const membershipTypeEnum = pgEnum("membership_type", [
   "class_pack",
   "free_pass",
   "custom",
-])
-
-export const emailCampaignTemplateEnum = pgEnum("email_campaign_template", [
-  "announcement",
-  "class_reminder",
-  "membership_expiring",
-  "custom",
-])
-
-export const emailCampaignStatusEnum = pgEnum("email_campaign_status", [
-  "draft",
-  "sending",
-  "sent",
-  "failed",
-])
-
-export const emailRecipientStatusEnum = pgEnum("email_recipient_status", [
-  "queued",
-  "sent",
-  "failed",
 ])
 
 export const productBaseUnitEnum = pgEnum("product_base_unit", [
@@ -192,32 +171,12 @@ export const videos = pgTable("videos", {
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
 
-// ─── Watch Progress ──────────────────────────────────────
-export const watchProgress = pgTable("watch_progress", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  videoId: uuid("video_id")
-    .notNull()
-    .references(() => videos.id, { onDelete: "cascade" }),
-  progressSeconds: integer("progress_seconds").default(0),
-  completed: boolean("completed").default(false),
-  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
-})
-
-// ─── Email Marketing ─────────────────────────────────────
+// ─── Email Subscribers (newsletter / ebook leads) ────────
 export const subscriberStatusEnum = pgEnum("subscriber_status", [
   "active",
   "unsubscribed",
   "bounced",
   "complained",
-])
-
-export const emailSendStatusEnum = pgEnum("email_send_status", [
-  "queued",
-  "sent",
-  "failed",
 ])
 
 export const emailSubscribers = pgTable("email_subscribers", {
@@ -229,42 +188,6 @@ export const emailSubscribers = pgTable("email_subscribers", {
   unsubscribeToken: uuid("unsubscribe_token").defaultRandom().notNull().unique(),
   subscribedAt: timestamp("subscribed_at", { mode: "string" }).defaultNow().notNull(),
   unsubscribedAt: timestamp("unsubscribed_at", { mode: "string" }),
-})
-
-export const emailSequences = pgTable("email_sequences", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  slug: varchar("slug", { length: 100 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-})
-
-export const emailSequenceSteps = pgTable("email_sequence_steps", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  sequenceId: uuid("sequence_id")
-    .notNull()
-    .references(() => emailSequences.id, { onDelete: "cascade" }),
-  stepOrder: integer("step_order").notNull(),
-  delayHours: integer("delay_hours").notNull().default(24),
-  subject: varchar("subject", { length: 255 }).notNull(),
-  preheader: varchar("preheader", { length: 255 }),
-  bodyMarkdown: text("body_markdown").notNull(),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-})
-
-export const emailSequenceEnrollments = pgTable("email_sequence_enrollments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  subscriberId: uuid("subscriber_id")
-    .notNull()
-    .references(() => emailSubscribers.id, { onDelete: "cascade" }),
-  sequenceId: uuid("sequence_id")
-    .notNull()
-    .references(() => emailSequences.id, { onDelete: "cascade" }),
-  currentStep: integer("current_step").notNull().default(0),
-  nextSendAt: timestamp("next_send_at", { mode: "string" }).notNull(),
-  completedAt: timestamp("completed_at", { mode: "string" }),
-  enrolledAt: timestamp("enrolled_at", { mode: "string" }).defaultNow().notNull(),
 })
 
 // ─── Digital Products (one-time PDFs, etc.) ──────────────
@@ -485,57 +408,6 @@ export const membershipCheckins = pgTable("membership_checkins", {
   success: boolean("success").notNull().default(true),
   /** Human-readable reason when success=false. */
   failureReason: text("failure_reason"),
-})
-
-export const emailSends = pgTable("email_sends", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  subscriberId: uuid("subscriber_id")
-    .notNull()
-    .references(() => emailSubscribers.id, { onDelete: "cascade" }),
-  sequenceStepId: uuid("sequence_step_id").references(() => emailSequenceSteps.id, {
-    onDelete: "set null",
-  }),
-  subject: varchar("subject", { length: 255 }).notNull(),
-  status: emailSendStatusEnum("status").notNull().default("queued"),
-  resendId: varchar("resend_id", { length: 255 }),
-  errorMessage: text("error_message"),
-  sentAt: timestamp("sent_at", { mode: "string" }),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-})
-
-// ─── Email campaigns (one-shot broadcasts) ──────────────────
-export const emailCampaigns = pgTable("email_campaigns", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  createdByUserId: uuid("created_by_user_id").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  template: emailCampaignTemplateEnum("template").notNull().default("custom"),
-  subject: varchar("subject", { length: 255 }).notNull(),
-  bodyText: text("body_text").notNull(),
-  /** Snapshot of the filter used to resolve recipients (audience). */
-  audience: jsonb("audience").notNull(),
-  /** Human-readable summary, e.g. "All students (43)". */
-  audienceSummary: varchar("audience_summary", { length: 255 }).notNull(),
-  recipientCount: integer("recipient_count").notNull().default(0),
-  sentCount: integer("sent_count").notNull().default(0),
-  failedCount: integer("failed_count").notNull().default(0),
-  status: emailCampaignStatusEnum("status").notNull().default("draft"),
-  sentAt: timestamp("sent_at", { mode: "string" }),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-})
-
-export const emailCampaignSends = pgTable("email_campaign_sends", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  campaignId: uuid("campaign_id")
-    .notNull()
-    .references(() => emailCampaigns.id, { onDelete: "cascade" }),
-  recipientEmail: varchar("recipient_email", { length: 255 }).notNull(),
-  recipientName: varchar("recipient_name", { length: 255 }),
-  status: emailRecipientStatusEnum("status").notNull().default("queued"),
-  resendId: varchar("resend_id", { length: 255 }),
-  errorMessage: text("error_message"),
-  sentAt: timestamp("sent_at", { mode: "string" }),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 })
 
 // ─── Products & stock ────────────────────────────────────────

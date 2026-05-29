@@ -7,7 +7,6 @@ import {
   GraduationCap,
   CalendarDays,
   Wallet,
-  Mail,
   MapPin,
   Command,
   Utensils,
@@ -30,6 +29,7 @@ import {
   Coins,
   BookOpen,
   Inbox,
+  Network,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -150,9 +150,9 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/memberships", label: "Memberships", icon: Ticket },
+    { href: "/dashboard/relations", label: "Relations", icon: Network },
     FINANCE_GROUP,
     PERSONAL_GROUP,
-    { href: "/dashboard/emails", label: "Emails", icon: Mail },
     { href: "/dashboard/captions", label: "Captions", icon: Hash },
     { href: "/dashboard/ebooks", label: "Ebooks", icon: BookOpen },
     { href: "/dashboard/subscribers", label: "Subscribers", icon: Inbox },
@@ -168,8 +168,8 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/employees", label: "Employees", icon: UserCog },
     { href: "/dashboard/students", label: "Students", icon: Users },
     { href: "/dashboard/memberships", label: "Memberships", icon: Ticket },
+    { href: "/dashboard/relations", label: "Relations", icon: Network },
     FINANCE_GROUP,
-    { href: "/dashboard/emails", label: "Emails", icon: Mail },
     { href: "/dashboard/captions", label: "Captions", icon: Hash },
     { href: "/dashboard/ebooks", label: "Ebooks", icon: BookOpen },
     { href: "/dashboard/subscribers", label: "Subscribers", icon: Inbox },

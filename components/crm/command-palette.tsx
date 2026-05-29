@@ -8,7 +8,6 @@ import {
   GraduationCap,
   CalendarDays,
   Wallet,
-  Mail,
   MapPin,
   Utensils,
   Package,
@@ -215,13 +214,6 @@ const NAV_GROUPS: Group[] = [
   {
     heading: "Communication",
     items: [
-      {
-        label: "Emails",
-        href: "/dashboard/emails",
-        icon: Mail,
-        keywords: "campaign newsletter broadcast",
-        roles: ["admin", "manager"],
-      },
       {
         label: "Captions",
         href: "/dashboard/captions",
