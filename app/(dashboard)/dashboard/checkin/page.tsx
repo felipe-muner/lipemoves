@@ -34,6 +34,14 @@ import { ensureDefaultMembershipPlans } from "@/lib/actions/membership-plans"
 import { loadStudentMembershipsData } from "@/lib/db/queries/student-memberships"
 import { PageHeader } from "@/components/crm/page-header"
 
+const MEMBERSHIP_TYPE_LABEL: Record<string, string> = {
+  drop_in: "Drop-in",
+  monthly: "Monthly",
+  class_pack: "Class Pack",
+  free_pass: "Free Pass",
+  custom: "Custom",
+}
+
 export const dynamic = "force-dynamic"
 
 export default async function CheckinPage() {
@@ -173,7 +181,8 @@ export default async function CheckinPage() {
                             style={{ background: r.planColor ?? "#64748b" }}
                           />
                           <span className="text-sm">
-                            {r.planName ?? r.type ?? "—"}
+                            {r.planName ??
+                              (r.type ? MEMBERSHIP_TYPE_LABEL[r.type] ?? r.type : "—")}
                           </span>
                         </div>
                       ) : (
