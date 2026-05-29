@@ -16,8 +16,10 @@ IN_DIR="${1:?input dir required}"
 OUT_DIR="${2:-$IN_DIR/edited}"
 mkdir -p "$OUT_DIR"
 
-ZOOM=0.16   # total zoom range over the clip (gentle, slow ken-burns)
+ZOOM=0.20      # max zoom range (cap)
+RAMP_SEC=5     # seconds to reach max zoom; after this, hold at max
 FPS=30
+RAMP_FRAMES=$(( RAMP_SEC * FPS ))
 
 i=0
 shopt -s nullglob nocaseglob
@@ -31,18 +33,18 @@ for f in "$IN_DIR"/*.{mov,mp4,m4v}; do
   [[ -z "$D" || "$D" == "N/A" ]] && D=$("$FFPROBE" -v error \
        -show_entries format=duration -of default=nw=1:nk=1 "$f")
 
-  N=$(awk -v d="$D" -v f="$FPS" 'BEGIN{printf "%d", d*f}')
-  (( N < 2 )) && N=2
-
+  # Zoom progresses at a constant rate per second, capped at ZOOM after RAMP_SEC.
+  # That way short clips feel snappy AND long clips don't crawl — they reach
+  # the cap quickly then hold. Video plays at natural speed.
   if (( i % 2 == 0 )); then
-    zexpr="1.0+${ZOOM}*on/${N}"
+    zexpr="1.0+${ZOOM}*min(1\\,on/${RAMP_FRAMES})"
     label="in"
   else
-    zexpr="1.0+${ZOOM}-${ZOOM}*on/${N}"
+    zexpr="1.0+${ZOOM}*max(0\\,1-on/${RAMP_FRAMES})"
     label="out"
   fi
 
-  echo "[$((i+1))] $name  ->  ${base}-kb.mp4  (zoom-${label}, ${D}s, frames=${N})"
+  echo "[$((i+1))] $name  ->  ${base}-kb.mp4  (zoom-${label}, ${D}s)"
 
   # Pipeline:
   #  1) HDR HLG/BT.2020 10-bit -> linear -> hable tonemap -> BT.709 SDR 8-bit
