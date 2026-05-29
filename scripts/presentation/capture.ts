@@ -140,12 +140,6 @@ async function capture() {
   await page.waitForTimeout(800)
   await shoot(page, "12-account")
 
-  console.log("→ Emails composer")
-  await page.goto(`${BASE}/dashboard/emails`)
-  await page.waitForLoadState("networkidle")
-  await page.waitForTimeout(1200)
-  await shoot(page, "13-emails")
-
   // ─── Last 24h features ────────────────────────────────────────
 
   console.log("→ Finance overview")
