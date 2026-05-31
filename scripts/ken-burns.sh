@@ -16,10 +16,8 @@ IN_DIR="${1:?input dir required}"
 OUT_DIR="${2:-$IN_DIR/edited}"
 mkdir -p "$OUT_DIR"
 
-ZOOM=0.20      # max zoom range (cap)
-RAMP_SEC=5     # seconds to reach max zoom; after this, hold at max
+ZOOM=0.20      # total zoom range, spread across the whole clip
 FPS=30
-RAMP_FRAMES=$(( RAMP_SEC * FPS ))
 
 i=0
 shopt -s nullglob nocaseglob
@@ -33,14 +31,15 @@ for f in "$IN_DIR"/*.{mov,mp4,m4v}; do
   [[ -z "$D" || "$D" == "N/A" ]] && D=$("$FFPROBE" -v error \
        -show_entries format=duration -of default=nw=1:nk=1 "$f")
 
-  # Zoom progresses at a constant rate per second, capped at ZOOM after RAMP_SEC.
-  # That way short clips feel snappy AND long clips don't crawl — they reach
-  # the cap quickly then hold. Video plays at natural speed.
+  # Zoom progresses smoothly across the ENTIRE clip: it reaches the full ZOOM
+  # range exactly at the last frame, so the effect never stops early. Longer
+  # clips zoom slower, shorter clips faster — but all run end to end.
+  TOTAL_FRAMES=$(awk "BEGIN{f=$D*$FPS; printf \"%d\", (f<1?1:f)}")
   if (( i % 2 == 0 )); then
-    zexpr="1.0+${ZOOM}*min(1\\,on/${RAMP_FRAMES})"
+    zexpr="1.0+${ZOOM}*on/${TOTAL_FRAMES}"
     label="in"
   else
-    zexpr="1.0+${ZOOM}*max(0\\,1-on/${RAMP_FRAMES})"
+    zexpr="1.0+${ZOOM}*(1-on/${TOTAL_FRAMES})"
     label="out"
   fi
 
