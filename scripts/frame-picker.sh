@@ -14,6 +14,7 @@
 set -euo pipefail
 
 FF="/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"; [[ -x "$FF" ]] || FF="ffmpeg"
+FFP="/opt/homebrew/opt/ffmpeg-full/bin/ffprobe"; [[ -x "$FFP" ]] || FFP="ffprobe"
 FONT="$HOME/Library/Fonts/ArchivoBlack-Regular.ttf"; [[ -f "$FONT" ]] || FONT="Impact"
 GREEN="#7CFC00"   # brand lime for the badge number
 
@@ -28,8 +29,20 @@ rm -f "$FRAMES"/*.png 2>/dev/null || true
 # frames-per-second = 1 / step  (0.5s -> 2fps, 0.25s -> 4fps)
 FPS=$(awk "BEGIN{printf \"%.6f\", 1/$STEP}")
 
+# HDR stills fix: a still pulled from an HLG/PQ (HDR) clip and saved as a plain
+# 8-bit PNG looks washed out / flat, because the HDR-coded values are shown as
+# if they were SDR. So when the source is HDR we tone-map HLG/PQ -> SDR Rec.709
+# during extraction. The VIDEO is never touched — this only affects the stills.
+TRC="$("$FFP" -v error -select_streams v:0 -show_entries stream=color_transfer \
+       -of default=nw=1:nk=1 "$VIDEO" 2>/dev/null || true)"
+TM=""
+if [[ "$TRC" == "arib-std-b67" || "$TRC" == "smpte2084" ]]; then
+  TM="zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,\
+tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p,"
+fi
+
 # 1) full-res numbered frames (001.png, 002.png, ...) — these are what you keep
-"$FF" -y -hide_banner -loglevel error -i "$VIDEO" -vf "fps=${FPS}" "$FRAMES/%03d.png"
+"$FF" -y -hide_banner -loglevel error -i "$VIDEO" -vf "${TM}fps=${FPS}" "$FRAMES/%03d.png"
 
 # 2) numbered contact sheet: burn a black circular badge with the green frame
 #    number into the top-left of each tile. The number maps straight to
