@@ -2,7 +2,7 @@
 # Ken Burns zoom (in/out alternating) for a batch of clips.
 # - Output: 1080x1920 @30fps (Reels/TikTok portrait)
 # - Video plays at original speed; zoom progresses slowly across the clip
-# - HLG/BT.2020 HDR -> BT.709 SDR tonemap (preserves source colors)
+# - Colors are NEVER changed: keeps source HDR (HLG/BT.2020, 10-bit), no tonemap
 # Usage: ./scripts/ken-burns.sh <input_dir> [output_dir]
 set -euo pipefail
 
@@ -45,22 +45,22 @@ for f in "$IN_DIR"/*.{mov,mp4,m4v}; do
 
   echo "[$((i+1))] $name  ->  ${base}-kb.mp4  (zoom-${label}, ${D}s)"
 
-  # Pipeline:
-  #  1) HDR HLG/BT.2020 10-bit -> linear -> hable tonemap -> BT.709 SDR 8-bit
-  #  2) upscale 2x to give zoompan crop room
-  #  3) zoompan with per-frame (d=1) zoom expression, output 1080x1920
+  # Pipeline — NO color change. The zoom is the only thing applied. We keep the
+  # source HDR untouched (HLG/BT.2020, 10-bit): no tonemap, no gamut/transfer
+  # conversion. setparams re-stamps the HDR tags zoompan strips, and libx265
+  # writes the matching HLG VUI so players render it exactly like the source.
+  #  1) upscale 2x to give zoompan crop room  2) zoompan zoom -> 1080x1920
   VF="fps=${FPS},\
-zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,\
-tonemap=tonemap=hable:desat=0,\
-zscale=t=bt709:m=bt709:r=tv,format=yuv420p,\
 scale=2160:3840,\
 zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=${FPS},\
-format=yuv420p"
+format=yuv420p10le,\
+setparams=colorspace=bt2020nc:color_primaries=bt2020:color_trc=arib-std-b67"
 
   "$FFMPEG" -y -hide_banner -loglevel error -i "$f" \
     -vf "$VF" \
-    -c:v libx264 -preset medium -crf 18 \
-    -color_primaries bt709 -colorspace bt709 -color_trc bt709 -color_range tv \
+    -c:v libx265 -preset medium -crf 18 -tag:v hvc1 \
+    -x265-params "colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc:range=limited" \
+    -color_primaries bt2020 -colorspace bt2020nc -color_trc arib-std-b67 -color_range tv \
     -c:a aac -b:a 128k -movflags +faststart "$out"
 
   i=$((i+1))
