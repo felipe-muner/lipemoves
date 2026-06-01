@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     status: "queued",
     steps,
     artifacts: [],
-    coverDefaults: null,
+    coverRequested: false,
     frameCount: 0,
     dir,
   }

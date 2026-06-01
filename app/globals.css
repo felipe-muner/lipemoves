@@ -4,6 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Cover/caption display face — used for the live cover preview in the Studio
+   so it matches the burned-in result (cover.sh uses the same font). */
+@font-face {
+  font-family: "Archivo Black";
+  src: url("/fonts/ArchivoBlack-Regular.ttf") format("truetype");
+  font-weight: 900;
+  font-display: swap;
+}
+
 /* =============================================
    Tailwind Theme Integration
    ============================================= */

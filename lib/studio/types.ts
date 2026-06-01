@@ -26,11 +26,6 @@ export interface FramePickerConfig {
 
 export type CoverPosition = "top" | "center" | "bottom"
 
-export interface CoverConfig {
-  text: string
-  position: CoverPosition
-}
-
 /** Second-phase request: burn the cover onto a chosen contact-sheet frame. */
 export interface CoverRequest {
   /** 1-based frame number from the contact sheet. */
@@ -43,7 +38,8 @@ export interface StudioConfig {
   kenburns: boolean
   caption: CaptionConfig | null
   framepicker: FramePickerConfig | null
-  cover: CoverConfig | null
+  /** Whether to extract frames so a cover can be finished interactively. */
+  cover: boolean
 }
 
 export interface StepState {
@@ -68,8 +64,8 @@ export interface Job {
   steps: StepState[]
   artifacts: Artifact[]
   error?: string
-  /** Set when a cover was requested — its defaults, awaiting a frame choice. */
-  coverDefaults: CoverConfig | null
+  /** True when a cover was requested — the UI shows the interactive picker. */
+  coverRequested: boolean
   /** Number of frames in the contact sheet (so the UI can bound the picker). */
   frameCount: number
   /** Absolute working dir — never serialized to the client. */
