@@ -110,7 +110,7 @@ export async function runPipeline(
     // 3) Frames + numbered contact sheet. Needed if the frame sheet was asked
     //    for, OR if a cover was requested (covers are burned onto a chosen
     //    frame, so we always extract the full-res frames here).
-    const wantsCover = !!(config.cover && config.cover.text.trim())
+    const wantsCover = config.cover === true
     if (config.framepicker || wantsCover) {
       setStep(job, "framepicker", { status: "running" })
       const framesDir = path.join(dir, "frames")
@@ -126,27 +126,50 @@ export async function runPipeline(
         kind: "image",
         label: "Frame contact sheet",
       })
+      const fullDir = path.join(framesDir, "frames")
+      let frameFiles: string[] = []
       try {
-        const files = await readdir(path.join(framesDir, "frames"))
-        job.frameCount = files.filter((f) => f.endsWith(".png")).length
+        frameFiles = (await readdir(fullDir))
+          .filter((f) => f.endsWith(".png"))
+          .sort()
+        job.frameCount = frameFiles.length
       } catch {
         job.frameCount = 0
+      }
+      // Small JPG thumbnails for the clickable picker grid (full-res frames
+      // are several MB each; these keep the UI snappy).
+      if (frameFiles.length) {
+        const webDir = path.join(framesDir, "web")
+        await mkdir(webDir, { recursive: true })
+        await run(
+          "magick",
+          [
+            "mogrify",
+            "-path",
+            webDir,
+            "-resize",
+            "240x",
+            "-quality",
+            "82",
+            "-format",
+            "jpg",
+            ...frameFiles.map((f) => path.join(fullDir, f)),
+          ],
+          dir,
+        )
       }
       setStep(job, "framepicker", { status: "done" })
     } else {
       setStep(job, "framepicker", { status: "skipped" })
     }
 
-    // 4) Cover is a SECOND phase: it waits for you to pick a frame number from
-    //    the contact sheet, then applyCover() burns the text onto that frame.
-    if (wantsCover && config.cover) {
-      job.coverDefaults = {
-        text: config.cover.text,
-        position: config.cover.position,
-      }
+    // 4) Cover is a SECOND phase: it waits for you to click a frame and type
+    //    the text in the UI, then applyCover() burns it onto that frame.
+    if (wantsCover) {
+      job.coverRequested = true
       setStep(job, "cover", {
         status: "pending",
-        message: "pick a frame from the contact sheet",
+        message: "pick a frame & add text",
       })
     } else {
       setStep(job, "cover", { status: "skipped" })
