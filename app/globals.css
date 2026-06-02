@@ -169,7 +169,7 @@
   to { transform: translateX(-50%); }
 }
 .animate-marquee {
-  animation: lm-marquee 32s linear infinite;
+  animation: lm-marquee 90s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee { animation: none; }
