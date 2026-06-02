@@ -2,7 +2,10 @@
 # Ken Burns zoom (in/out alternating) for a batch of clips.
 # - Output: 1080x1920 @30fps (Reels/TikTok portrait)
 # - Video plays at original speed; zoom progresses slowly across the clip
-# - Colors are NEVER changed: keeps source HDR (HLG/BT.2020, 10-bit), no tonemap
+# - Colors are NEVER changed: each clip's own color tags (matrix/primaries/
+#   transfer/range) + bit depth are detected and passed through verbatim. So
+#   HLG/BT.2020 10-bit stays HDR and bt709 8-bit stays SDR — no tonemap, no
+#   gamut change. Falls back to bt709 only when a clip is genuinely untagged.
 # Usage: ./scripts/ken-burns.sh <input_dir> [output_dir]
 set -euo pipefail
 
@@ -18,6 +21,16 @@ mkdir -p "$OUT_DIR"
 
 ZOOM=0.20      # total zoom range, spread across the whole clip
 FPS=30
+
+# Read one source video stream tag, falling back to a default when the source
+# is missing/unknown for that field.  probe_tag <field> <file> <default>
+probe_tag() {
+  local v
+  v=$("$FFPROBE" -v error -select_streams v:0 \
+       -show_entries stream="$1" -of default=nw=1:nk=1 "$2" 2>/dev/null)
+  [[ -z "$v" || "$v" == "unknown" || "$v" == "N/A" ]] && v="$3"
+  printf '%s' "$v"
+}
 
 i=0
 shopt -s nullglob nocaseglob
@@ -43,24 +56,42 @@ for f in "$IN_DIR"/*.{mov,mp4,m4v}; do
     label="out"
   fi
 
-  echo "[$((i+1))] $name  ->  ${base}-kb.mp4  (zoom-${label}, ${D}s)"
+  # Detect the SOURCE color so we PRESERVE it exactly: HLG/bt2020 stays HDR,
+  # bt709 stays SDR. No tonemap, no gamut change. bt709 fallback if untagged.
+  CS=$(probe_tag color_space     "$f" bt709)   # matrix
+  CP=$(probe_tag color_primaries "$f" bt709)
+  CT=$(probe_tag color_transfer  "$f" bt709)
+  CR=$(probe_tag color_range     "$f" tv)
+  PIXFMT=$(probe_tag pix_fmt     "$f" yuv420p)
+  # Match source bit depth (HDR is 10-bit); otherwise 8-bit.
+  case "$PIXFMT" in
+    *10le|*10be|p010*|*10) OUTFMT=yuv420p10le ;;
+    *)                     OUTFMT=yuv420p ;;
+  esac
+  # x265 wants full/limited; ffmpeg + ffprobe use pc/tv.
+  if [[ "$CR" == pc || "$CR" == full ]]; then
+    X265RANGE=full; FFRANGE=pc
+  else
+    X265RANGE=limited; FFRANGE=tv
+  fi
 
-  # Pipeline — NO color change. The zoom is the only thing applied. We keep the
-  # source HDR untouched (HLG/BT.2020, 10-bit): no tonemap, no gamut/transfer
-  # conversion. setparams re-stamps the HDR tags zoompan strips, and libx265
-  # writes the matching HLG VUI so players render it exactly like the source.
+  echo "[$((i+1))] $name  ->  ${base}-kb.mp4  (zoom-${label}, ${D}s, ${CT}/${CP} ${FFRANGE} ${OUTFMT})"
+
+  # Pipeline — NO color change. The zoom is the only thing applied. setparams
+  # re-stamps the color tags zoompan strips with the SOURCE's own values, and
+  # libx265 writes a matching VUI, so players render it exactly like the source.
   #  1) upscale 2x to give zoompan crop room  2) zoompan zoom -> 1080x1920
   VF="fps=${FPS},\
 scale=2160:3840,\
 zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=${FPS},\
-format=yuv420p10le,\
-setparams=colorspace=bt2020nc:color_primaries=bt2020:color_trc=arib-std-b67"
+format=${OUTFMT},\
+setparams=range=${FFRANGE}:colorspace=${CS}:color_primaries=${CP}:color_trc=${CT}"
 
   "$FFMPEG" -y -hide_banner -loglevel error -i "$f" \
     -vf "$VF" \
     -c:v libx265 -preset medium -crf 18 -tag:v hvc1 \
-    -x265-params "colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc:range=limited" \
-    -color_primaries bt2020 -colorspace bt2020nc -color_trc arib-std-b67 -color_range tv \
+    -x265-params "colorprim=${CP}:transfer=${CT}:colormatrix=${CS}:range=${X265RANGE}" \
+    -color_primaries "${CP}" -colorspace "${CS}" -color_trc "${CT}" -color_range "${FFRANGE}" \
     -c:a aac -b:a 128k -movflags +faststart "$out"
 
   i=$((i+1))
