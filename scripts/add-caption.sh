@@ -34,11 +34,14 @@ for a in "$@"; do [[ "$a" == "--no-anim" ]] && ANIM=0; done
 FONT="$HOME/Library/Fonts/ArchivoBlack-Regular.ttf"; [[ -f "$FONT" ]] || FONT="/System/Library/Fonts/Supplemental/Impact.ttf"
 
 # ---- Look knobs -------------------------------------------------------------
+# Kept inside Instagram's Reels safe area: the bottom ~420px (caption, audio
+# tag, progress bar) and the right column (action buttons) get covered by IG's
+# UI, so the text sits well above that band and pulled in from the edge.
 W=1080; H=1920
 MAIN_SIZE=58        # main line point size
 SUB_SIZE=34         # subtitle point size
-LEFT=46             # left margin
-SUB_BOTTOM=120      # subtitle distance up from the bottom edge
+LEFT=90             # left margin
+SUB_BOTTOM=470      # subtitle distance up from the bottom edge (clears IG UI)
 GAP=20              # vertical gap between subtitle and main line
 BLUR=22             # fog blur strength (sigma)
 AD=0.9              # fog fade-in total duration (s)
