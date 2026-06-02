@@ -1,139 +1,454 @@
 import Link from "next/link"
-import Header from "@/components/Header"
+import Image from "next/image"
+import { auth } from "@/lib/auth"
+import { LandingNav, type NavItem } from "@/components/landing/LandingNav"
 import NewsletterForm from "@/components/NewsletterForm"
 
-export default function HomePage() {
+const NAV: NavItem[] = [
+  { label: "The Program", id: "program" },
+  { label: "Who's It For", id: "who" },
+  { label: "Felipe", id: "felipe" },
+  { label: "Pricing", id: "pricing" },
+  { label: "Inner Circle", id: "inner-circle" },
+  { label: "FAQ", id: "faq" },
+]
+
+const MARQUEE = [
+  "Strength",
+  "Mobility",
+  "Breath",
+  "Balance",
+  "Longevity",
+  "Control",
+  "Flexibility",
+]
+
+const PILLARS = [
+  {
+    n: "01",
+    title: "Yoga",
+    desc: "Vinyasa, hatha and yin to calm the nervous system and win back the range of motion you were born with.",
+  },
+  {
+    n: "02",
+    title: "Mobility",
+    desc: "Daily routines to free the joints — long spine, open hips, ankles that bend, a body that works with you.",
+  },
+  {
+    n: "03",
+    title: "Kettlebell",
+    desc: "One weight, the whole body. Ballistic, rotational strength for a body that can catch a slip and bounce back.",
+  },
+  {
+    n: "04",
+    title: "Breath",
+    desc: "Breath first, eyes next, movement follows. Active meditation that leaves you better than you came in.",
+  },
+]
+
+const METHOD_POINTS = [
+  "Mobility before muscle",
+  "Daily practice over intensity",
+  "Breath-led movement",
+  "Train for real life",
+]
+
+const AUDIENCE = [
+  {
+    title: "Rebuilding after 30",
+    desc: "You looked fine in the mirror but couldn't do much in real life. Time to rebuild from the ground up.",
+  },
+  {
+    title: "Travelers & nomads",
+    desc: "8 years on the road, routine never broken. A practice that fits hotels, beaches, jungles and airports.",
+  },
+  {
+    title: "Desk-bound bodies",
+    desc: "Tight hips, stiff shoulders, a stiff spine. Ten minutes a day to undo what sitting does.",
+  },
+  {
+    title: "Starting over",
+    desc: "No equipment, no experience, no pressure. Slow and steady, the kind of change that actually sticks.",
+  },
+]
+
+const FAQ = [
+  {
+    q: "Do I need any equipment?",
+    a: "No. Everything starts with your body. A single kettlebell is optional and introduced later — never required.",
+  },
+  {
+    q: "How much time per day?",
+    a: "As little as 5–10 minutes to start. Consistency beats intensity — the practice grows with you.",
+  },
+  {
+    q: "I'm a total beginner. Is this for me?",
+    a: "Especially for you. The whole method is built to ease you in slowly, mobility first, so nothing breaks and it sticks.",
+  },
+  {
+    q: "Is it only yoga?",
+    a: "No — yoga, mobility, kettlebell and breath. Four pillars working together for a body built for real life.",
+  },
+  {
+    q: "Can I cancel anytime?",
+    a: "Yes. Both plans are cancel-anytime, no questions asked.",
+  },
+]
+
+const WA_INNER =
+  "https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%201%3A1%20coaching"
+
+export default async function HomePage() {
+  const session = await auth()
+  const user = session?.user
+    ? { name: session.user.name, image: session.user.image }
+    : null
+
   return (
-    <main className="flex min-h-screen flex-col">
-      <Header />
-      {/* Hero */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
-        <div className="relative z-10 mx-auto max-w-3xl">
-          <h1 className="font-heading text-5xl leading-tight md:text-7xl">
-            Mova-se <span className="text-primary">Melhor.</span>
-            <br />
-            Respire <span className="text-primary">Mais Fundo.</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-            V&iacute;deos de yoga, mobilidade, acrobacia e respira&ccedil;&atilde;o para voc&ecirc; praticar no
-            seu ritmo &mdash; onde e quando quiser.
+    <main className="min-h-screen bg-[#0a0a0a] text-white antialiased">
+      <LandingNav items={NAV} user={user} />
+
+      {/* ===== Hero ===== */}
+      <section className="relative mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-20 pt-36 md:flex-row md:items-center md:pt-44">
+        <div className="flex-1">
+          <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+            Movement · Mobility · Breath
           </p>
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link
-              href="/pricing"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          <h1 className="mt-6 text-5xl font-extrabold uppercase leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+            A body
+            <br />
+            <span className="text-[#39FF14]">built for life.</span>
+          </h1>
+          <p className="mt-7 max-w-md text-base leading-relaxed text-white/60">
+            Daily yoga, mobility, kettlebell and breath — practice at your own
+            pace, anywhere. Years in motion, distilled into one simple practice.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <span className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/70">
+              No equipment needed
+            </span>
+            <span className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/70">
+              New classes weekly
+            </span>
+          </div>
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <a
+              href="#pricing"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-[#39FF14] px-8 text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
             >
-              Comece Agora
-            </Link>
-            <Link
-              href="#about"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-border px-8 text-sm font-medium transition-colors hover:bg-accent"
+              Start practicing
+            </a>
+            <a
+              href="#program"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-white/20 px-8 text-sm font-medium text-white transition-colors hover:bg-white/10"
             >
-              Saiba Mais
-            </Link>
+              See the program
+            </a>
+          </div>
+        </div>
+
+        <div className="flex-1">
+          <div className="relative ml-auto aspect-[3/4] w-full max-w-sm overflow-hidden rounded-3xl">
+            <Image
+              src="/ebooks/photos/1SN01213.jpg"
+              alt="Felipe Muner — movement practice"
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 384px"
+              className="object-cover"
+            />
           </div>
         </div>
       </section>
 
-      {/* About */}
-      <section id="about" className="border-t border-border px-6 py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-heading text-3xl md:text-4xl">Sobre</h2>
-          <p className="mt-6 text-muted-foreground leading-relaxed">
-            Nascido no Rio de Janeiro, descobri o yoga e o movimento como forma de reconectar
-            corpo e mente. O que come&ccedil;ou como pr&aacute;tica pessoal virou miss&atilde;o: ajudar pessoas a se
-            moverem melhor, com mais consci&ecirc;ncia e liberdade.
-          </p>
-          <p className="mt-4 text-muted-foreground leading-relaxed">
-            Aqui voc&ecirc; encontra aulas de yoga, mobilidade, acrobacia e respira&ccedil;&atilde;o &mdash; tudo
-            gravado com cuidado para voc&ecirc; praticar no seu tempo.
-          </p>
+      {/* ===== Marquee band ===== */}
+      <div className="overflow-hidden border-y border-white/10 py-5">
+        <div className="flex w-max animate-marquee">
+          {[0, 1].map((dup) => (
+            <div key={dup} className="flex shrink-0" aria-hidden={dup === 1}>
+              {MARQUEE.map((word) => (
+                <span
+                  key={`${dup}-${word}`}
+                  className="flex items-center text-sm font-semibold uppercase tracking-[0.3em] text-white/80"
+                >
+                  <span className="px-6">{word}</span>
+                  <span className="text-[#39FF14]">✦</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== The Program ===== */}
+      <section id="program" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-24 md:py-32">
+        <div className="grid items-center gap-12 md:grid-cols-2">
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl">
+            <Image
+              src="/ebooks/photos/z_yoga.jpg"
+              alt="Movement practice"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              The program
+            </p>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
+              Built for life,
+              <br />
+              <span className="text-[#39FF14]">not the mirror.</span>
+            </h2>
+            <p className="mt-6 max-w-md leading-relaxed text-white/60">
+              Mobility first, then flexibility, then stability and balance — and
+              only then muscle. Rebuilt from the ground up, the kind of body that
+              sits on the floor, lifts, twists, falls and gets back up.
+            </p>
+            <ul className="mt-8 space-y-3">
+              {METHOD_POINTS.map((point) => (
+                <li key={point} className="flex items-center gap-3 text-white/80">
+                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#39FF14] text-[11px] font-bold text-black">
+                    ✓
+                  </span>
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {PILLARS.map((pillar) => (
+            <div
+              key={pillar.title}
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-7 transition-colors hover:border-white/30"
+            >
+              <span className="text-2xl font-extrabold text-[#39FF14]">
+                {pillar.n}
+              </span>
+              <h3 className="mt-5 text-xl font-semibold">{pillar.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-white/55">
+                {pillar.desc}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="border-t border-border px-6 py-24">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="font-heading text-center text-3xl md:text-4xl">Categorias</h2>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { title: "Yoga", desc: "Aulas completas de vinyasa, hatha e yin yoga" },
-              { title: "Mobilidade", desc: "Rotinas para destravar articulações e ganhar amplitude" },
-              { title: "Acrobacia", desc: "Progressões de parada de mão, floreios e equilíbrio" },
-              { title: "Respiração", desc: "Protocolos de breathwork para energia e foco" },
-            ].map((cat) => (
+      {/* ===== Who's It For ===== */}
+      <section id="who" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-xl">
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Who's it for
+            </p>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
+              Built for real bodies.
+            </h2>
+          </div>
+          <div className="mt-14 grid gap-5 sm:grid-cols-2">
+            {AUDIENCE.map((item) => (
               <div
-                key={cat.title}
-                className="rounded-xl border border-border bg-card p-6 text-center transition-colors hover:border-primary/30"
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 transition-colors hover:border-white/30"
               >
-                <h3 className="font-heading text-xl">{cat.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{cat.desc}</p>
+                <h3 className="text-xl font-semibold">{item.title}</h3>
+                <p className="mt-3 leading-relaxed text-white/55">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="border-t border-border px-6 py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-heading text-3xl md:text-4xl">Planos</h2>
-          <p className="mt-4 text-muted-foreground">
-            Acesso ilimitado a todos os v&iacute;deos. Cancele quando quiser.
-          </p>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-8">
-              <h3 className="font-heading text-2xl">Mensal</h3>
-              <p className="mt-4 text-4xl font-bold">
-                R$97<span className="text-base font-normal text-muted-foreground">/m&ecirc;s</span>
-              </p>
-              <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>Acesso a todos os v&iacute;deos</li>
-                <li>Novas aulas toda semana</li>
-                <li>Cancele quando quiser</li>
-              </ul>
-              <Link
-                href="/register"
-                className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Assinar Mensal
-              </Link>
-            </div>
-            <div className="relative rounded-xl border-2 border-primary bg-card p-8">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-medium text-primary-foreground">
-                Melhor valor
-              </span>
-              <h3 className="font-heading text-2xl">Anual</h3>
-              <p className="mt-4 text-4xl font-bold">
-                R$970<span className="text-base font-normal text-muted-foreground">/ano</span>
-              </p>
-              <p className="mt-1 text-sm text-primary">Economia de R$194</p>
-              <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <li>Tudo do plano mensal</li>
-                <li>2 meses gr&aacute;tis</li>
-                <li>Acesso priorit&aacute;rio</li>
-              </ul>
-              <Link
-                href="/register"
-                className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Assinar Anual
-              </Link>
-            </div>
+      {/* ===== Felipe (about) ===== */}
+      <section id="felipe" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Felipe Muner
+            </p>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
+              Years in motion.
+            </h2>
+            <p className="mt-6 max-w-md leading-relaxed text-white/60">
+              Until I was 28 I lived the typical loop — desk, gym, mirror — with
+              a body that looked fine but couldn't do much. Everything changed
+              after 30: mobility, then flexibility, then strength. I'm going to
+              hit 40 feeling better than I did in my 20s — and I'm here to help
+              you get there too.
+            </p>
+            <p className="mt-8 text-2xl font-extrabold uppercase leading-snug tracking-tight">
+              “Build a body <span className="text-[#39FF14]">for life</span>,
+              <br />
+              not the mirror.”
+            </p>
+          </div>
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl md:order-first">
+            <Image
+              src="/ebooks/photos/1SN03111.jpg"
+              alt="Felipe Muner"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+            />
           </div>
         </div>
       </section>
 
-      {/* Newsletter */}
-      <section className="border-t border-border px-6 py-24">
+      {/* ===== Pricing ===== */}
+      <section id="pricing" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
+        <div className="mx-auto max-w-4xl">
+          <div className="text-center">
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Pricing
+            </p>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
+              Choose your membership.
+            </h2>
+            <p className="mt-4 text-white/55">
+              Every class, every pillar. No equipment. Cancel anytime.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-6 sm:grid-cols-2">
+            {/* Monthly */}
+            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
+              <p className="text-sm uppercase tracking-[0.2em] text-white/50">
+                Monthly
+              </p>
+              <p className="mt-5 text-5xl font-bold">
+                $19
+                <span className="text-base font-normal text-white/40">/mo</span>
+              </p>
+              <ul className="mt-7 space-y-3 text-sm text-white/60">
+                <li>Access to every class</li>
+                <li>New classes weekly</li>
+                <li>Cancel anytime</li>
+              </ul>
+              <Link
+                href="/register"
+                className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full border border-white/20 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Begin monthly
+              </Link>
+            </div>
+
+            {/* Annual */}
+            <div className="relative rounded-3xl bg-[#39FF14] p-8 text-black">
+              <span className="absolute right-8 top-8 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
+                Best value
+              </span>
+              <p className="text-sm uppercase tracking-[0.2em] text-black/60">
+                Annual
+              </p>
+              <p className="mt-5 text-5xl font-bold">
+                $190
+                <span className="text-base font-normal text-black/50">/yr</span>
+              </p>
+              <ul className="mt-7 space-y-3 text-sm text-black/70">
+                <li>Everything in monthly</li>
+                <li>2 months free</li>
+                <li>Priority access to new drops</li>
+              </ul>
+              <Link
+                href="/register"
+                className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
+              >
+                Begin annual
+              </Link>
+            </div>
+          </div>
+          <p className="mt-6 text-center text-xs text-white/40">
+            No equipment · Cancel anytime
+          </p>
+        </div>
+      </section>
+
+      {/* ===== Inner Circle ===== */}
+      <section
+        id="inner-circle"
+        className="relative scroll-mt-20 overflow-hidden border-t border-white/10"
+      >
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-24 md:grid-cols-2 md:py-32">
+          <div>
+            <h2 className="text-4xl font-extrabold uppercase leading-[0.95] tracking-tight md:text-6xl">
+              Inner circle.
+              <br />
+              <span className="text-[#39FF14]">1:1 coaching.</span>
+            </h2>
+            <p className="mt-7 max-w-md leading-relaxed text-white/60">
+              The highest tier — personal and hands-on. A few clients each month.
+              We build your movement, nutrition, fasting, rest and breath into one
+              plan that fits your body and goals, tracked with you daily.
+            </p>
+            <p className="mt-4 max-w-md leading-relaxed text-white/60">
+              By application only, for those ready to make a serious commitment to
+              long-term transformation.
+            </p>
+            <a
+              href={WA_INNER}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-9 inline-flex h-12 items-center justify-center rounded-full bg-[#39FF14] px-8 text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
+            >
+              Apply on WhatsApp →
+            </a>
+          </div>
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl">
+            <Image
+              src="/ebooks/photos/z_kettlebell_rack.jpg"
+              alt="1:1 coaching"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FAQ ===== */}
+      <section id="faq" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
+        <div className="mx-auto max-w-3xl">
+          <div className="text-center">
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              FAQ
+            </p>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
+              Questions, answered.
+            </h2>
+          </div>
+          <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
+            {FAQ.map((item) => (
+              <details key={item.q} className="group py-5">
+                <summary className="flex cursor-pointer items-center justify-between text-lg font-medium text-white marker:content-none">
+                  {item.q}
+                  <span className="ml-4 text-[#39FF14] transition-transform group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 leading-relaxed text-white/55">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Guide / Newsletter ===== */}
+      <section className="border-t border-white/10 px-6 py-24 md:py-32">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-heading text-3xl md:text-4xl">
-            Receba o Guia de Fundamentos
+          <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+            Free guide
+          </p>
+          <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
+            Start with the foundations.
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            5 movimentos base que destravam quadril, ombro e coluna em 10 minutos por dia.
-            Gr&aacute;tis, direto no seu email.
+          <p className="mt-4 text-white/55">
+            Five base movements that free the hips, shoulders and spine in 10
+            minutes a day. Free, straight to your inbox.
           </p>
           <div className="mt-8">
             <NewsletterForm source="homepage" />
@@ -141,16 +456,41 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border px-6 py-12">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="font-heading text-lg">Lipe Moves</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Mova-se melhor. Respire mais fundo. Viva plenamente.
+      {/* ===== Footer ===== */}
+      <footer className="border-t border-white/10 px-6 py-16">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-6xl">
+            Move better. <span className="text-[#39FF14]">For life.</span>
           </p>
-          <p className="mt-6 text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} Lipe Moves. Todos os direitos reservados.
-          </p>
+          <div className="mt-12 flex flex-col justify-between gap-8 border-t border-white/10 pt-8 md:flex-row md:items-center">
+            <p className="text-sm text-white/40">
+              © {new Date().getFullYear()} Lipe Moves. All rights reserved.
+            </p>
+            <div className="flex flex-wrap gap-6 text-sm text-white/60">
+              <a
+                href="https://instagram.com/felipeenjoylife"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-white"
+              >
+                Instagram
+              </a>
+              <a
+                href="https://wa.me/5521984852802"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-white"
+              >
+                WhatsApp
+              </a>
+              <a
+                href="mailto:felipe.muner@gmail.com"
+                className="transition-colors hover:text-white"
+              >
+                Email
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </main>
