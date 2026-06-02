@@ -25,7 +25,7 @@ export default function NewsletterForm({ source = "homepage" }: NewsletterFormPr
 
     if (!response.ok) {
       const data = (await response.json().catch(() => null)) as { error?: string } | null
-      setErrorMessage(data?.error ?? "Algo deu errado. Tente de novo.")
+      setErrorMessage(data?.error ?? "Something went wrong. Please try again.")
       setStatus("error")
       return
     }
@@ -37,42 +37,58 @@ export default function NewsletterForm({ source = "homepage" }: NewsletterFormPr
 
   if (status === "ok") {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 text-center">
-        <p className="font-heading text-lg">Pronto. Confere seu email.</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          O primeiro email já está a caminho.
+      <div className="rounded-2xl border border-[#39FF14]/40 bg-[#39FF14]/5 p-6 text-center">
+        <p className="text-lg font-semibold text-white">You&apos;re in. Check your inbox.</p>
+        <p className="mt-2 text-sm text-white/60">
+          The first email is already on its way.
         </p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
-      <input
-        type="text"
-        placeholder="Seu nome (opcional)"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="h-11 flex-1 rounded-lg border border-border bg-background px-4 text-sm"
-      />
-      <input
-        type="email"
-        required
-        placeholder="seu@email.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="h-11 flex-1 rounded-lg border border-border bg-background px-4 text-sm"
-      />
-      <button
-        type="submit"
-        disabled={status === "loading"}
-        className="h-11 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-      >
-        {status === "loading" ? "Enviando..." : "Receber"}
-      </button>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex-1">
+          <label htmlFor="nl-name" className="sr-only">
+            Your name (optional)
+          </label>
+          <input
+            id="nl-name"
+            type="text"
+            placeholder="Your name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="h-12 w-full rounded-full border border-white/15 bg-white/5 px-5 text-sm text-white placeholder:text-white/40 transition-colors focus:border-[#39FF14] focus:outline-none"
+          />
+        </div>
+        <div className="flex-1">
+          <label htmlFor="nl-email" className="sr-only">
+            Email address
+          </label>
+          <input
+            id="nl-email"
+            type="email"
+            required
+            placeholder="you@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-12 w-full rounded-full border border-white/15 bg-white/5 px-5 text-sm text-white placeholder:text-white/40 transition-colors focus:border-[#39FF14] focus:outline-none"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          className="h-12 shrink-0 rounded-full bg-[#39FF14] px-8 text-sm font-semibold text-black transition-transform hover:scale-[1.03] disabled:opacity-60"
+        >
+          {status === "loading" ? "Sending…" : "Get the guide"}
+        </button>
+      </div>
       {errorMessage ? (
-        <p className="text-sm text-red-500 sm:w-full">{errorMessage}</p>
-      ) : null}
+        <p className="text-sm text-red-400">{errorMessage}</p>
+      ) : (
+        <p className="text-xs text-white/35">No spam. Unsubscribe anytime.</p>
+      )}
     </form>
   )
 }
