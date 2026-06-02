@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { Check, ArrowRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { LandingNav, type NavItem } from "@/components/landing/LandingNav"
 import NewsletterForm from "@/components/NewsletterForm"
@@ -95,6 +96,22 @@ const FAQ = [
   },
 ]
 
+const MONTHLY_FEATURES = [
+  "Personalized adaptive daily practice",
+  "Full movement library — yoga, mobility, kettlebell, breath",
+  "Strength, mobility, control & longevity tracks",
+  "Community access + challenges",
+  "New classes every week",
+]
+
+const ANNUAL_FEATURES = [
+  "Everything in Monthly, plus:",
+  "Save 40% vs monthly billing",
+  "Priority access to new drops",
+  "Early access to new programs",
+  "Annual member perks & content",
+]
+
 const WA_INNER =
   "https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%201%3A1%20coaching"
 
@@ -150,7 +167,7 @@ export default async function HomePage() {
         </div>
 
         <div className="flex-1">
-          <div className="relative ml-auto aspect-[3/4] w-full max-w-sm overflow-hidden rounded-3xl">
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl md:ml-auto md:max-w-sm">
             <Image
               src="/ebooks/photos/1SN01213.jpg"
               alt="Felipe Muner — movement practice"
@@ -314,27 +331,29 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="mt-14 grid gap-6 sm:grid-cols-2">
+          <div className="mt-14 grid items-start gap-6 sm:grid-cols-2">
             {/* Monthly */}
             <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
-              <p className="text-sm uppercase tracking-[0.2em] text-white/50">
-                Monthly
+              <p className="text-base text-white/70">Monthly</p>
+              <p className="mt-4 flex items-end gap-2">
+                <span className="text-6xl font-extrabold leading-none">$35</span>
+                <span className="pb-1 text-base text-white/40">/ month</span>
               </p>
-              <p className="mt-5 text-5xl font-bold">
-                $19
-                <span className="text-base font-normal text-white/40">/mo</span>
-              </p>
-              <ul className="mt-7 space-y-3 text-sm text-white/60">
-                <li>Access to every class</li>
-                <li>New classes weekly</li>
-                <li>Cancel anytime</li>
+              <ul className="mt-8 space-y-4 text-sm">
+                {MONTHLY_FEATURES.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-white/80">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#39FF14]" strokeWidth={3} />
+                    {feature}
+                  </li>
+                ))}
               </ul>
               <Link
                 href="/register"
-                className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full border border-white/20 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="mt-9 inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-semibold text-black transition-transform hover:scale-[1.02]"
               >
-                Begin monthly
+                Begin Monthly <ArrowRight className="h-4 w-4" />
               </Link>
+              <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
             </div>
 
             {/* Annual */}
@@ -342,28 +361,35 @@ export default async function HomePage() {
               <span className="absolute right-8 top-8 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
                 Best value
               </span>
-              <p className="text-sm uppercase tracking-[0.2em] text-black/60">
-                Annual
+              <p className="text-base text-black/70">Annual</p>
+              <p className="mt-4 flex items-end gap-2">
+                <span className="text-6xl font-extrabold leading-none">$250</span>
+                <span className="pb-1 text-base text-black/50">/ year</span>
               </p>
-              <p className="mt-5 text-5xl font-bold">
-                $190
-                <span className="text-base font-normal text-black/50">/yr</span>
-              </p>
-              <ul className="mt-7 space-y-3 text-sm text-black/70">
-                <li>Everything in monthly</li>
-                <li>2 months free</li>
-                <li>Priority access to new drops</li>
+              <span className="mt-5 inline-block rounded-full bg-black/15 px-3 py-1 text-xs font-bold">
+                Save 40% · Billed yearly
+              </span>
+              <ul className="mt-6 space-y-4 text-sm">
+                {ANNUAL_FEATURES.map((feature, i) => (
+                  <li key={feature} className="flex items-start gap-3 text-black/80">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-black" strokeWidth={3} />
+                    <span className={i === 0 ? "font-bold text-black" : undefined}>
+                      {feature}
+                    </span>
+                  </li>
+                ))}
               </ul>
               <Link
                 href="/register"
-                className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
+                className="mt-9 inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
               >
-                Begin annual
+                Begin Annual <ArrowRight className="h-4 w-4" />
               </Link>
+              <p className="mt-4 text-center text-sm text-black/50">Cancel anytime</p>
             </div>
           </div>
-          <p className="mt-6 text-center text-xs text-white/40">
-            No equipment · Cancel anytime
+          <p className="mt-8 text-center text-sm text-white/40">
+            No equipment · Cancel any time
           </p>
         </div>
       </section>
