@@ -185,15 +185,17 @@ export default async function HomePage() {
         <div className="flex w-max animate-marquee">
           {[0, 1].map((dup) => (
             <div key={dup} className="flex shrink-0" aria-hidden={dup === 1}>
-              {MARQUEE.map((word) => (
-                <span
-                  key={`${dup}-${word}`}
-                  className="flex items-center text-sm font-semibold uppercase tracking-[0.3em] text-white/80"
-                >
-                  <span className="px-6">{word}</span>
-                  <span className="text-[#39FF14]">✦</span>
-                </span>
-              ))}
+              {Array.from({ length: 3 }).flatMap((_, rep) =>
+                MARQUEE.map((word, w) => (
+                  <span
+                    key={`${dup}-${rep}-${w}`}
+                    className="flex items-center text-sm font-semibold uppercase tracking-[0.3em] text-white/80"
+                  >
+                    <span className="px-6">{word}</span>
+                    <span className="text-[#39FF14]">✦</span>
+                  </span>
+                )),
+              )}
             </div>
           ))}
         </div>
