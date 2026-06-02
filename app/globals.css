@@ -160,3 +160,17 @@
     font-weight: 400;
   }
 }
+
+/* =============================================
+   Landing marquee (royegold-style ticker band)
+   ============================================= */
+@keyframes lm-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: lm-marquee 32s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee { animation: none; }
+}
