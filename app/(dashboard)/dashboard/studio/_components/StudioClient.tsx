@@ -278,82 +278,6 @@ function ModeOption({
   )
 }
 
-/** White bottom-left caption overlay matching add-caption.sh. */
-function CaptionText({ main, sub }: { main: string; sub: string }) {
-  const shadow =
-    "0.22cqw 0.22cqw 0 rgba(0,0,0,.6), -0.18cqw 0.18cqw 0 rgba(0,0,0,.55), 0.18cqw -0.18cqw 0 rgba(0,0,0,.55)"
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 flex flex-col items-start justify-end"
-      style={{ padding: "0 0 6% 4.5%", fontFamily: '"Archivo Black", system-ui, sans-serif' }}
-    >
-      {main ? (
-        <span
-          style={{
-            color: "#fff",
-            fontSize: "5.6cqw",
-            lineHeight: 1.05,
-            WebkitTextStroke: "0.12cqw rgba(0,0,0,.85)",
-            textShadow: shadow,
-          }}
-        >
-          {main}
-        </span>
-      ) : null}
-      {sub ? (
-        <span
-          style={{
-            color: "#fff",
-            fontSize: "3.3cqw",
-            marginTop: "1.4%",
-            WebkitTextStroke: "0.08cqw rgba(0,0,0,.85)",
-            textShadow: shadow,
-          }}
-        >
-          {sub}
-        </span>
-      ) : null}
-    </div>
-  )
-}
-
-/** A frame from the picked file (decoded in the browser) + live caption. */
-function CaptionPreview({
-  file,
-  main,
-  sub,
-}: {
-  file: File
-  main: string
-  sub: string
-}) {
-  const url = React.useMemo(() => URL.createObjectURL(file), [file])
-  React.useEffect(() => () => URL.revokeObjectURL(url), [url])
-  return (
-    <div
-      className="relative mt-2 w-full max-w-[200px] overflow-hidden rounded-md bg-black"
-      style={{ aspectRatio: "9 / 16", containerType: "inline-size" }}
-    >
-      <video
-        src={url}
-        muted
-        playsInline
-        preload="metadata"
-        onLoadedMetadata={(e) => {
-          const v = e.currentTarget
-          try {
-            v.currentTime = Math.min(1, (v.duration || 2) / 2)
-          } catch {
-            /* ignore seek errors */
-          }
-        }}
-        className="h-full w-full object-cover"
-      />
-      <CaptionText main={main} sub={sub} />
-    </div>
-  )
-}
-
 export function StudioClient() {
   const [files, setFiles] = React.useState<File[]>([])
   const [clipCfgs, setClipCfgs] = React.useState<ClipCfg[]>([])
@@ -601,15 +525,6 @@ export function StudioClient() {
                           value={cfg.sub}
                           onChange={(e) => setClip(i, { sub: e.target.value })}
                         />
-                        {cfg.main.trim() ? (
-                          <>
-                            <CaptionPreview file={f} main={cfg.main} sub={cfg.sub} />
-                            <p className="text-[10px] text-muted-foreground">
-                              Preview frame — {fog ? "fog fade-in" : "no animation"} on
-                              render.
-                            </p>
-                          </>
-                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -684,7 +599,7 @@ export function StudioClient() {
                       {c.label}
                     </span>
                   </span>
-                  {c.videoName ? (
+                  {c.videoName && job.kenburns ? (
                     <a
                       href={fileUrl(c.videoName, true)}
                       className="flex shrink-0 items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
@@ -696,7 +611,9 @@ export function StudioClient() {
                 {c.status === "error" ? (
                   <p className="text-xs text-red-500">{c.message}</p>
                 ) : null}
-                {c.videoName && !job.joinedName ? (
+                {/* In frames/contact-sheet mode skip the video player — only the
+                    cover section below matters. */}
+                {c.videoName && !job.joinedName && job.kenburns ? (
                   <video
                     src={fileUrl(c.videoName)}
                     controls
@@ -735,7 +652,36 @@ export function StudioClient() {
                     ) : null}
                   </div>
 
-                  {/* controls (above the images) */}
+                  {/* frame picker — single horizontal scrollable strip */}
+                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                    {Array.from({ length: clipObj.frameCount }, (_, i) => i + 1).map(
+                      (n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setSelFrame(n)}
+                          className={`relative aspect-[3/4] w-24 shrink-0 overflow-hidden rounded-md ring-2 transition ${
+                            selFrame === n
+                              ? "ring-emerald-500"
+                              : "ring-transparent hover:ring-muted-foreground/40"
+                          }`}
+                        >
+                          <Image
+                            src={fileUrl(`${clipObj.framesPrefix}/web/${pad3(n)}.jpg`)}
+                            alt={`Frame ${n}`}
+                            fill
+                            unoptimized
+                            className="object-cover"
+                          />
+                          <span className="absolute left-0.5 top-0.5 rounded bg-black/70 px-1 text-[10px] font-bold text-emerald-400">
+                            {n}
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+
+                  {/* text + position controls (below the frame strip) */}
                   <Input
                     placeholder="Cover text (use \n for a line break)"
                     value={coverText}
@@ -767,59 +713,8 @@ export function StudioClient() {
                       frame {selFrame} / {clipObj.frameCount}
                     </span>
                   </div>
-                  <Button
-                    onClick={downloadCover}
-                    disabled={coverBusy || !coverText.trim()}
-                    className="w-full"
-                  >
-                    {coverBusy ? (
-                      <>
-                        <Loader2 className="size-4 animate-spin" /> Rendering cover…
-                      </>
-                    ) : (
-                      <>
-                        <Download className="size-4" /> Download cover
-                      </>
-                    )}
-                  </Button>
-                  {coverErr ? <p className="text-sm text-red-500">{coverErr}</p> : null}
-                  {burnedUrl ? (
-                    <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                      <ImageIcon className="size-3.5" /> Cover downloaded — preview
-                      below is the real burned image.
-                    </p>
-                  ) : null}
 
-                  {/* clickable thumbnail grid */}
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {Array.from({ length: clipObj.frameCount }, (_, i) => i + 1).map(
-                      (n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => setSelFrame(n)}
-                          className={`relative aspect-[3/4] overflow-hidden rounded-md ring-2 transition ${
-                            selFrame === n
-                              ? "ring-emerald-500"
-                              : "ring-transparent hover:ring-muted-foreground/40"
-                          }`}
-                        >
-                          <Image
-                            src={fileUrl(`${clipObj.framesPrefix}/web/${pad3(n)}.jpg`)}
-                            alt={`Frame ${n}`}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
-                          <span className="absolute left-0.5 top-0.5 rounded bg-black/70 px-1 text-[10px] font-bold text-emerald-400">
-                            {n}
-                          </span>
-                        </button>
-                      ),
-                    )}
-                  </div>
-
-                  {/* live preview */}
+                  {/* live preview (result) */}
                   <div
                     className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-lg bg-black"
                     style={{ aspectRatio: String(aspect), containerType: "inline-size" }}
@@ -855,6 +750,30 @@ export function StudioClient() {
                       />
                     ) : null}
                   </div>
+
+                  {/* download button (below the result) */}
+                  {burnedUrl ? (
+                    <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                      <ImageIcon className="size-3.5" /> Cover downloaded — preview
+                      above is the real burned image.
+                    </p>
+                  ) : null}
+                  <Button
+                    onClick={downloadCover}
+                    disabled={coverBusy || !coverText.trim()}
+                    className="w-full"
+                  >
+                    {coverBusy ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" /> Rendering cover…
+                      </>
+                    ) : (
+                      <>
+                        <Download className="size-4" /> Download cover
+                      </>
+                    )}
+                  </Button>
+                  {coverErr ? <p className="text-sm text-red-500">{coverErr}</p> : null}
                 </div>
               </>
             ) : null}
