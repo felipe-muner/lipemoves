@@ -26,50 +26,40 @@ import {
 import { Separator } from "@/components/ui/separator"
 
 import type {
+  ClipState,
   CoverPosition,
   SerializedJob,
-  StepState,
   StudioConfig,
 } from "@/lib/studio/types"
 
+const pad2 = (n: number) => String(n).padStart(2, "0")
 const pad3 = (n: number) => String(n).padStart(3, "0")
 
-function StepRow({ step }: { step: StepState }) {
-  const icon =
-    step.status === "done" ? (
-      <CheckCircle2 className="size-4 text-emerald-500" />
-    ) : step.status === "running" ? (
-      <Loader2 className="size-4 animate-spin text-sky-500" />
-    ) : step.status === "error" ? (
-      <XCircle className="size-4 text-red-500" />
-    ) : (
-      <span className="size-4 rounded-full border border-muted-foreground/30" />
-    )
+/** Default vertical center (fraction of frame) for each position preset. */
+const presetY = (p: CoverPosition) => (p === "top" ? 0.12 : p === "center" ? 0.5 : 0.86)
+
+/** 8-way black drop-shadow string, scaled to the font size (in cqw). */
+const shadow = (s: number) => {
+  const a = (s * 0.023).toFixed(3)
+  const b = (s * 0.035).toFixed(3)
   return (
-    <div className="flex items-center gap-2 text-sm">
-      {icon}
-      <span
-        className={
-          step.status === "skipped"
-            ? "text-muted-foreground/50 line-through"
-            : step.status === "pending"
-              ? "text-muted-foreground"
-              : ""
-        }
-      >
-        {step.label}
-      </span>
-      {step.message && (step.status === "error" || step.status === "pending") ? (
-        <span
-          className={`truncate text-xs ${
-            step.status === "error" ? "text-red-500" : "text-muted-foreground"
-          }`}
-        >
-          — {step.message}
-        </span>
-      ) : null}
-    </div>
+    `${a}cqw ${a}cqw 0 #000, -${a}cqw ${a}cqw 0 #000, ${a}cqw -${a}cqw 0 #000,` +
+    ` -${a}cqw -${a}cqw 0 #000, 0 ${b}cqw 0 #000, 0 -${b}cqw 0 #000,` +
+    ` ${b}cqw 0 0 #000, -${b}cqw 0 0 #000`
   )
+}
+
+interface ClipCfg {
+  captionOn: boolean
+  main: string
+  sub: string
+}
+
+function statusIcon(status: ClipState["status"]) {
+  if (status === "done") return <CheckCircle2 className="size-4 text-emerald-500" />
+  if (status === "running") return <Loader2 className="size-4 animate-spin text-sky-500" />
+  if (status === "error") return <XCircle className="size-4 text-red-500" />
+  return <span className="size-4 rounded-full border border-muted-foreground/30" />
 }
 
 function Toggle({
@@ -101,53 +91,293 @@ function Toggle({
   )
 }
 
-/** CSS overlay approximating the burned cover (cover.sh) for instant preview. */
-function CoverText({ text, position }: { text: string; position: CoverPosition }) {
-  const place =
-    position === "top"
-      ? "items-start pt-[6%]"
-      : position === "center"
-        ? "items-center"
-        : "items-end pb-[7%]"
+/** Draggable + resizable cover-text overlay. Free X/Y drag with a live center
+ *  guide that snaps to horizontal center, plus a bottom-right handle to scale
+ *  the font. It measures the rendered width and reports it (as a fraction of the
+ *  frame) so the burned cover (cover.sh) matches the preview exactly. */
+function CoverText({
+  text,
+  cx,
+  cy,
+  size,
+  onMove,
+  onResize,
+  onMeasure,
+}: {
+  text: string
+  cx: number
+  cy: number
+  size: number
+  onMove: (x: number, y: number) => void
+  onResize: (size: number) => void
+  onMeasure: (widthFrac: number) => void
+}) {
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  const boxRef = React.useRef<HTMLDivElement>(null)
+  const [drag, setDrag] = React.useState(false)
+  const [snapped, setSnapped] = React.useState(false)
+  const [hot, setHot] = React.useState(false) // show the bounding box
+  const rz = React.useRef<{ startDist: number; startSize: number } | null>(null)
+
+  // Report the widest line's width (fraction of the frame) so the burn matches.
+  React.useLayoutEffect(() => {
+    const root = rootRef.current
+    const box = boxRef.current
+    if (!root || !box) return
+    const measure = () => {
+      const cw = root.clientWidth
+      if (cw) onMeasure(box.offsetWidth / cw)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(root)
+    ro.observe(box)
+    return () => ro.disconnect()
+  }, [text, size, onMeasure])
+
+  // Screen-space center of the text block (for the resize math).
+  function blockCenter() {
+    const r = rootRef.current!.getBoundingClientRect()
+    return { x: r.left + cx * r.width, y: r.top + cy * r.height }
+  }
+
+  function moveTo(e: React.PointerEvent) {
+    const r = rootRef.current!.getBoundingClientRect()
+    let x = (e.clientX - r.left) / r.width
+    let y = (e.clientY - r.top) / r.height
+    const snap = Math.abs(x - 0.5) < 0.025 // magnet zone around dead-center
+    if (snap) x = 0.5
+    x = Math.min(0.95, Math.max(0.05, x))
+    y = Math.min(0.95, Math.max(0.05, y))
+    setSnapped(snap)
+    onMove(x, y)
+  }
+
   return (
-    <div className={`pointer-events-none absolute inset-0 flex justify-center ${place}`}>
+    <div ref={rootRef} className="absolute inset-0">
+      {/* center guide: only while dragging; turns lime + glows when snapped */}
+      {drag ? (
+        <div
+          className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2"
+          style={{
+            background: snapped ? "#7CFC00" : "rgba(255,255,255,.55)",
+            boxShadow: snapped ? "0 0 6px #7CFC00" : "none",
+          }}
+        />
+      ) : null}
+
       <div
-        className="whitespace-pre-line text-center uppercase"
+        ref={boxRef}
+        onPointerEnter={() => setHot(true)}
+        onPointerLeave={() => {
+          if (!drag) setHot(false)
+        }}
+        onPointerDown={(e) => {
+          e.preventDefault()
+          e.currentTarget.setPointerCapture(e.pointerId)
+          setDrag(true)
+          moveTo(e)
+        }}
+        onPointerMove={(e) => {
+          if (drag) moveTo(e)
+        }}
+        onPointerUp={(e) => {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+          setDrag(false)
+        }}
+        className="absolute -translate-x-1/2 -translate-y-1/2 select-none whitespace-pre text-center uppercase"
         style={{
+          left: `${cx * 100}%`,
+          top: `${cy * 100}%`,
+          cursor: drag ? "grabbing" : "grab",
+          touchAction: "none",
+          outline: hot || drag ? "1px dashed rgba(255,255,255,.85)" : "none",
+          outlineOffset: "4px",
           fontFamily: '"Archivo Black", system-ui, sans-serif',
           color: "#7CFC00",
-          width: "88%",
-          fontSize: "13cqw",
+          fontSize: `${size}cqw`,
           lineHeight: 1.02,
-          WebkitTextStroke: "0.45cqw #000",
-          textShadow:
-            "0.3cqw 0.3cqw 0 #000, -0.3cqw 0.3cqw 0 #000, 0.3cqw -0.3cqw 0 #000, -0.3cqw -0.3cqw 0 #000, 0 0.45cqw 0 #000, 0 -0.45cqw 0 #000, 0.45cqw 0 0 #000, -0.45cqw 0 0 #000",
+          // Original ratio: 0.45cqw stroke at the 13cqw default size.
+          WebkitTextStroke: `${(size * 0.0346).toFixed(3)}cqw #000`,
+          textShadow: shadow(size),
         }}
       >
         {text.replace(/\\n/g, "\n")}
+
+        {/* resize handle — drag out to enlarge, in to shrink */}
+        <span
+          onPointerDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            e.currentTarget.setPointerCapture(e.pointerId)
+            const c = blockCenter()
+            rz.current = {
+              startDist: Math.hypot(e.clientX - c.x, e.clientY - c.y),
+              startSize: size,
+            }
+          }}
+          onPointerMove={(e) => {
+            if (!rz.current) return
+            e.stopPropagation()
+            const c = blockCenter()
+            const dist = Math.hypot(e.clientX - c.x, e.clientY - c.y)
+            const { startDist, startSize } = rz.current
+            onResize(Math.min(34, Math.max(5, (startSize * dist) / startDist)))
+          }}
+          onPointerUp={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId)
+            rz.current = null
+          }}
+          className="absolute -bottom-2.5 -right-2.5 block size-4 cursor-nwse-resize rounded-full border-2 border-white bg-emerald-500 shadow"
+          style={{ touchAction: "none", WebkitTextStroke: "0", textShadow: "none" }}
+        />
       </div>
     </div>
   )
 }
 
+function ModeOption({
+  active,
+  onClick,
+  label,
+  desc,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+  desc: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full rounded-md border px-3 py-2 text-left transition ${
+        active
+          ? "border-emerald-500/60 bg-emerald-500/10"
+          : "border-border hover:bg-muted"
+      }`}
+    >
+      <span className="flex items-center gap-2">
+        <span
+          className={`flex size-4 items-center justify-center rounded-full border ${
+            active ? "border-emerald-500" : "border-muted-foreground/40"
+          }`}
+        >
+          {active ? <span className="size-2 rounded-full bg-emerald-500" /> : null}
+        </span>
+        <span
+          className={`text-sm font-medium ${
+            active ? "text-emerald-600 dark:text-emerald-400" : ""
+          }`}
+        >
+          {label}
+        </span>
+      </span>
+      <span className="mt-0.5 block pl-6 text-xs text-muted-foreground">{desc}</span>
+    </button>
+  )
+}
+
+/** White bottom-left caption overlay matching add-caption.sh. */
+function CaptionText({ main, sub }: { main: string; sub: string }) {
+  const shadow =
+    "0.22cqw 0.22cqw 0 rgba(0,0,0,.6), -0.18cqw 0.18cqw 0 rgba(0,0,0,.55), 0.18cqw -0.18cqw 0 rgba(0,0,0,.55)"
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 flex flex-col items-start justify-end"
+      style={{ padding: "0 0 6% 4.5%", fontFamily: '"Archivo Black", system-ui, sans-serif' }}
+    >
+      {main ? (
+        <span
+          style={{
+            color: "#fff",
+            fontSize: "5.6cqw",
+            lineHeight: 1.05,
+            WebkitTextStroke: "0.12cqw rgba(0,0,0,.85)",
+            textShadow: shadow,
+          }}
+        >
+          {main}
+        </span>
+      ) : null}
+      {sub ? (
+        <span
+          style={{
+            color: "#fff",
+            fontSize: "3.3cqw",
+            marginTop: "1.4%",
+            WebkitTextStroke: "0.08cqw rgba(0,0,0,.85)",
+            textShadow: shadow,
+          }}
+        >
+          {sub}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+/** A frame from the picked file (decoded in the browser) + live caption. */
+function CaptionPreview({
+  file,
+  main,
+  sub,
+}: {
+  file: File
+  main: string
+  sub: string
+}) {
+  const url = React.useMemo(() => URL.createObjectURL(file), [file])
+  React.useEffect(() => () => URL.revokeObjectURL(url), [url])
+  return (
+    <div
+      className="relative mt-2 w-full max-w-[200px] overflow-hidden rounded-md bg-black"
+      style={{ aspectRatio: "9 / 16", containerType: "inline-size" }}
+    >
+      <video
+        src={url}
+        muted
+        playsInline
+        preload="metadata"
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget
+          try {
+            v.currentTime = Math.min(1, (v.duration || 2) / 2)
+          } catch {
+            /* ignore seek errors */
+          }
+        }}
+        className="h-full w-full object-cover"
+      />
+      <CaptionText main={main} sub={sub} />
+    </div>
+  )
+}
+
 export function StudioClient() {
-  const [file, setFile] = React.useState<File | null>(null)
-  const [kenburns, setKenburns] = React.useState(true)
+  const [files, setFiles] = React.useState<File[]>([])
+  const [clipCfgs, setClipCfgs] = React.useState<ClipCfg[]>([])
 
-  const [capOn, setCapOn] = React.useState(true)
-  const [capMain, setCapMain] = React.useState("")
-  const [capSub, setCapSub] = React.useState("")
-  const [capFog, setCapFog] = React.useState(true)
-
-  const [fpOn, setFpOn] = React.useState(false)
+  const [mode, setMode] = React.useState<"kenburns" | "frames">("kenburns")
+  const [fog, setFog] = React.useState(true)
+  const [join, setJoin] = React.useState(true)
   const [fpStep, setFpStep] = React.useState("0.5")
 
-  const [coverOn, setCoverOn] = React.useState(false)
-
-  // Cover finishing (phase 2).
+  // Cover studio (phase 2).
+  const [selClip, setSelClip] = React.useState(0)
   const [selFrame, setSelFrame] = React.useState(1)
   const [coverText, setCoverText] = React.useState("")
   const [coverPos, setCoverPos] = React.useState<CoverPosition>("bottom")
+  // Free-drag center of the cover text, as fractions of the frame (0..1).
+  const [coverX, setCoverX] = React.useState(0.5)
+  const [coverY, setCoverY] = React.useState(0.86)
+  // Cover font size, in cqw (% of the preview width). Resized via a corner handle.
+  const [coverSize, setCoverSize] = React.useState(13)
+  // Latest measured widest-line width as a fraction of the frame (preview → burn).
+  const coverWidthRef = React.useRef(0.9)
+  const reportCoverWidth = React.useCallback((frac: number) => {
+    coverWidthRef.current = frac
+  }, [])
   const [aspect, setAspect] = React.useState(9 / 16)
   const [burnedUrl, setBurnedUrl] = React.useState<string | null>(null)
   const [coverBusy, setCoverBusy] = React.useState(false)
@@ -157,7 +387,19 @@ export function StudioClient() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  // Poll the job until it finishes.
+  function pickFiles(list: FileList | null) {
+    const arr = list ? Array.from(list) : []
+    setFiles(arr)
+    setClipCfgs(arr.map(() => ({ captionOn: false, main: "", sub: "" })))
+  }
+
+  function setClip(i: number, patch: Partial<ClipCfg>) {
+    setClipCfgs((prev) =>
+      prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
+    )
+  }
+
+  // Poll until the job finishes.
   React.useEffect(() => {
     if (!job || job.status === "done" || job.status === "error") return
     const t = setInterval(async () => {
@@ -167,28 +409,39 @@ export function StudioClient() {
     return () => clearInterval(t)
   }, [job])
 
-  // Any change to the cover inputs invalidates the last burned image.
+  // Cover input changes invalidate the last burned image.
   React.useEffect(() => {
     setBurnedUrl(null)
-  }, [selFrame, coverText, coverPos])
+  }, [selClip, selFrame, coverText, coverPos, coverX, coverY])
 
   const running = job?.status === "running" || job?.status === "queued"
+  const clipsWithFrames = job?.clips.filter((c) => c.frameCount > 0) ?? []
+
+  // Default the cover studio to the first clip that has frames.
+  React.useEffect(() => {
+    if (clipsWithFrames.length && !clipsWithFrames.some((c) => c.index === selClip)) {
+      setSelClip(clipsWithFrames[0].index)
+      setSelFrame(1)
+    }
+  }, [clipsWithFrames, selClip])
 
   async function submit() {
-    if (!file) return
+    if (files.length === 0) return
     setError(null)
     setBusy(true)
     setJob(null)
     setBurnedUrl(null)
-    setSelFrame(1)
     const config: StudioConfig = {
-      kenburns,
-      caption: capOn ? { main: capMain, sub: capSub, fog: capFog } : null,
-      framepicker: fpOn ? { step: Number(fpStep) || 0.5 } : null,
-      cover: coverOn,
+      kenburns: mode === "kenburns",
+      fog,
+      join,
+      framepicker: mode === "frames" ? { step: Number(fpStep) || 0.5 } : null,
+      clips: clipCfgs.map((c) => ({
+        caption: c.captionOn && c.main.trim() ? { main: c.main, sub: c.sub } : null,
+      })),
     }
     const fd = new FormData()
-    fd.append("file", file)
+    files.forEach((f) => fd.append("files", f))
     fd.append("config", JSON.stringify(config))
     try {
       const res = await fetch("/api/studio/jobs", { method: "POST", body: fd })
@@ -207,24 +460,37 @@ export function StudioClient() {
       download ? "&download=1" : ""
     }`
 
+  const clipObj = job?.clips.find((c) => c.index === selClip) ?? null
+
   async function downloadCover() {
-    if (!job || !coverText.trim()) return
+    if (!job || !clipObj || !coverText.trim()) return
     setCoverBusy(true)
     setCoverErr(null)
     try {
       const res = await fetch(`/api/studio/jobs/${job.id}/cover`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ frame: selFrame, text: coverText, position: coverPos }),
+        body: JSON.stringify({
+          clip: selClip,
+          frame: selFrame,
+          text: coverText,
+          position: coverPos,
+          x: coverX,
+          y: coverY,
+          width: coverWidthRef.current,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "Cover failed")
-      setJob(data as SerializedJob)
+      const updated = data as SerializedJob
+      setJob(updated)
+      const name =
+        updated.clips.find((c) => c.index === selClip)?.coverName ??
+        `clip${pad2(selClip)}/cover.jpg`
       const bust = `&t=${Date.now()}`
-      setBurnedUrl(fileUrl("cover.jpg") + bust)
-      // trigger the actual file download
+      setBurnedUrl(fileUrl(name) + bust)
       const a = document.createElement("a")
-      a.href = fileUrl("cover.jpg", true) + bust
+      a.href = fileUrl(name, true) + bust
       a.download = "cover.jpg"
       document.body.appendChild(a)
       a.click()
@@ -236,97 +502,134 @@ export function StudioClient() {
     }
   }
 
-  const videoArts = job?.artifacts.filter((a) => a.kind === "video") ?? []
-  const contactArt = job?.artifacts.find((a) => a.name.includes("contact"))
-  const showCover = !!job?.coverRequested && job.frameCount > 0
-
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      {/* ---- Left: build the pipeline ---- */}
+      {/* ---- Left: build the batch ---- */}
       <Card className="space-y-5 p-5">
         <div>
-          <Label className="mb-2 block">1 · Upload a clip</Label>
+          <Label className="mb-2 block">1 · Upload clips</Label>
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground transition hover:bg-muted/50">
             <Upload className="size-5" />
-            {file ? (
-              <span className="font-medium text-foreground">{file.name}</span>
+            {files.length ? (
+              <span className="font-medium text-foreground">
+                {files.length} clip{files.length > 1 ? "s" : ""} selected
+              </span>
             ) : (
-              <span>Tap to choose a .mov / .mp4</span>
+              <span>Tap to choose one or more .mov / .mp4</span>
             )}
             <input
               type="file"
               accept="video/*"
+              multiple
               className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => pickFiles(e.target.files)}
             />
           </label>
         </div>
 
         <Separator />
 
-        <div className="space-y-4">
-          <Label className="block">2 · Pick the steps</Label>
-
-          <Toggle checked={kenburns} onChange={setKenburns} label="Ken Burns zoom" />
-
-          <div className="space-y-2">
-            <Toggle checked={capOn} onChange={setCapOn} label="Caption (fog fade-in)" />
-            {capOn ? (
-              <div className="space-y-2 pl-1">
-                <Input
-                  placeholder="MAIN LINE (e.g. FULL BODY KETTLEBELL FLOW)"
-                  value={capMain}
-                  onChange={(e) => setCapMain(e.target.value)}
-                />
-                <Input
-                  placeholder="Subtitle (e.g. 3 ROUNDS | 30 SEC) — optional"
-                  value={capSub}
-                  onChange={(e) => setCapSub(e.target.value)}
-                />
-                <Toggle checked={capFog} onChange={setCapFog} label="Fog fade-in animation" />
-              </div>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            <Toggle checked={fpOn} onChange={setFpOn} label="Frame contact sheet" />
-            {fpOn ? (
-              <div className="flex items-center gap-2 pl-1">
-                <Label className="text-xs text-muted-foreground">Every</Label>
-                <Input
-                  type="number"
-                  step="0.25"
-                  min="0.1"
-                  value={fpStep}
-                  onChange={(e) => setFpStep(e.target.value)}
-                  className="w-24"
-                />
-                <span className="text-xs text-muted-foreground">seconds</span>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="space-y-1">
-            <Toggle checked={coverOn} onChange={setCoverOn} label="Cover / thumbnail" />
-            {coverOn ? (
-              <p className="pl-1 text-xs text-muted-foreground">
-                After rendering, click a frame and add the text — you preview it
-                live before downloading.
-              </p>
-            ) : null}
-          </div>
+        <div className="space-y-3">
+          <Label className="block">2 · What do you want to do?</Label>
+          <ModeOption
+            active={mode === "kenburns"}
+            onClick={() => setMode("kenburns")}
+            label="Ken Burns zoom"
+            desc="Zoom all clips (alternating in/out), with optional captions per clip."
+          />
+          <ModeOption
+            active={mode === "frames"}
+            onClick={() => setMode("frames")}
+            label="Frame contact sheet"
+            desc="Extract frames per clip so you can pick + make a cover."
+          />
+          {mode === "frames" ? (
+            <div className="flex items-center gap-2 pl-1">
+              <Label className="text-xs text-muted-foreground">Every</Label>
+              <Input
+                type="number"
+                step="0.25"
+                min="0.1"
+                value={fpStep}
+                onChange={(e) => setFpStep(e.target.value)}
+                className="w-24"
+              />
+              <span className="text-xs text-muted-foreground">seconds</span>
+            </div>
+          ) : null}
+          {mode === "kenburns" && files.length > 1 ? (
+            <Toggle
+              checked={join}
+              onChange={setJoin}
+              label="Join clips into one final video"
+            />
+          ) : null}
         </div>
+
+        {files.length && mode === "kenburns" ? (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="block">3 · Captions per clip</Label>
+                <Toggle checked={fog} onChange={setFog} label="Fog fade-in" />
+              </div>
+              {files.map((f, i) => {
+                const cfg = clipCfgs[i]
+                if (!cfg) return null
+                return (
+                  <div key={i} className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-xs font-medium" title={f.name}>
+                        {i + 1}. {f.name}
+                      </span>
+                      <Toggle
+                        checked={cfg.captionOn}
+                        onChange={(v) => setClip(i, { captionOn: v })}
+                        label="Caption"
+                      />
+                    </div>
+                    {cfg.captionOn ? (
+                      <div className="mt-2 space-y-2">
+                        <Input
+                          placeholder="MAIN LINE"
+                          value={cfg.main}
+                          onChange={(e) => setClip(i, { main: e.target.value })}
+                        />
+                        <Input
+                          placeholder="Subtitle (optional)"
+                          value={cfg.sub}
+                          onChange={(e) => setClip(i, { sub: e.target.value })}
+                        />
+                        {cfg.main.trim() ? (
+                          <>
+                            <CaptionPreview file={f} main={cfg.main} sub={cfg.sub} />
+                            <p className="text-[10px] text-muted-foreground">
+                              Preview frame — {fog ? "fog fade-in" : "no animation"} on
+                              render.
+                            </p>
+                          </>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        ) : null}
 
         <Separator />
 
-        <Button onClick={submit} disabled={!file || busy || running} className="w-full">
+        <Button onClick={submit} disabled={files.length === 0 || busy || running} className="w-full">
           {busy || running ? (
             <>
               <Loader2 className="size-4 animate-spin" /> Rendering…
             </>
           ) : (
             <>
-              <Film className="size-4" /> Render
+              <Film className="size-4" /> Render {files.length || ""} clip
+              {files.length > 1 ? "s" : ""}
             </>
           )}
         </Button>
@@ -335,117 +638,104 @@ export function StudioClient() {
 
       {/* ---- Right: progress + results ---- */}
       <Card className="space-y-5 p-5">
-        <Label className="block">3 · Result</Label>
+        <Label className="block">4 · Result</Label>
 
         {!job ? (
           <p className="text-sm text-muted-foreground">
-            Your rendered clip and cover will appear here.
+            Your processed clips and covers will appear here.
           </p>
         ) : (
           <>
-            <div className="space-y-1.5">
-              {job.steps.map((s) => (
-                <StepRow key={s.id} step={s} />
-              ))}
-            </div>
-
-            {job.status === "error" ? (
-              <p className="text-sm text-red-500">{job.error}</p>
-            ) : null}
-
-            {videoArts.map((a) => (
-              <div key={a.name} className="space-y-2">
-                <Separator />
+            {/* joined final video (Ken Burns mode) */}
+            {job.joinedName ? (
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-medium">
-                    <Film className="size-4" />
-                    {a.label}
+                    <Film className="size-4" /> Final video (joined)
                   </span>
                   <a
-                    href={fileUrl(a.name, true)}
+                    href={fileUrl(job.joinedName, true)}
                     className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
                   >
                     <Download className="size-3.5" /> Download
                   </a>
                 </div>
                 <video
-                  src={fileUrl(a.name)}
+                  src={fileUrl(job.joinedName)}
                   controls
                   className="max-h-[60vh] w-full rounded-lg bg-black"
                 />
+                <Separator />
+              </div>
+            ) : null}
+            {job.joinError ? (
+              <p className="text-xs text-amber-600 dark:text-amber-500">
+                Couldn’t join clips ({job.joinError}) — individual clips are below.
+              </p>
+            ) : null}
+
+            {/* per-clip progress + video */}
+            {job.clips.map((c) => (
+              <div key={c.index} className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                    {statusIcon(c.status)}
+                    <span className="truncate" title={c.label}>
+                      {c.label}
+                    </span>
+                  </span>
+                  {c.videoName ? (
+                    <a
+                      href={fileUrl(c.videoName, true)}
+                      className="flex shrink-0 items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
+                    >
+                      <Download className="size-3.5" /> Download
+                    </a>
+                  ) : null}
+                </div>
+                {c.status === "error" ? (
+                  <p className="text-xs text-red-500">{c.message}</p>
+                ) : null}
+                {c.videoName && !job.joinedName ? (
+                  <video
+                    src={fileUrl(c.videoName)}
+                    controls
+                    className="max-h-[50vh] w-full rounded-lg bg-black"
+                  />
+                ) : null}
               </div>
             ))}
 
-            {/* ---- Cover studio: click a frame, preview live, download ---- */}
-            {showCover ? (
+            {/* ---- Cover studio ---- */}
+            {clipsWithFrames.length && clipObj ? (
               <>
                 <Separator />
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="block">Cover — pick a frame</Label>
-                    {contactArt ? (
-                      <a
-                        href={fileUrl(contactArt.name, true)}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="block">Cover</Label>
+                    {clipsWithFrames.length > 1 ? (
+                      <Select
+                        value={String(selClip)}
+                        onValueChange={(v) => {
+                          setSelClip(Number(v))
+                          setSelFrame(1)
+                        }}
                       >
-                        <Download className="size-3.5" /> contact sheet
-                      </a>
+                        <SelectTrigger className="h-8 w-40 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clipsWithFrames.map((c) => (
+                            <SelectItem key={c.index} value={String(c.index)}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : null}
                   </div>
 
-                  {/* clickable thumbnail grid */}
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {Array.from({ length: job.frameCount }, (_, i) => i + 1).map(
-                      (n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => setSelFrame(n)}
-                          className={`relative aspect-[3/4] overflow-hidden rounded-md ring-2 transition ${
-                            selFrame === n
-                              ? "ring-emerald-500"
-                              : "ring-transparent hover:ring-muted-foreground/40"
-                          }`}
-                        >
-                          <Image
-                            src={fileUrl(`frames/web/${pad3(n)}.jpg`)}
-                            alt={`Frame ${n}`}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
-                          <span className="absolute left-0.5 top-0.5 rounded bg-black/70 px-1 text-[10px] font-bold text-emerald-400">
-                            {n}
-                          </span>
-                        </button>
-                      ),
-                    )}
-                  </div>
-
-                  {/* live preview */}
-                  <div
-                    className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-lg bg-black"
-                    style={{ aspectRatio: String(aspect), containerType: "inline-size" }}
-                  >
-                    <Image
-                      src={burnedUrl ?? fileUrl(`frames/frames/${pad3(selFrame)}.png`)}
-                      alt="Cover preview"
-                      fill
-                      unoptimized
-                      className="object-contain"
-                      onLoad={(e) => {
-                        const t = e.currentTarget
-                        if (t.naturalWidth && t.naturalHeight) {
-                          setAspect(t.naturalWidth / t.naturalHeight)
-                        }
-                      }}
-                    />
-                    {!burnedUrl ? (
-                      <CoverText text={coverText} position={coverPos} />
-                    ) : null}
-                  </div>
-
-                  {/* controls */}
+                  {/* controls (above the images) */}
                   <Input
                     placeholder="Cover text (use \n for a line break)"
                     value={coverText}
@@ -455,7 +745,14 @@ export function StudioClient() {
                     <Label className="text-xs text-muted-foreground">Position</Label>
                     <Select
                       value={coverPos}
-                      onValueChange={(v) => setCoverPos(v as CoverPosition)}
+                      onValueChange={(v) => {
+                        const p = v as CoverPosition
+                        setCoverPos(p)
+                        // Jumping to a preset re-centers horizontally + snaps to
+                        // that vertical anchor (drag from there to fine-tune).
+                        setCoverX(0.5)
+                        setCoverY(presetY(p))
+                      }}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />
@@ -467,10 +764,9 @@ export function StudioClient() {
                       </SelectContent>
                     </Select>
                     <span className="ml-auto text-xs text-muted-foreground">
-                      frame {selFrame} / {job.frameCount}
+                      frame {selFrame} / {clipObj.frameCount}
                     </span>
                   </div>
-
                   <Button
                     onClick={downloadCover}
                     disabled={coverBusy || !coverText.trim()}
@@ -490,9 +786,75 @@ export function StudioClient() {
                   {burnedUrl ? (
                     <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                       <ImageIcon className="size-3.5" /> Cover downloaded — preview
-                      above is the real burned image.
+                      below is the real burned image.
                     </p>
                   ) : null}
+
+                  {/* clickable thumbnail grid */}
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {Array.from({ length: clipObj.frameCount }, (_, i) => i + 1).map(
+                      (n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setSelFrame(n)}
+                          className={`relative aspect-[3/4] overflow-hidden rounded-md ring-2 transition ${
+                            selFrame === n
+                              ? "ring-emerald-500"
+                              : "ring-transparent hover:ring-muted-foreground/40"
+                          }`}
+                        >
+                          <Image
+                            src={fileUrl(`${clipObj.framesPrefix}/web/${pad3(n)}.jpg`)}
+                            alt={`Frame ${n}`}
+                            fill
+                            unoptimized
+                            className="object-cover"
+                          />
+                          <span className="absolute left-0.5 top-0.5 rounded bg-black/70 px-1 text-[10px] font-bold text-emerald-400">
+                            {n}
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+
+                  {/* live preview */}
+                  <div
+                    className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-lg bg-black"
+                    style={{ aspectRatio: String(aspect), containerType: "inline-size" }}
+                  >
+                    <Image
+                      src={
+                        burnedUrl ??
+                        fileUrl(`${clipObj.framesPrefix}/frames/${pad3(selFrame)}.png`)
+                      }
+                      alt="Cover preview"
+                      fill
+                      unoptimized
+                      className="object-contain"
+                      onLoad={(e) => {
+                        const t = e.currentTarget
+                        if (t.naturalWidth && t.naturalHeight) {
+                          setAspect(t.naturalWidth / t.naturalHeight)
+                        }
+                      }}
+                    />
+                    {!burnedUrl && coverText.trim() ? (
+                      <CoverText
+                        text={coverText}
+                        cx={coverX}
+                        cy={coverY}
+                        size={coverSize}
+                        onMove={(x, y) => {
+                          setCoverX(x)
+                          setCoverY(y)
+                        }}
+                        onResize={setCoverSize}
+                        onMeasure={reportCoverWidth}
+                      />
+                    ) : null}
+                  </div>
                 </div>
               </>
             ) : null}

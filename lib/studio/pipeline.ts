@@ -3,15 +3,18 @@ import { existsSync } from "node:fs"
 import { copyFile, mkdir, readdir, rename } from "node:fs/promises"
 import path from "node:path"
 
-import type {
-  CoverRequest,
-  Job,
-  StepId,
-  StepState,
-  StudioConfig,
-} from "./types"
+import type { CoverRequest, Job, StudioConfig } from "./types"
 
 const SCRIPTS = path.join(process.cwd(), "scripts")
+const FFMPEG = existsSync("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
+  ? "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
+  : "ffmpeg"
+const FFPROBE = existsSync("/opt/homebrew/opt/ffmpeg-full/bin/ffprobe")
+  ? "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe"
+  : "ffprobe"
+
+const pad2 = (n: number) => String(n).padStart(2, "0")
+const pad3 = (n: number) => String(n).padStart(3, "0")
 
 /** Run a command, rejecting with stderr on failure. */
 function run(file: string, args: string[], cwd: string): Promise<void> {
@@ -28,197 +31,244 @@ function run(file: string, args: string[], cwd: string): Promise<void> {
   })
 }
 
-function setStep(job: Job, id: StepId, patch: Partial<StepState>): void {
-  const step = job.steps.find((s) => s.id === id)
-  if (step) Object.assign(step, patch)
+/** Read one ffprobe field, empty string on failure. */
+function probe(video: string, entries: string): Promise<string> {
+  return new Promise((resolve) => {
+    execFile(
+      FFPROBE,
+      ["-v", "error", "-select_streams", "v:0", "-show_entries", entries,
+        "-of", "default=nw=1:nk=1", video],
+      (_e, stdout) => resolve((stdout || "").trim()),
+    )
+  })
+}
+
+function hasAudio(video: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile(
+      FFPROBE,
+      ["-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
+        "-of", "csv=p=0", video],
+      (_e, stdout) => resolve(!!(stdout || "").trim()),
+    )
+  })
+}
+
+/** Concatenate clips into one video (re-encode), preserving HDR if present. */
+async function joinClips(
+  paths: string[],
+  out: string,
+  cwd: string,
+): Promise<void> {
+  const trc = await probe(paths[0], "stream=color_transfer")
+  const hdr = trc === "arib-std-b67" || trc === "smpte2084"
+  const audio = (await Promise.all(paths.map(hasAudio))).every(Boolean)
+  const n = paths.length
+
+  const inputs = paths.flatMap((p) => ["-i", p])
+  const tag = paths.map((_, i) => (audio ? `[${i}:v][${i}:a]` : `[${i}:v]`)).join("")
+  let filter = `${tag}concat=n=${n}:v=1:a=${audio ? 1 : 0}[v]${audio ? "[a]" : ""}`
+  filter += hdr
+    ? ";[v]format=yuv420p10le,setparams=colorspace=bt2020nc:color_primaries=bt2020:color_trc=arib-std-b67[vo]"
+    : ";[v]format=yuv420p[vo]"
+
+  const args = [
+    "-y", "-hide_banner", "-loglevel", "error",
+    ...inputs,
+    "-filter_complex", filter,
+    "-map", "[vo]",
+  ]
+  if (audio) args.push("-map", "[a]")
+  args.push("-c:v", "libx265", "-preset", "medium", "-crf", "18", "-tag:v", "hvc1")
+  if (hdr) {
+    args.push(
+      "-x265-params",
+      "colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc:range=limited",
+      "-color_primaries", "bt2020", "-colorspace", "bt2020nc",
+      "-color_trc", "arib-std-b67", "-color_range", "tv",
+    )
+  }
+  if (audio) args.push("-c:a", "aac", "-b:a", "128k")
+  args.push("-movflags", "+faststart", out)
+  await run(FFMPEG, args, cwd)
 }
 
 /**
- * Run the selected steps in order, mutating the job in place (the job store
- * holds the same object reference, so progress is visible to pollers).
+ * Run the batch. Ken Burns is applied to all clips in one alternating pass;
+ * then each clip is captioned (if requested) and, if a contact sheet was
+ * requested, frames + thumbnails are extracted so a cover can be finished.
  *
- * @param job   the job (its `dir` already contains the uploaded `inputName`)
- * @param config which steps to run + their settings
+ * The job is mutated in place — the store holds the same reference, so progress
+ * is visible to pollers. `dir` already contains `clip<NN>/<inputName>` per clip.
  */
 export async function runPipeline(
   job: Job,
   config: StudioConfig,
+  inputNames: string[],
 ): Promise<void> {
   job.status = "running"
   const dir = job.dir
-  const input = path.join(dir, job.inputName)
-
-  // The clip that carries the video edits forward (ken-burns -> caption).
-  let finalVideo = input
-  // The clip the cover frame + contact sheet are pulled from: ken-burns output
-  // (or the original) but BEFORE the caption, so covers sit on a clean frame.
-  let coverSource = input
-  let videoEdited = false
+  const clipDir = (i: number) => path.join(dir, `clip${pad2(i)}`)
 
   try {
-    // 1) Ken Burns (operates on a directory; give it one of its own).
+    // --- Phase A: Ken Burns over all clips at once (alternating in/out). ---
     if (config.kenburns) {
-      setStep(job, "kenburns", { status: "running" })
-      const kbIn = path.join(dir, "kb")
+      const kbIn = path.join(dir, "kb-in")
       await mkdir(kbIn, { recursive: true })
-      await copyFile(input, path.join(kbIn, job.inputName))
-      await run("bash", [path.join(SCRIPTS, "ken-burns.sh"), kbIn], dir)
-      const base = job.inputName.replace(/\.[^.]+$/, "")
-      const produced = path.join(kbIn, "edited", `${base}-kb.mp4`)
-      const dest = path.join(dir, "kb.mp4")
-      await rename(produced, dest)
-      finalVideo = dest
-      coverSource = dest
-      videoEdited = true
-      setStep(job, "kenburns", { status: "done" })
-    } else {
-      setStep(job, "kenburns", { status: "skipped" })
-    }
-
-    // 2) Caption (fog fade-in, all white).
-    if (config.caption && config.caption.main.trim()) {
-      setStep(job, "caption", { status: "running" })
-      const out = path.join(dir, "cap.mp4")
-      const args = [
-        path.join(SCRIPTS, "add-caption.sh"),
-        finalVideo,
-        config.caption.main,
-        config.caption.sub,
-        out,
-      ]
-      if (!config.caption.fog) args.push("--no-anim")
-      await run("bash", args, dir)
-      finalVideo = out
-      videoEdited = true
-      setStep(job, "caption", { status: "done" })
-    } else {
-      setStep(job, "caption", { status: "skipped" })
-    }
-
-    // Expose the processed clip as the headline artifact.
-    if (videoEdited) {
-      const out = path.join(dir, "final.mp4")
-      await copyFile(finalVideo, out)
-      finalVideo = out
-      job.artifacts.push({
-        name: "final.mp4",
-        kind: "video",
-        label: "Processed clip",
-      })
-    }
-
-    // 3) Frames + numbered contact sheet. Needed if the frame sheet was asked
-    //    for, OR if a cover was requested (covers are burned onto a chosen
-    //    frame, so we always extract the full-res frames here).
-    const wantsCover = config.cover === true
-    if (config.framepicker || wantsCover) {
-      setStep(job, "framepicker", { status: "running" })
-      const framesDir = path.join(dir, "frames")
-      const step = String(config.framepicker?.step ?? 0.5)
-      await run(
-        "bash",
-        [path.join(SCRIPTS, "frame-picker.sh"), coverSource, step, framesDir],
-        dir,
-      )
-      const base = path.basename(coverSource).replace(/\.[^.]+$/, "")
-      job.artifacts.push({
-        name: path.join("frames", `${base}-contact.png`),
-        kind: "image",
-        label: "Frame contact sheet",
-      })
-      const fullDir = path.join(framesDir, "frames")
-      let frameFiles: string[] = []
-      try {
-        frameFiles = (await readdir(fullDir))
-          .filter((f) => f.endsWith(".png"))
-          .sort()
-        job.frameCount = frameFiles.length
-      } catch {
-        job.frameCount = 0
-      }
-      // Small JPG thumbnails for the clickable picker grid (full-res frames
-      // are several MB each; these keep the UI snappy).
-      if (frameFiles.length) {
-        const webDir = path.join(framesDir, "web")
-        await mkdir(webDir, { recursive: true })
-        await run(
-          "magick",
-          [
-            "mogrify",
-            "-path",
-            webDir,
-            "-resize",
-            "240x",
-            "-quality",
-            "82",
-            "-format",
-            "jpg",
-            ...frameFiles.map((f) => path.join(fullDir, f)),
-          ],
-          dir,
+      for (let i = 0; i < job.clips.length; i++) {
+        const ext = path.extname(inputNames[i]) || ".mp4"
+        await copyFile(
+          path.join(clipDir(i), inputNames[i]),
+          path.join(kbIn, `clip${pad2(i)}${ext}`),
         )
       }
-      setStep(job, "framepicker", { status: "done" })
-    } else {
-      setStep(job, "framepicker", { status: "skipped" })
+      for (const c of job.clips) if (c.status === "pending") c.status = "running"
+      await run("bash", [path.join(SCRIPTS, "ken-burns.sh"), kbIn], dir)
+      for (let i = 0; i < job.clips.length; i++) {
+        const produced = path.join(kbIn, "edited", `clip${pad2(i)}-kb.mp4`)
+        if (existsSync(produced)) {
+          await rename(produced, path.join(clipDir(i), "kb.mp4"))
+        }
+      }
     }
 
-    // 4) Cover is a SECOND phase: it waits for you to click a frame and type
-    //    the text in the UI, then applyCover() burns it onto that frame.
-    if (wantsCover) {
-      job.coverRequested = true
-      setStep(job, "cover", {
-        status: "pending",
-        message: "pick a frame & add text",
-      })
-    } else {
-      setStep(job, "cover", { status: "skipped" })
+    // --- Phase B: per clip — caption, then frames for the cover studio. ---
+    for (let i = 0; i < job.clips.length; i++) {
+      const clip = job.clips[i]
+      const cfg = config.clips[i]
+      const cdir = clipDir(i)
+      clip.status = "running"
+      try {
+        const input = path.join(cdir, inputNames[i])
+        let finalVideo = input
+        // Cover/contact frames come from BEFORE the caption, so covers sit on
+        // a clean frame.
+        let coverSource = input
+        let edited = false
+
+        if (config.kenburns && existsSync(path.join(cdir, "kb.mp4"))) {
+          finalVideo = path.join(cdir, "kb.mp4")
+          coverSource = finalVideo
+          edited = true
+        }
+
+        if (cfg.caption && cfg.caption.main.trim()) {
+          const out = path.join(cdir, "cap.mp4")
+          const args = [
+            path.join(SCRIPTS, "add-caption.sh"),
+            finalVideo,
+            cfg.caption.main,
+            cfg.caption.sub,
+            out,
+          ]
+          if (!config.fog) args.push("--no-anim")
+          await run("bash", args, dir)
+          finalVideo = out
+          edited = true
+        }
+
+        if (edited) {
+          const out = path.join(cdir, "final.mp4")
+          await copyFile(finalVideo, out)
+          clip.videoName = `clip${pad2(i)}/final.mp4`
+        } else {
+          // No edits — expose the original so it can still be previewed.
+          clip.videoName = `clip${pad2(i)}/${inputNames[i]}`
+        }
+
+        if (config.framepicker) {
+          const framesDir = path.join(cdir, "frames")
+          const step = String(config.framepicker.step)
+          await run(
+            "bash",
+            [path.join(SCRIPTS, "frame-picker.sh"), coverSource, step, framesDir],
+            dir,
+          )
+          const base = path.basename(coverSource).replace(/\.[^.]+$/, "")
+          clip.contactName = `clip${pad2(i)}/frames/${base}-contact.png`
+          clip.framesPrefix = `clip${pad2(i)}/frames`
+          const fullDir = path.join(framesDir, "frames")
+          let frameFiles: string[] = []
+          try {
+            frameFiles = (await readdir(fullDir))
+              .filter((f) => f.endsWith(".png"))
+              .sort()
+            clip.frameCount = frameFiles.length
+          } catch {
+            clip.frameCount = 0
+          }
+          if (frameFiles.length) {
+            const webDir = path.join(framesDir, "web")
+            await mkdir(webDir, { recursive: true })
+            await run(
+              "magick",
+              [
+                "mogrify",
+                "-path",
+                webDir,
+                "-resize",
+                "240x",
+                "-quality",
+                "82",
+                "-format",
+                "jpg",
+                ...frameFiles.map((f) => path.join(fullDir, f)),
+              ],
+              dir,
+            )
+          }
+        }
+
+        clip.status = "done"
+      } catch (err) {
+        clip.status = "error"
+        clip.message = err instanceof Error ? err.message : String(err)
+      }
     }
 
-    job.status = "done"
+    // --- Phase C: optionally join all processed clips into one video. ---
+    const finals = job.clips
+      .filter((c) => c.status === "done" && c.videoName)
+      .map((c) => path.join(dir, c.videoName as string))
+    if (config.kenburns && config.join && finals.length >= 2) {
+      try {
+        const out = path.join(dir, "joined.mp4")
+        await joinClips(finals, out, dir)
+        job.joinedName = "joined.mp4"
+      } catch (err) {
+        job.joinError = err instanceof Error ? err.message : String(err)
+      }
+    }
+
+    job.status = job.clips.every((c) => c.status === "error") ? "error" : "done"
+    if (job.status === "error") job.error = "All clips failed"
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
     job.status = "error"
-    job.error = message
-    const running = job.steps.find((s) => s.status === "running")
-    if (running) setStep(job, running.id, { status: "error", message })
+    job.error = err instanceof Error ? err.message : String(err)
   }
 }
 
 /**
- * Phase 2: burn the cover text onto a chosen contact-sheet frame (1-based).
- * The full-res frames were saved by frame-picker at frames/frames/<NNN>.png.
+ * Burn the cover text onto a chosen frame of a chosen clip. The full-res frames
+ * were saved by frame-picker at <framesPrefix>/frames/<NNN>.png.
  */
-export async function applyCover(
-  job: Job,
-  req: CoverRequest,
-): Promise<void> {
-  const num = String(req.frame).padStart(3, "0")
-  const frame = path.join(job.dir, "frames", "frames", `${num}.png`)
-  if (!existsSync(frame)) {
-    throw new Error(`Frame ${req.frame} not found`)
-  }
+export async function applyCover(job: Job, req: CoverRequest): Promise<void> {
+  const clip = job.clips[req.clip]
+  if (!clip || !clip.framesPrefix) throw new Error("Clip has no frames")
 
-  setStep(job, "cover", { status: "running", message: undefined })
-  const out = path.join(job.dir, "cover.jpg")
-  try {
-    await run(
-      "bash",
-      [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position],
-      job.dir,
-    )
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    setStep(job, "cover", { status: "error", message })
-    throw err
-  }
+  const frame = path.join(job.dir, clip.framesPrefix, "frames", `${pad3(req.frame)}.png`)
+  if (!existsSync(frame)) throw new Error(`Frame ${req.frame} not found`)
 
-  if (!job.artifacts.some((a) => a.name === "cover.jpg")) {
-    job.artifacts.push({
-      name: "cover.jpg",
-      kind: "image",
-      label: "Cover / thumbnail",
-    })
-  }
-  setStep(job, "cover", { status: "done" })
+  const out = path.join(job.dir, `clip${pad2(req.clip)}`, "cover.jpg")
+  // Pass the free-drag center (x,y) and measured width fraction when present;
+  // cover.sh falls back to the named position preset + auto-fit when empty.
+  const x = req.x === undefined ? "" : String(req.x)
+  const y = req.y === undefined ? "" : String(req.y)
+  const width = req.width === undefined ? "" : String(req.width)
+  await run(
+    "bash",
+    [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position, x, y, width],
+    job.dir,
+  )
+  clip.coverName = `clip${pad2(req.clip)}/cover.jpg`
 }
