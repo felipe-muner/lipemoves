@@ -75,7 +75,7 @@ function Toggle({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition ${
+      className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs font-medium transition ${
         checked
           ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
           : "border-border text-muted-foreground hover:bg-muted"
@@ -251,29 +251,27 @@ function ModeOption({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-md border px-3 py-2 text-left transition ${
+      title={desc}
+      className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-left transition ${
         active
           ? "border-emerald-500/60 bg-emerald-500/10"
           : "border-border hover:bg-muted"
       }`}
     >
-      <span className="flex items-center gap-2">
-        <span
-          className={`flex size-4 items-center justify-center rounded-full border ${
-            active ? "border-emerald-500" : "border-muted-foreground/40"
-          }`}
-        >
-          {active ? <span className="size-2 rounded-full bg-emerald-500" /> : null}
-        </span>
-        <span
-          className={`text-sm font-medium ${
-            active ? "text-emerald-600 dark:text-emerald-400" : ""
-          }`}
-        >
-          {label}
-        </span>
+      <span
+        className={`flex size-3.5 shrink-0 items-center justify-center rounded-full border ${
+          active ? "border-emerald-500" : "border-muted-foreground/40"
+        }`}
+      >
+        {active ? <span className="size-1.5 rounded-full bg-emerald-500" /> : null}
       </span>
-      <span className="mt-0.5 block pl-6 text-xs text-muted-foreground">{desc}</span>
+      <span
+        className={`truncate text-xs font-medium ${
+          active ? "text-emerald-600 dark:text-emerald-400" : ""
+        }`}
+      >
+        {label}
+      </span>
     </button>
   )
 }
@@ -427,34 +425,12 @@ export function StudioClient() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      {/* ---- Left: build the batch ---- */}
-      <Card className="space-y-5 p-5">
-        <div>
-          <Label className="mb-2 block">1 · Upload clips</Label>
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground transition hover:bg-muted/50">
-            <Upload className="size-5" />
-            {files.length ? (
-              <span className="font-medium text-foreground">
-                {files.length} clip{files.length > 1 ? "s" : ""} selected
-              </span>
-            ) : (
-              <span>Tap to choose one or more .mov / .mp4</span>
-            )}
-            <input
-              type="file"
-              accept="video/*"
-              multiple
-              className="hidden"
-              onChange={(e) => pickFiles(e.target.files)}
-            />
-          </label>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-3">
-          <Label className="block">2 · What do you want to do?</Label>
+    <div className="space-y-6">
+      {/* ---- Top: compact builder. Mode radio first, then upload (+ captions
+            on the right for Ken Burns), kept short so the result sits high. ---- */}
+      <Card className="gap-5 p-3">
+        {/* Mode — pick this first */}
+        <div className="flex flex-wrap items-center gap-2">
           <ModeOption
             active={mode === "kenburns"}
             onClick={() => setMode("kenburns")}
@@ -468,7 +444,7 @@ export function StudioClient() {
             desc="Extract frames per clip so you can pick + make a cover."
           />
           {mode === "frames" ? (
-            <div className="flex items-center gap-2 pl-1">
+            <div className="flex items-center gap-1.5">
               <Label className="text-xs text-muted-foreground">Every</Label>
               <Input
                 type="number"
@@ -476,74 +452,103 @@ export function StudioClient() {
                 min="0.1"
                 value={fpStep}
                 onChange={(e) => setFpStep(e.target.value)}
-                className="w-24"
+                className="h-8 w-20"
               />
-              <span className="text-xs text-muted-foreground">seconds</span>
+              <span className="text-xs text-muted-foreground">s</span>
             </div>
           ) : null}
-          {mode === "kenburns" && files.length > 1 ? (
-            <Toggle
-              checked={join}
-              onChange={setJoin}
-              label="Join clips into one final video"
-            />
+          {mode === "kenburns" && files.length ? (
+            <div className="ml-auto flex items-center gap-2">
+              {files.length > 1 ? (
+                <Toggle checked={join} onChange={setJoin} label="Join" />
+              ) : null}
+              <Toggle checked={fog} onChange={setFog} label="Fog fade-in" />
+            </div>
           ) : null}
         </div>
 
-        {files.length && mode === "kenburns" ? (
-          <>
-            <Separator />
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="block">3 · Captions per clip</Label>
-                <Toggle checked={fog} onChange={setFog} label="Fog fade-in" />
-              </div>
-              {files.map((f, i) => {
-                const cfg = clipCfgs[i]
-                if (!cfg) return null
-                return (
-                  <div key={i} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-xs font-medium" title={f.name}>
-                        {i + 1}. {f.name}
-                      </span>
-                      <Toggle
-                        checked={cfg.captionOn}
-                        onChange={(v) => setClip(i, { captionOn: v })}
-                        label="Caption"
-                      />
-                    </div>
-                    {cfg.captionOn ? (
-                      <div className="mt-2 space-y-2">
-                        <Input
-                          placeholder="MAIN LINE"
-                          value={cfg.main}
-                          onChange={(e) => setClip(i, { main: e.target.value })}
-                        />
-                        <Input
-                          placeholder="Subtitle (optional)"
-                          value={cfg.sub}
-                          onChange={(e) => setClip(i, { sub: e.target.value })}
+        {/* Upload (left) + captions (right, Ken Burns only) */}
+        <div
+          className={`grid gap-4 ${
+            mode === "kenburns" && files.length ? "md:grid-cols-2" : ""
+          }`}
+        >
+          <div className="space-y-2">
+            <label className="flex w-full max-w-[200px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground transition hover:bg-muted/50">
+              <Upload className="size-5" />
+              {files.length ? (
+                <span className="font-medium text-foreground">
+                  {files.length} clip{files.length > 1 ? "s" : ""} selected
+                </span>
+              ) : (
+                <span>Tap to choose one or more .mov / .mp4</span>
+              )}
+              <input
+                type="file"
+                accept="video/*"
+                multiple
+                className="hidden"
+                onChange={(e) => pickFiles(e.target.files)}
+              />
+            </label>
+          </div>
+
+          {mode === "kenburns" && files.length ? (
+            <div className="space-y-2">
+              <Label className="block text-xs">Captions per clip</Label>
+              <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
+                {files.map((f, i) => {
+                  const cfg = clipCfgs[i]
+                  if (!cfg) return null
+                  return (
+                    <div key={i} className="rounded-lg border p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-xs font-medium" title={f.name}>
+                          {i + 1}. {f.name}
+                        </span>
+                        <Toggle
+                          checked={cfg.captionOn}
+                          onChange={(v) => setClip(i, { captionOn: v })}
+                          label="Caption"
                         />
                       </div>
-                    ) : null}
-                  </div>
-                )
-              })}
+                      {cfg.captionOn ? (
+                        <div className="mt-2 space-y-2">
+                          <Input
+                            placeholder="MAIN LINE"
+                            className="h-8"
+                            value={cfg.main}
+                            onChange={(e) => setClip(i, { main: e.target.value })}
+                          />
+                          <Input
+                            placeholder="Subtitle (optional)"
+                            className="h-8"
+                            value={cfg.sub}
+                            onChange={(e) => setClip(i, { sub: e.target.value })}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </>
-        ) : null}
+          ) : null}
+        </div>
 
-        <Separator />
-
-        <Button onClick={submit} disabled={files.length === 0 || busy || running} className="w-full">
+        <Button
+          onClick={submit}
+          size="sm"
+          disabled={files.length === 0 || busy || running}
+          className="h-8 w-fit px-3 text-xs"
+        >
           {busy || running ? (
             <>
-              <Loader2 className="size-4 animate-spin" /> Rendering…
+              <Loader2 className="size-3.5 animate-spin" /> Rendering…
             </>
           ) : (
             <>
-              <Film className="size-4" /> Render {files.length || ""} clip
+              <Film className="size-3.5" /> Render {files.length || ""} clip
               {files.length > 1 ? "s" : ""}
             </>
           )}
@@ -551,7 +556,7 @@ export function StudioClient() {
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
       </Card>
 
-      {/* ---- Right: progress + results ---- */}
+      {/* ---- Bottom: full-width progress + results ---- */}
       <Card className="space-y-5 p-5">
         <Label className="block">4 · Result</Label>
 
