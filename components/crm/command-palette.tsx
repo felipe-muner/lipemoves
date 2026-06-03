@@ -5,30 +5,16 @@ import { useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Users,
-  GraduationCap,
-  CalendarDays,
-  Wallet,
-  MapPin,
-  Utensils,
-  Package,
-  UserCog,
-  Armchair,
   PieChart,
-  TrendingUp,
-  TrendingDown,
-  Tags,
-  FileText,
+  Film,
   Settings,
   Search,
   ArrowRight,
   PlusCircle,
-  Bell,
-  DoorOpen,
   Hash,
   BookOpen,
   Inbox,
-  Heart,
-  Footprints,
+  Clapperboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -42,16 +28,12 @@ import {
   CommandShortcut,
 } from "@/components/ui/command"
 
-type Role = "admin" | "manager" | "teacher"
-
 interface Entry {
   label: string
   href: string
   icon: React.ElementType
   /** Extra search terms (synonyms / acronyms). */
   keywords?: string
-  /** Roles that can see this entry. Empty = all. */
-  roles?: Role[]
 }
 
 interface Group {
@@ -67,19 +49,7 @@ const NAV_GROUPS: Group[] = [
         label: "Overview",
         href: "/dashboard",
         icon: LayoutDashboard,
-        keywords: "home dashboard summary",
-      },
-      {
-        label: "Notifications",
-        href: "/dashboard/notifications",
-        icon: Bell,
-        keywords: "alerts inbox feed reminders low stock expiring",
-      },
-      {
-        label: "Check-in",
-        href: "/dashboard/checkin",
-        icon: DoorOpen,
-        keywords: "reception entry door arrive attend",
+        keywords: "home dashboard summary kpi",
       },
       {
         label: "My account",
@@ -90,170 +60,54 @@ const NAV_GROUPS: Group[] = [
     ],
   },
   {
-    heading: "Yoga",
+    heading: "Manage",
     items: [
       {
-        label: "Classes",
-        href: "/dashboard/classes",
-        icon: CalendarDays,
-        keywords: "schedule calendar week",
-      },
-      {
-        label: "Teachers",
-        href: "/dashboard/teachers",
-        icon: GraduationCap,
-        keywords: "instructors staff",
-        roles: ["admin", "manager"],
-      },
-      {
-        label: "Students",
-        href: "/dashboard/students",
+        label: "Members",
+        href: "/dashboard/members",
         icon: Users,
-        keywords: "members customers",
-        roles: ["admin", "manager"],
+        keywords: "subscribers customers paying plans stripe",
       },
       {
-        label: "Locations",
-        href: "/dashboard/locations",
-        icon: MapPin,
-        keywords: "shala room studio",
-        roles: ["admin", "manager"],
-      },
-      {
-        label: "Memberships",
-        href: "/dashboard/memberships",
-        icon: Tags,
-        keywords: "plans drop-in pass packs subscription",
-        roles: ["admin", "manager"],
-      },
-    ],
-  },
-  {
-    heading: "Finance",
-    items: [
-      {
-        label: "Finance overview",
+        label: "Finance",
         href: "/dashboard/finance",
         icon: PieChart,
-        keywords: "money kpi summary profit revenue",
-        roles: ["admin", "manager"],
+        keywords: "money revenue mrr churn subscriptions income",
       },
       {
-        label: "Income",
-        href: "/dashboard/finance/income",
-        icon: TrendingUp,
-        keywords: "revenue sales in earnings",
-        roles: ["admin", "manager"],
-      },
-      {
-        label: "Expenses",
-        href: "/dashboard/finance/expenses",
-        icon: TrendingDown,
-        keywords: "out spending cost rent utilities",
-        roles: ["admin", "manager"],
-      },
-      {
-        label: "Expense categories",
-        href: "/dashboard/finance/categories",
-        icon: Tags,
-        keywords: "buckets classification",
-        roles: ["admin", "manager"],
-      },
-      {
-        label: "Payroll / Payments",
-        href: "/dashboard/payments",
-        icon: Wallet,
-        keywords: "teacher payouts salary",
-      },
-      {
-        label: "PDF reports",
-        href: "/dashboard/finance/reports",
-        icon: FileText,
-        keywords: "print pdf export statement",
-        roles: ["admin", "manager"],
-      },
-    ],
-  },
-  {
-    heading: "Restaurant",
-    items: [
-      {
-        label: "POS",
-        href: "/dashboard/restaurant",
-        icon: Utensils,
-        keywords: "point of sale checkout cart tab",
-      },
-      {
-        label: "Tables",
-        href: "/dashboard/restaurant-tables",
-        icon: Armchair,
-        keywords: "booth seating rooms",
-        roles: ["admin", "manager"],
-      },
-      {
-        label: "Products",
-        href: "/dashboard/products",
-        icon: Package,
-        keywords: "stock inventory menu items",
-        roles: ["admin", "manager"],
-      },
-    ],
-  },
-  {
-    heading: "People",
-    items: [
-      {
-        label: "Employees",
-        href: "/dashboard/employees",
-        icon: UserCog,
-        keywords: "staff roles teams",
-        roles: ["admin", "manager"],
-      },
-    ],
-  },
-  {
-    heading: "Communication",
-    items: [
-      {
-        label: "Captions",
-        href: "/dashboard/captions",
-        icon: Hash,
-        keywords:
-          "hashtags instagram tiktok youtube social posts copy library kettlebell yoga",
-        roles: ["admin", "manager"],
-      },
-      {
-        label: "Ebooks",
-        href: "/dashboard/ebooks",
-        icon: BookOpen,
-        keywords: "pdf guides books move better download lead magnet",
-        roles: ["admin", "manager"],
+        label: "Videos",
+        href: "/dashboard/videos",
+        icon: Film,
+        keywords: "library kettlebell mobility content bunny upload",
       },
       {
         label: "Subscribers",
         href: "/dashboard/subscribers",
         icon: Inbox,
         keywords: "email list newsletter leads contacts audience",
-        roles: ["admin", "manager"],
+      },
+      {
+        label: "Ebooks",
+        href: "/dashboard/ebooks",
+        icon: BookOpen,
+        keywords: "pdf guides books move better download lead magnet",
       },
     ],
   },
   {
-    heading: "Personal",
+    heading: "Content",
     items: [
       {
-        label: "Personal expenses",
-        href: "/dashboard/personal/expenses",
-        icon: Heart,
-        keywords: "private spending personal budget",
-        roles: ["admin", "manager"],
+        label: "Studio",
+        href: "/dashboard/studio",
+        icon: Clapperboard,
+        keywords: "video editor render cover clips reels",
       },
       {
-        label: "Movement",
-        href: "/dashboard/personal/movement",
-        icon: Footprints,
-        keywords: "training workout log yoga kettlebell personal",
-        roles: ["admin", "manager"],
+        label: "Captions",
+        href: "/dashboard/captions",
+        icon: Hash,
+        keywords: "hashtags instagram tiktok youtube social posts copy",
       },
     ],
   },
@@ -261,39 +115,14 @@ const NAV_GROUPS: Group[] = [
 
 const QUICK_ACTIONS: Entry[] = [
   {
-    label: "New expense",
-    href: "/dashboard/finance/expenses",
+    label: "Add video",
+    href: "/dashboard/videos",
     icon: PlusCircle,
-    keywords: "create add log spend",
-    roles: ["admin", "manager"],
-  },
-  {
-    label: "New student",
-    href: "/dashboard/students",
-    icon: PlusCircle,
-    keywords: "create add register",
-    roles: ["admin", "manager"],
-  },
-  {
-    label: "New class",
-    href: "/dashboard/classes",
-    icon: PlusCircle,
-    keywords: "create schedule add",
-    roles: ["admin", "manager"],
-  },
-  {
-    label: "Open POS",
-    href: "/dashboard/restaurant",
-    icon: PlusCircle,
-    keywords: "take order sale checkout",
+    keywords: "create upload new clip library",
   },
 ]
 
-function visibleFor(role: Role, items: Entry[]) {
-  return items.filter((i) => !i.roles || i.roles.includes(role))
-}
-
-export function CommandPalette({ role }: { role: Role }) {
+export function CommandPalette() {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
 
@@ -312,13 +141,6 @@ export function CommandPalette({ role }: { role: Role }) {
     setOpen(false)
     router.push(href)
   }
-
-  const groups = NAV_GROUPS.map((g) => ({
-    heading: g.heading,
-    items: visibleFor(role, g.items),
-  })).filter((g) => g.items.length > 0)
-
-  const quickActions = visibleFor(role, QUICK_ACTIONS)
 
   return (
     <>
@@ -348,26 +170,22 @@ export function CommandPalette({ role }: { role: Role }) {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
 
-          {quickActions.length > 0 && (
-            <>
-              <CommandGroup heading="Quick actions">
-                {quickActions.map((a) => (
-                  <CommandItem
-                    key={`qa-${a.label}`}
-                    value={`${a.label} ${a.keywords ?? ""}`}
-                    onSelect={() => go(a.href)}
-                  >
-                    <a.icon className="text-muted-foreground" />
-                    <span>{a.label}</span>
-                    <ArrowRight className="ml-auto text-muted-foreground" />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandSeparator />
-            </>
-          )}
+          <CommandGroup heading="Quick actions">
+            {QUICK_ACTIONS.map((a) => (
+              <CommandItem
+                key={`qa-${a.label}`}
+                value={`${a.label} ${a.keywords ?? ""}`}
+                onSelect={() => go(a.href)}
+              >
+                <a.icon className="text-muted-foreground" />
+                <span>{a.label}</span>
+                <ArrowRight className="ml-auto text-muted-foreground" />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
 
-          {groups.map((g, idx) => (
+          {NAV_GROUPS.map((g, idx) => (
             <React.Fragment key={g.heading}>
               <CommandGroup heading={g.heading}>
                 {g.items.map((it) => (
@@ -384,7 +202,7 @@ export function CommandPalette({ role }: { role: Role }) {
                   </CommandItem>
                 ))}
               </CommandGroup>
-              {idx < groups.length - 1 && <CommandSeparator />}
+              {idx < NAV_GROUPS.length - 1 && <CommandSeparator />}
             </React.Fragment>
           ))}
         </CommandList>
