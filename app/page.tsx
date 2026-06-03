@@ -1,5 +1,9 @@
 import Link from "next/link"
 import Image from "next/image"
+import heroImg from "@/public/ebooks/photos/1SN01213.jpg"
+import yogaImg from "@/public/ebooks/photos/z_yoga.jpg"
+import felipeImg from "@/public/ebooks/photos/1SN03111.jpg"
+import coachingImg from "@/public/ebooks/photos/z_kettlebell_rack.jpg"
 import { Check, ArrowRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { LandingNav, type NavItem } from "@/components/landing/LandingNav"
@@ -170,10 +174,11 @@ export default async function HomePage() {
         <div className="flex-1">
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl md:ml-auto md:max-w-sm">
             <Image
-              src="/ebooks/photos/1SN01213.jpg"
+              src={heroImg}
               alt="Felipe Muner — movement practice"
               fill
               priority
+              placeholder="blur"
               sizes="(max-width: 768px) 100vw, 384px"
               className="object-cover"
             />
@@ -207,9 +212,10 @@ export default async function HomePage() {
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl">
             <Image
-              src="/ebooks/photos/z_yoga.jpg"
+              src={yogaImg}
               alt="Movement practice"
               fill
+              placeholder="blur"
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
@@ -309,9 +315,10 @@ export default async function HomePage() {
           </div>
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl md:order-first">
             <Image
-              src="/ebooks/photos/1SN03111.jpg"
+              src={felipeImg}
               alt="Felipe Muner"
               fill
+              placeholder="blur"
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
@@ -424,9 +431,10 @@ export default async function HomePage() {
           </div>
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl">
             <Image
-              src="/ebooks/photos/z_kettlebell_rack.jpg"
+              src={coachingImg}
               alt="1:1 coaching"
               fill
+              placeholder="blur"
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
