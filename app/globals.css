@@ -170,7 +170,10 @@
 }
 .animate-marquee {
   animation: lm-marquee 90s linear infinite;
+  will-change: transform;
 }
+/* Slow, decorative ticker — keep it moving even with reduced-motion,
+   but ease off for users who request it rather than freezing it. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee { animation: none; }
+  .animate-marquee { animation-duration: 140s; }
 }
