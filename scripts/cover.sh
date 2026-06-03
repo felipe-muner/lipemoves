@@ -31,7 +31,7 @@ WFRAC="${7:-}"            # optional: widest line width as fraction of frame
 W=1080; H=1920               # output canvas (portrait)
 FONT="$HOME/Library/Fonts/ArchivoBlack-Regular.ttf"  # wide+bold; matches ref
 [[ -f "$FONT" ]] || FONT="Impact"
-GREEN="#7CFC00"              # lime fill
+GREEN="#00EF00"              # pure green fill (matches the "3 SIMBA" cover)
 STROKE="#000000"            # black outline color
 OUTLINE=13                   # outline radius in px (auto-fit path)
 MARGIN=48                    # side padding so text isn't edge-to-edge raw
