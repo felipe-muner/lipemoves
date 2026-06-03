@@ -38,7 +38,6 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <AppSidebar
-        role={role}
         user={{
           name: session.user.name ?? null,
           email: session.user.email ?? null,
@@ -50,7 +49,7 @@ export default async function DashboardLayout({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-1 justify-center px-2">
-            <CommandPalette role={role} />
+            <CommandPalette />
           </div>
           <CurrencySwitch />
           <ThemeToggle />

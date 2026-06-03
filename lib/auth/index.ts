@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { db } from "@/lib/db"
-import { users, accounts, sessions, verificationTokens, employees } from "@/lib/db/schema"
+import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 
@@ -85,27 +85,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         .where(eq(users.id, token.id as string))
         .limit(1)
 
-      let role = dbUser?.role ?? null
-
-      // Auto-link Google login → teacher when emails match
-      if (!role && dbUser?.email) {
-        const [t] = await db
-          .select({ id: employees.id })
-          .from(employees)
-          .where(eq(employees.email, dbUser.email))
-          .limit(1)
-        if (t) {
-          await db
-            .update(users)
-            .set({ role: "teacher" })
-            .where(eq(users.id, dbUser.id))
-          await db
-            .update(employees)
-            .set({ userId: dbUser.id })
-            .where(eq(employees.id, t.id))
-          role = "teacher"
-        }
-      }
+      const role = dbUser?.role ?? null
 
       token.role = role
       return token
