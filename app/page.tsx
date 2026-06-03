@@ -4,6 +4,12 @@ import { Check, ArrowRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { LandingNav, type NavItem } from "@/components/landing/LandingNav"
 import NewsletterForm from "@/components/NewsletterForm"
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion"
 
 const NAV: NavItem[] = [
   { label: "The Program", id: "program" },
@@ -449,19 +455,22 @@ export default async function HomePage() {
               Questions, answered.
             </h2>
           </div>
-          <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
+          <Accordion
+            type="single"
+            collapsible
+            className="mt-12 border-y border-white/10 [&>*]:border-white/10"
+          >
             {FAQ.map((item) => (
-              <details key={item.q} className="group py-5">
-                <summary className="flex cursor-pointer items-center justify-between text-lg font-medium text-white marker:content-none">
+              <AccordionItem key={item.q} value={item.q}>
+                <AccordionTrigger className="py-5 text-lg font-medium text-white hover:no-underline [&>svg]:text-[#39FF14] [&>svg]:size-5">
                   {item.q}
-                  <span className="ml-4 text-[#39FF14] transition-transform group-open:rotate-45">
-                    +
-                  </span>
-                </summary>
-                <p className="mt-3 leading-relaxed text-white/55">{item.a}</p>
-              </details>
+                </AccordionTrigger>
+                <AccordionContent className="text-base leading-relaxed text-white/55">
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         </div>
       </section>
 
