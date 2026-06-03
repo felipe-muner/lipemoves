@@ -38,17 +38,6 @@ const pad3 = (n: number) => String(n).padStart(3, "0")
 /** Default vertical center (fraction of frame) for each position preset. */
 const presetY = (p: CoverPosition) => (p === "top" ? 0.12 : p === "center" ? 0.5 : 0.86)
 
-/** 8-way black drop-shadow string, scaled to the font size (in cqw). */
-const shadow = (s: number) => {
-  const a = (s * 0.023).toFixed(3)
-  const b = (s * 0.035).toFixed(3)
-  return (
-    `${a}cqw ${a}cqw 0 #000, -${a}cqw ${a}cqw 0 #000, ${a}cqw -${a}cqw 0 #000,` +
-    ` -${a}cqw -${a}cqw 0 #000, 0 ${b}cqw 0 #000, 0 -${b}cqw 0 #000,` +
-    ` ${b}cqw 0 0 #000, -${b}cqw 0 0 #000`
-  )
-}
-
 interface ClipCfg {
   captionOn: boolean
   main: string
@@ -160,8 +149,8 @@ function CoverText({
         <div
           className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2"
           style={{
-            background: snapped ? "#7CFC00" : "rgba(255,255,255,.55)",
-            boxShadow: snapped ? "0 0 6px #7CFC00" : "none",
+            background: snapped ? "#00EF00" : "rgba(255,255,255,.55)",
+            boxShadow: snapped ? "0 0 6px #00EF00" : "none",
           }}
         />
       ) : null}
@@ -194,12 +183,15 @@ function CoverText({
           outline: hot || drag ? "1px dashed rgba(255,255,255,.85)" : "none",
           outlineOffset: "4px",
           fontFamily: '"Archivo Black", system-ui, sans-serif',
-          color: "#7CFC00",
+          color: "#00EF00",
           fontSize: `${size}cqw`,
           lineHeight: 1.02,
-          // Original ratio: 0.45cqw stroke at the 13cqw default size.
-          WebkitTextStroke: `${(size * 0.0346).toFixed(3)}cqw #000`,
-          textShadow: shadow(size),
+          // Match cover.sh's burned outline: a Disk:21 dilation at 220pt font is
+          // an OUTWARD-only black ring of 21/220 ≈ 0.0955 of the font size. With
+          // paint-order:stroke the green fill paints over the stroke's inner
+          // half, so the visible outward outline is strokeWidth/2 — hence 2×.
+          paintOrder: "stroke",
+          WebkitTextStroke: `${(size * 0.191).toFixed(3)}cqw #000`,
         }}
       >
         {text.replace(/\\n/g, "\n")}
