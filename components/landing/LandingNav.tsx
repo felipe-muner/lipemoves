@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { UserDropdown } from "@/components/user-dropdown"
+import { Button } from "@/components/ui/button"
 
 export type NavItem = { label: string; id: string }
 
@@ -72,12 +73,9 @@ export function LandingNav({
               Log in
             </Link>
           )}
-          <a
-            href="#pricing"
-            className="inline-flex h-9 items-center justify-center rounded-full bg-[#39FF14] px-5 text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
-          >
-            Find Your Program
-          </a>
+          <Button asChild variant="lime" size="pill-sm">
+            <a href="#pricing">Find Your Program</a>
+          </Button>
         </div>
       </div>
     </header>

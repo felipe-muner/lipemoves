@@ -1,10 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface NewsletterFormProps {
   source?: string
 }
+
+// Brand pill style shared by both fields (overrides shadcn Input defaults).
+const pillInput =
+  "h-12 rounded-full border-white/15 bg-white/5 px-5 text-sm text-white placeholder:text-white/40 focus-visible:border-[#39FF14] focus-visible:ring-[#39FF14]/30 dark:bg-white/5"
 
 export default function NewsletterForm({ source = "homepage" }: NewsletterFormProps) {
   const [email, setEmail] = useState("")
@@ -53,36 +59,37 @@ export default function NewsletterForm({ source = "homepage" }: NewsletterFormPr
           <label htmlFor="nl-name" className="sr-only">
             Your name (optional)
           </label>
-          <input
+          <Input
             id="nl-name"
             type="text"
             placeholder="Your name (optional)"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-12 w-full rounded-full border border-white/15 bg-white/5 px-5 text-sm text-white placeholder:text-white/40 transition-colors focus:border-[#39FF14] focus:outline-none"
+            className={pillInput}
           />
         </div>
         <div className="flex-1">
           <label htmlFor="nl-email" className="sr-only">
             Email address
           </label>
-          <input
+          <Input
             id="nl-email"
             type="email"
             required
             placeholder="you@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-12 w-full rounded-full border border-white/15 bg-white/5 px-5 text-sm text-white placeholder:text-white/40 transition-colors focus:border-[#39FF14] focus:outline-none"
+            className={pillInput}
           />
         </div>
-        <button
+        <Button
           type="submit"
+          variant="lime"
+          size="pill"
           disabled={status === "loading"}
-          className="h-12 shrink-0 rounded-full bg-[#39FF14] px-8 text-sm font-semibold text-black transition-transform hover:scale-[1.03] disabled:opacity-60"
         >
           {status === "loading" ? "Sending…" : "Get the guide"}
-        </button>
+        </Button>
       </div>
       {errorMessage ? (
         <p className="text-sm text-red-400">{errorMessage}</p>

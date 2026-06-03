@@ -4,6 +4,7 @@ import { Check, ArrowRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { LandingNav, type NavItem } from "@/components/landing/LandingNav"
 import NewsletterForm from "@/components/NewsletterForm"
+import { Button } from "@/components/ui/button"
 import {
   Accordion,
   AccordionItem,
@@ -157,18 +158,12 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <a
-              href="#pricing"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-[#39FF14] px-8 text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
-            >
-              Start practicing
-            </a>
-            <a
-              href="#program"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-white/20 px-8 text-sm font-medium text-white transition-colors hover:bg-white/10"
-            >
-              See the program
-            </a>
+            <Button asChild variant="lime" size="pill">
+              <a href="#pricing">Start practicing</a>
+            </Button>
+            <Button asChild variant="glass" size="pill">
+              <a href="#program">See the program</a>
+            </Button>
           </div>
         </div>
 
@@ -355,12 +350,11 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/register"
-                className="mt-9 inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-semibold text-black transition-transform hover:scale-[1.02]"
-              >
-                Begin Monthly <ArrowRight className="h-4 w-4" />
-              </Link>
+              <Button asChild variant="white" size="pill-lg" className="mt-9 w-full">
+                <Link href="/register">
+                  Begin Monthly <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
               <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
             </div>
 
@@ -387,12 +381,11 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/register"
-                className="mt-9 inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
-              >
-                Begin Annual <ArrowRight className="h-4 w-4" />
-              </Link>
+              <Button asChild variant="ink" size="pill-lg" className="mt-9 w-full">
+                <Link href="/register">
+                  Begin Annual <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
               <p className="mt-4 text-center text-sm text-black/50">Cancel anytime</p>
             </div>
           </div>
@@ -423,14 +416,11 @@ export default async function HomePage() {
               By application only, for those ready to make a serious commitment to
               long-term transformation.
             </p>
-            <a
-              href={WA_INNER}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-9 inline-flex h-12 items-center justify-center rounded-full bg-[#39FF14] px-8 text-sm font-semibold text-black transition-transform hover:scale-[1.03]"
-            >
-              Apply on WhatsApp →
-            </a>
+            <Button asChild variant="lime" size="pill" className="mt-9">
+              <a href={WA_INNER} target="_blank" rel="noopener noreferrer">
+                Apply on WhatsApp →
+              </a>
+            </Button>
           </div>
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl">
             <Image
