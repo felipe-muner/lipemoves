@@ -492,14 +492,15 @@ export default async function HomePage() {
       </section>
 
       {/* ===== Footer ===== */}
-      <footer className="border-t border-white/10 px-6 py-16">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-6xl">
+      <footer className="relative overflow-hidden border-t border-white/10">
+        {/* tagline + legal + social, constrained */}
+        <div className="mx-auto max-w-6xl px-6 pt-16">
+          <p className="text-3xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
             Move better.{" "}
             <br className="md:hidden" />
             <span className="whitespace-nowrap text-[#39FF14]">For life.</span>
           </p>
-          <div className="mt-12 flex flex-col justify-between gap-8 border-t border-white/10 pt-8 md:flex-row md:items-center">
+          <div className="mt-12 flex flex-col justify-between gap-8 border-t border-white/10 pb-14 pt-8 md:flex-row md:items-center">
             <p className="text-sm text-white/40">
               © {new Date().getFullYear()} Lipe Moves. All rights reserved.
             </p>
@@ -528,6 +529,21 @@ export default async function HomePage() {
               </a>
             </div>
           </div>
+        </div>
+
+        {/* giant full-bleed faded wordmark (micro1-style), bleeding off both edges */}
+        <div className="relative">
+          {/* neon-green glow rising from the bottom */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] bg-[radial-gradient(60%_120%_at_50%_115%,rgba(57,255,20,0.28),transparent_70%)]"
+          />
+          <h2
+            aria-label="Lipe Moves"
+            className="-mb-[0.14em] block select-none whitespace-nowrap bg-gradient-to-b from-white/[0.04] via-white/20 to-[#39FF14] bg-clip-text text-center text-[17vw] font-black uppercase leading-none tracking-tighter text-transparent"
+          >
+            Lipe Moves
+          </h2>
         </div>
       </footer>
     </main>
