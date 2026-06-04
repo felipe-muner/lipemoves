@@ -79,14 +79,14 @@ const pad3 = (n: number) => String(n).padStart(3, "0")
 /** Default vertical center (fraction of frame) for each position preset. */
 const presetY = (p: CoverPosition) => (p === "top" ? 0.12 : p === "center" ? 0.5 : 0.86)
 
-interface ClipCfg {
-  captionOn: boolean
-  main: string
-  sub: string
-}
+type ZoomMode = "off" | "in" | "out"
 
-/** Per-clip drill label: text + free-drag placement, on its poster frame. */
-interface DrillCfg {
+/** Per-clip Compose settings: a Ken Burns zoom and/or a free-drag text label,
+ *  edited on the clip's own poster frame. */
+interface ComposeCfg {
+  /** Ken Burns zoom direction (or off). */
+  zoom: ZoomMode
+  /** Label text ("" = no label). */
   text: string
   /** Free-drag center (fractions of the frame). */
   x: number
@@ -174,6 +174,14 @@ function CoverText({
   const [hot, setHot] = React.useState(false) // show the bounding box
   const rz = React.useRef<{ startDist: number; startSize: number } | null>(null)
 
+  // Call onMeasure through a ref so the effect below doesn't re-run (and rebuild
+  // its ResizeObserver) just because the parent passed a new inline callback —
+  // important when many editors are mounted at once.
+  const onMeasureRef = React.useRef(onMeasure)
+  React.useLayoutEffect(() => {
+    onMeasureRef.current = onMeasure
+  })
+
   // Report the widest line's width (fraction of the frame) so the burn matches.
   React.useLayoutEffect(() => {
     const root = rootRef.current
@@ -181,14 +189,14 @@ function CoverText({
     if (!root || !box) return
     const measure = () => {
       const cw = root.clientWidth
-      if (cw) onMeasure(box.offsetWidth / cw)
+      if (cw) onMeasureRef.current(box.offsetWidth / cw)
     }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(root)
     ro.observe(box)
     return () => ro.disconnect()
-  }, [text, size, onMeasure])
+  }, [text, size])
 
   // Screen-space center of the text block (for the resize math).
   function blockCenter() {
@@ -346,30 +354,21 @@ function ModeOption({
 
 export function StudioClient() {
   const [files, setFiles] = React.useState<File[]>([])
-  const [clipCfgs, setClipCfgs] = React.useState<ClipCfg[]>([])
 
-  const [mode, setMode] = React.useState<"kenburns" | "frames" | "drills">(
-    "kenburns",
-  )
-  const [fog, setFog] = React.useState(true)
+  const [mode, setMode] = React.useState<"compose" | "frames">("compose")
   const [join, setJoin] = React.useState(true)
   const [fpStep, setFpStep] = React.useState("0.5")
 
-  // Drill-labels mode (phase 3): per-clip text/placement + a shared style.
-  const [drillCfgs, setDrillCfgs] = React.useState<DrillCfg[]>([])
-  const [selDrill, setSelDrill] = React.useState(0)
-  const [drillColor, setDrillColor] = React.useState("#FFFFFF")
-  const [drillOpacity, setDrillOpacity] = React.useState(0.5)
-  const [drillFade, setDrillFade] = React.useState(true)
+  // Compose mode: per-clip zoom + text/placement, with a shared text style.
+  const [composeCfgs, setComposeCfgs] = React.useState<ComposeCfg[]>([])
+  const [textColor, setTextColor] = React.useState("#FFFFFF")
+  const [textOpacity, setTextOpacity] = React.useState(1)
+  const [textFade, setTextFade] = React.useState(true)
   // Latest measured widest-line width per clip (preview → burn). Kept in a ref
   // (like the cover) so measuring never triggers a re-render loop.
-  const drillWidths = React.useRef<Record<number, number>>({})
-  const selDrillRef = React.useRef(0)
-  React.useEffect(() => {
-    selDrillRef.current = selDrill
-  }, [selDrill])
-  const reportDrillWidth = React.useCallback((frac: number) => {
-    drillWidths.current[selDrillRef.current] = frac
+  const labelWidths = React.useRef<Record<number, number>>({})
+  const setLabelWidth = React.useCallback((i: number, frac: number) => {
+    labelWidths.current[i] = frac
   }, [])
 
   // Cover studio (phase 2).
@@ -399,13 +398,13 @@ export function StudioClient() {
   function pickFiles(list: FileList | null) {
     const arr = list ? Array.from(list) : []
     setFiles(arr)
-    setClipCfgs(arr.map(() => ({ captionOn: false, main: "", sub: "" })))
-    setSelDrill(0)
-    // Seed drill configs: number-prefixed by upload order, centered, no poster
-    // yet. Posters are extracted asynchronously below.
-    setDrillCfgs(
+    labelWidths.current = {}
+    // Seed per-clip configs: zoom alternates in/out (the classic Ken Burns
+    // look, editable per clip), no label text yet. Posters load async below.
+    setComposeCfgs(
       arr.map((_, i) => ({
-        text: `${i + 1} — `,
+        zoom: i % 2 === 0 ? "in" : "out",
+        text: "",
         x: 0.5,
         y: 0.85,
         size: 7,
@@ -417,7 +416,7 @@ export function StudioClient() {
     arr.forEach((file, i) => {
       extractPoster(file)
         .then(({ url, aspect }) =>
-          setDrillCfgs((prev) =>
+          setComposeCfgs((prev) =>
             prev.map((c, idx) =>
               idx === i ? { ...c, poster: url, aspect } : c,
             ),
@@ -429,14 +428,8 @@ export function StudioClient() {
     })
   }
 
-  function setClip(i: number, patch: Partial<ClipCfg>) {
-    setClipCfgs((prev) =>
-      prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
-    )
-  }
-
-  function setDrill(i: number, patch: Partial<DrillCfg>) {
-    setDrillCfgs((prev) =>
+  function setCompose(i: number, patch: Partial<ComposeCfg>) {
+    setComposeCfgs((prev) =>
       prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
     )
   }
@@ -474,29 +467,23 @@ export function StudioClient() {
     setJob(null)
     setBurnedUrl(null)
     const config: StudioConfig = {
-      kenburns: mode === "kenburns",
-      fog,
       join,
       framepicker: mode === "frames" ? { step: Number(fpStep) || 0.5 } : null,
-      drills:
-        mode === "drills"
-          ? { color: drillColor, opacity: drillOpacity, fade: drillFade }
+      text:
+        mode === "compose"
+          ? { color: textColor, opacity: textOpacity, fade: textFade }
           : null,
       clips: files.map((_, i) => {
-        const cap = clipCfgs[i]
-        const drill = drillCfgs[i]
+        const c = composeCfgs[i]
         return {
-          caption:
-            mode === "kenburns" && cap?.captionOn && cap.main.trim()
-              ? { main: cap.main, sub: cap.sub }
-              : null,
+          zoom: mode === "compose" && c && c.zoom !== "off" ? c.zoom : null,
           label:
-            mode === "drills" && drill?.text.trim()
+            mode === "compose" && c?.text.trim()
               ? {
-                  text: drill.text,
-                  x: drill.x,
-                  y: drill.y,
-                  width: drillWidths.current[i] ?? drill.width,
+                  text: c.text,
+                  x: c.x,
+                  y: c.y,
+                  width: labelWidths.current[i] ?? c.width,
                 }
               : null,
         }
@@ -566,28 +553,22 @@ export function StudioClient() {
 
   return (
     <div className="space-y-6">
-      {/* ---- Top: compact builder. Mode radio first, then upload (+ captions
-            on the right for Ken Burns), kept short so the result sits high. ---- */}
+      {/* ---- Top: compact builder. Mode radio first, then upload + the
+            per-clip editor, kept short so the result sits high. ---- */}
       <Card className="gap-5 p-3">
         {/* Mode — pick this first */}
         <div className="flex flex-wrap items-center gap-2">
           <ModeOption
-            active={mode === "kenburns"}
-            onClick={() => setMode("kenburns")}
-            label="Ken Burns zoom"
-            desc="Zoom all clips (alternating in/out), with optional captions per clip."
+            active={mode === "compose"}
+            onClick={() => setMode("compose")}
+            label="Compose"
+            desc="Per clip: Ken Burns zoom (in/out) and/or a text label, then stitch them together."
           />
           <ModeOption
             active={mode === "frames"}
             onClick={() => setMode("frames")}
             label="Frame contact sheet"
             desc="Extract frames per clip so you can pick + make a cover."
-          />
-          <ModeOption
-            active={mode === "drills"}
-            onClick={() => setMode("drills")}
-            label="Drill labels"
-            desc="Label each clip with a number + name, then stitch the drills together."
           />
           {mode === "frames" ? (
             <div className="flex items-center gap-1.5">
@@ -603,106 +584,50 @@ export function StudioClient() {
               <span className="text-xs text-muted-foreground">s</span>
             </div>
           ) : null}
-          {mode === "kenburns" && files.length ? (
-            <div className="ml-auto flex items-center gap-2">
-              {files.length > 1 ? (
-                <Toggle checked={join} onChange={setJoin} label="Join" />
-              ) : null}
-              <Toggle checked={fog} onChange={setFog} label="Fog fade-in" />
-            </div>
-          ) : null}
-          {mode === "drills" && files.length ? (
+          {mode === "compose" && files.length ? (
             <div className="ml-auto flex items-center gap-2">
               {files.length > 1 ? (
                 <Toggle checked={join} onChange={setJoin} label="Stitch" />
               ) : null}
-              <Toggle checked={drillFade} onChange={setDrillFade} label="Fade" />
+              <Toggle checked={textFade} onChange={setTextFade} label="Fade" />
             </div>
           ) : null}
         </div>
 
-        {/* Upload (left) + captions (right, Ken Burns only) */}
-        <div
-          className={`grid gap-4 ${
-            mode === "kenburns" && files.length ? "md:grid-cols-2" : ""
-          }`}
-        >
-          <div className="space-y-2">
-            <label className="flex w-full max-w-[200px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground transition hover:bg-muted/50">
-              <Upload className="size-5" />
-              {files.length ? (
-                <span className="font-medium text-foreground">
-                  {files.length} clip{files.length > 1 ? "s" : ""} selected
-                </span>
-              ) : (
-                <span>Tap to choose one or more .mov / .mp4</span>
-              )}
-              <input
-                type="file"
-                accept="video/*"
-                multiple
-                className="hidden"
-                onChange={(e) => pickFiles(e.target.files)}
-              />
-            </label>
-          </div>
-
-          {mode === "kenburns" && files.length ? (
-            <div className="space-y-2">
-              <Label className="block text-xs">Captions per clip</Label>
-              <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
-                {files.map((f, i) => {
-                  const cfg = clipCfgs[i]
-                  if (!cfg) return null
-                  return (
-                    <div key={i} className="rounded-lg border p-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-xs font-medium" title={f.name}>
-                          {i + 1}. {f.name}
-                        </span>
-                        <Toggle
-                          checked={cfg.captionOn}
-                          onChange={(v) => setClip(i, { captionOn: v })}
-                          label="Caption"
-                        />
-                      </div>
-                      {cfg.captionOn ? (
-                        <div className="mt-2 space-y-2">
-                          <Input
-                            placeholder="MAIN LINE"
-                            className="h-8"
-                            value={cfg.main}
-                            onChange={(e) => setClip(i, { main: e.target.value })}
-                          />
-                          <Input
-                            placeholder="Subtitle (optional)"
-                            className="h-8"
-                            value={cfg.sub}
-                            onChange={(e) => setClip(i, { sub: e.target.value })}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : null}
+        {/* Upload */}
+        <div className="space-y-2">
+          <label className="flex w-full max-w-[200px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground transition hover:bg-muted/50">
+            <Upload className="size-5" />
+            {files.length ? (
+              <span className="font-medium text-foreground">
+                {files.length} clip{files.length > 1 ? "s" : ""} selected
+              </span>
+            ) : (
+              <span>Tap to choose one or more .mov / .mp4</span>
+            )}
+            <input
+              type="file"
+              accept="video/*"
+              multiple
+              className="hidden"
+              onChange={(e) => pickFiles(e.target.files)}
+            />
+          </label>
         </div>
 
-        {/* Drill labels: shared color/opacity + per-clip text dragged on the
+        {/* Compose: shared text style + per-clip zoom + label, dragged on the
             clip's own poster frame (extracted client-side). */}
-        {mode === "drills" && files.length ? (
+        {mode === "compose" && files.length ? (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
               <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Color</Label>
+                <Label className="text-xs text-muted-foreground">Text color</Label>
                 <input
                   type="color"
-                  value={drillColor}
-                  onChange={(e) => setDrillColor(e.target.value)}
+                  value={textColor}
+                  onChange={(e) => setTextColor(e.target.value)}
                   className="h-8 w-10 cursor-pointer rounded border bg-transparent p-0.5"
-                  aria-label="Label color"
+                  aria-label="Text color"
                 />
               </div>
               <div className="flex min-w-[200px] flex-1 items-center gap-2">
@@ -711,81 +636,88 @@ export function StudioClient() {
                   min={0}
                   max={100}
                   step={1}
-                  value={[Math.round(drillOpacity * 100)]}
-                  onValueChange={(v) => setDrillOpacity((v[0] ?? 50) / 100)}
+                  value={[Math.round(textOpacity * 100)]}
+                  onValueChange={(v) => setTextOpacity((v[0] ?? 100) / 100)}
                   className="max-w-[220px]"
                 />
                 <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
-                  {Math.round(drillOpacity * 100)}%
+                  {Math.round(textOpacity * 100)}%
                 </span>
               </div>
-              {files.length > 1 ? (
-                <Select
-                  value={String(selDrill)}
-                  onValueChange={(v) => setSelDrill(Number(v))}
-                >
-                  <SelectTrigger className="h-8 w-48 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {files.map((f, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        {i + 1}. {f.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : null}
             </div>
 
-            {drillCfgs[selDrill] ? (
-              <>
-                <Input
-                  placeholder="1 — Hip circles"
-                  value={drillCfgs[selDrill].text}
-                  onChange={(e) => setDrill(selDrill, { text: e.target.value })}
-                />
-                <div
-                  className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-lg bg-black"
-                  style={{
-                    aspectRatio: String(drillCfgs[selDrill].aspect),
-                    containerType: "inline-size",
-                  }}
-                >
-                  {drillCfgs[selDrill].poster ? (
-                    <Image
-                      src={drillCfgs[selDrill].poster as string}
-                      alt="Clip poster"
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 grid place-items-center text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                    </div>
-                  )}
-                  {drillCfgs[selDrill].text.trim() ? (
-                    <CoverText
-                      text={drillCfgs[selDrill].text}
-                      cx={drillCfgs[selDrill].x}
-                      cy={drillCfgs[selDrill].y}
-                      size={drillCfgs[selDrill].size}
-                      color={drillColor}
-                      opacity={drillOpacity}
-                      outline={false}
-                      onMove={(x, y) => setDrill(selDrill, { x, y })}
-                      onResize={(s) => setDrill(selDrill, { size: s })}
-                      onMeasure={reportDrillWidth}
-                    />
-                  ) : null}
+            {/* one small editor per clip — scroll horizontally if many */}
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {composeCfgs.map((c, i) => (
+                <div key={i} className="w-[180px] shrink-0 space-y-2">
+                  <div
+                    className="relative overflow-hidden rounded-lg bg-black"
+                    style={{
+                      aspectRatio: String(c.aspect),
+                      containerType: "inline-size",
+                    }}
+                  >
+                    {c.poster ? (
+                      <Image
+                        src={c.poster}
+                        alt={`Clip ${i + 1}`}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 grid place-items-center text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin" />
+                      </div>
+                    )}
+                    <span className="pointer-events-none absolute left-1 top-1 z-10 rounded bg-black/70 px-1.5 text-[10px] font-bold text-emerald-400">
+                      {i + 1}
+                    </span>
+                    {c.text.trim() ? (
+                      <CoverText
+                        text={c.text}
+                        cx={c.x}
+                        cy={c.y}
+                        size={c.size}
+                        color={textColor}
+                        opacity={textOpacity}
+                        outline={false}
+                        onMove={(x, y) => setCompose(i, { x, y })}
+                        onResize={(s) => setCompose(i, { size: s })}
+                        onMeasure={(w) => setLabelWidth(i, w)}
+                      />
+                    ) : null}
+                  </div>
+                  {/* per-clip Ken Burns zoom */}
+                  <div className="flex gap-1">
+                    {(["off", "in", "out"] as const).map((z) => (
+                      <button
+                        key={z}
+                        type="button"
+                        onClick={() => setCompose(i, { zoom: z })}
+                        className={`flex-1 rounded-md border py-1 text-[11px] font-medium transition ${
+                          c.zoom === z
+                            ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {z === "off" ? "Off" : z === "in" ? "In" : "Out"}
+                      </button>
+                    ))}
+                  </div>
+                  <Input
+                    placeholder="Label…"
+                    className="h-8 text-xs"
+                    value={c.text}
+                    onChange={(e) => setCompose(i, { text: e.target.value })}
+                  />
                 </div>
-                <p className="text-center text-xs text-muted-foreground">
-                  Drag to place · drag the corner dot to resize · color &amp;
-                  opacity apply to every clip
-                </p>
-              </>
-            ) : null}
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Drag each label to place · corner dot resizes · zoom is per clip ·
+              color, opacity &amp; fade apply to all
+            </p>
           </div>
         ) : null}
 
@@ -819,10 +751,10 @@ export function StudioClient() {
           </p>
         ) : (
           <>
-            {/* joined final video (Ken Burns mode) */}
+            {/* joined final video (Compose mode) */}
             {job.joinedName ? (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
                   <span className="flex items-center gap-2 text-sm font-medium">
                     <Film className="size-4" /> Final video (joined)
                   </span>
@@ -836,7 +768,7 @@ export function StudioClient() {
                 <video
                   src={fileUrl(job.joinedName)}
                   controls
-                  className="max-h-[60vh] w-full rounded-lg bg-black"
+                  className="block w-[180px] rounded-lg bg-black"
                 />
                 <Separator />
               </div>
@@ -847,39 +779,42 @@ export function StudioClient() {
               </p>
             ) : null}
 
-            {/* per-clip progress + video */}
-            {job.clips.map((c) => (
-              <div key={c.index} className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
-                    {statusIcon(c.status)}
-                    <span className="truncate" title={c.label}>
-                      {c.label}
+            {/* per-clip progress + videos — small players side by side, scroll
+                horizontally if many. In frames mode the players are skipped
+                (only the cover section below matters). */}
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {job.clips.map((c) => (
+                <div key={c.index} className="w-[180px] shrink-0 space-y-1.5">
+                  {c.videoName && !job.joinedName && job.compose ? (
+                    <video
+                      src={fileUrl(c.videoName)}
+                      controls
+                      className="w-full rounded-lg bg-black"
+                    />
+                  ) : null}
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium">
+                      {statusIcon(c.status)}
+                      <span className="truncate" title={c.label}>
+                        {c.label}
+                      </span>
                     </span>
-                  </span>
-                  {c.videoName && (job.kenburns || job.drills) ? (
-                    <a
-                      href={fileUrl(c.videoName, true)}
-                      className="flex shrink-0 items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
-                    >
-                      <Download className="size-3.5" /> Download
-                    </a>
+                    {c.videoName && job.compose ? (
+                      <a
+                        href={fileUrl(c.videoName, true)}
+                        title="Download"
+                        className="shrink-0 text-emerald-600 hover:underline dark:text-emerald-400"
+                      >
+                        <Download className="size-3.5" />
+                      </a>
+                    ) : null}
+                  </div>
+                  {c.status === "error" ? (
+                    <p className="text-xs text-red-500">{c.message}</p>
                   ) : null}
                 </div>
-                {c.status === "error" ? (
-                  <p className="text-xs text-red-500">{c.message}</p>
-                ) : null}
-                {/* In frames/contact-sheet mode skip the video player — only the
-                    cover section below matters. */}
-                {c.videoName && !job.joinedName && (job.kenburns || job.drills) ? (
-                  <video
-                    src={fileUrl(c.videoName)}
-                    controls
-                    className="max-h-[50vh] w-full rounded-lg bg-black"
-                  />
-                ) : null}
-              </div>
-            ))}
+              ))}
+            </div>
 
             {/* ---- Cover studio ---- */}
             {clipsWithFrames.length && clipObj ? (

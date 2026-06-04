@@ -17,9 +17,9 @@ export default function StudioPage() {
         title="Video Studio"
         subtitle={
           <>
-            Upload a clip, pick the steps, and LipeMoves renders it with{" "}
-            <span className="text-emerald-500">Ken Burns</span>, captions, and a
-            grid-safe cover.
+            Upload clips and{" "}
+            <span className="text-emerald-500">compose</span> them — Ken Burns
+            zoom, text labels, and stitching — or make a grid-safe cover.
           </>
         }
       />
