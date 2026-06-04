@@ -540,7 +540,7 @@ export default async function HomePage() {
           />
           <h2
             aria-label="Lipe Moves"
-            className="-mb-[0.14em] block select-none whitespace-nowrap bg-gradient-to-b from-white/[0.04] via-white/20 to-[#39FF14] bg-clip-text text-center text-[17vw] font-black uppercase leading-none tracking-tighter text-transparent"
+            className="-mb-[0.14em] block select-none whitespace-nowrap bg-gradient-to-b from-[#39FF14]/0 via-[#39FF14]/25 to-[#39FF14] bg-clip-text text-center text-[17vw] font-black uppercase leading-none tracking-tighter text-transparent"
           >
             Lipe Moves
           </h2>
