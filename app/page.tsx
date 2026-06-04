@@ -495,7 +495,9 @@ export default async function HomePage() {
       <footer className="border-t border-white/10 px-6 py-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-6xl">
-            Move better. <span className="text-[#39FF14]">For life.</span>
+            Move better.{" "}
+            <br className="md:hidden" />
+            <span className="whitespace-nowrap text-[#39FF14]">For life.</span>
           </p>
           <div className="mt-12 flex flex-col justify-between gap-8 border-t border-white/10 pt-8 md:flex-row md:items-center">
             <p className="text-sm text-white/40">
