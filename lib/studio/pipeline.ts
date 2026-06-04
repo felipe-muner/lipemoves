@@ -167,6 +167,26 @@ export async function runPipeline(
           edited = true
         }
 
+        // Drill label: burn a freely-placed line onto the whole clip.
+        if (config.drills && cfg.label && cfg.label.text.trim()) {
+          const out = path.join(cdir, "label.mp4")
+          const args = [
+            path.join(SCRIPTS, "label-video.sh"),
+            finalVideo,
+            cfg.label.text,
+            out,
+            config.drills.color,
+            String(config.drills.opacity),
+            String(cfg.label.x),
+            String(cfg.label.y),
+            String(cfg.label.width),
+          ]
+          if (!config.drills.fade) args.push("--no-anim")
+          await run("bash", args, dir)
+          finalVideo = out
+          edited = true
+        }
+
         if (edited) {
           const out = path.join(cdir, "final.mp4")
           await copyFile(finalVideo, out)
@@ -230,7 +250,7 @@ export async function runPipeline(
     const finals = job.clips
       .filter((c) => c.status === "done" && c.videoName)
       .map((c) => path.join(dir, c.videoName as string))
-    if (config.kenburns && config.join && finals.length >= 2) {
+    if ((config.kenburns || config.drills) && config.join && finals.length >= 2) {
       try {
         const out = path.join(dir, "joined.mp4")
         await joinClips(finals, out, dir)
