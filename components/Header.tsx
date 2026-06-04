@@ -16,13 +16,13 @@ export default async function Header() {
             href="#about"
             className="hidden text-sm text-white/70 hover:text-white sm:inline"
           >
-            Sobre
+            About
           </Link>
           <Link
             href="/pricing"
             className="hidden text-sm text-white/70 hover:text-white sm:inline"
           >
-            Preços
+            Pricing
           </Link>
           {session?.user ? (
             <UserDropdown
@@ -35,7 +35,7 @@ export default async function Header() {
               href="/login"
               className="inline-flex h-9 items-center justify-center rounded-full border border-white/20 px-5 text-sm text-white/90 hover:bg-white/10"
             >
-              Entrar
+              Sign in
             </Link>
           )}
         </nav>

@@ -27,7 +27,7 @@ export default function RegisterForm() {
 
     if (!res.ok) {
       const data = await res.json()
-      setError(data.error || "Erro ao criar conta")
+      setError(data.error || "Error creating account")
       setLoading(false)
       return
     }
@@ -41,7 +41,7 @@ export default function RegisterForm() {
     setLoading(false)
 
     if (result?.error) {
-      setError("Conta criada, mas houve erro ao entrar. Tente fazer login.")
+      setError("Account created, but sign-in failed. Please try logging in.")
       return
     }
 
@@ -53,9 +53,9 @@ export default function RegisterForm() {
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <h1 className="font-heading text-3xl">Criar Conta</h1>
+          <h1 className="font-heading text-3xl">Create account</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Crie sua conta para come&ccedil;ar a praticar
+            Create your account to start practicing
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function RegisterForm() {
 
           <div>
             <label htmlFor="name" className="text-sm font-medium">
-              Nome
+              Name
             </label>
             <input
               id="name"
@@ -76,7 +76,7 @@ export default function RegisterForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Seu nome"
+              placeholder="Your name"
             />
           </div>
 
@@ -91,13 +91,13 @@ export default function RegisterForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="seu@email.com"
+              placeholder="you@email.com"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="text-sm font-medium">
-              Senha
+              Password
             </label>
             <input
               id="password"
@@ -107,7 +107,7 @@ export default function RegisterForm() {
               required
               minLength={6}
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="M&iacute;nimo 6 caracteres"
+              placeholder="At least 6 characters"
             />
           </div>
 
@@ -116,7 +116,7 @@ export default function RegisterForm() {
             disabled={loading}
             className="flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading ? "Criando..." : "Criar Conta"}
+            {loading ? "Creating..." : "Create account"}
           </button>
         </form>
 
@@ -125,7 +125,7 @@ export default function RegisterForm() {
             <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">ou</span>
+            <span className="bg-background px-2 text-muted-foreground">or</span>
           </div>
         </div>
 
@@ -151,13 +151,13 @@ export default function RegisterForm() {
               fill="#EA4335"
             />
           </svg>
-          Cadastrar com Google
+          Sign up with Google
         </button>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          J&aacute; tem conta?{" "}
+          Already have an account?{" "}
           <Link href="/login" className="font-medium text-primary hover:underline">
-            Entrar
+            Sign in
           </Link>
         </p>
       </div>

@@ -26,7 +26,7 @@ export default async function ProtectedLayout({
               href="/videos"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Vídeos
+              Videos
             </Link>
             <UserDropdown name={session.user.name} image={session.user.image} />
           </nav>

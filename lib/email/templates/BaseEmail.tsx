@@ -36,12 +36,12 @@ export function BaseEmail({ preheader, unsubscribeUrl, children }: BaseEmailProp
           <Section>{children}</Section>
           <Hr style={{ borderColor: "#eee", margin: "32px 0 16px" }} />
           <Text style={{ fontSize: "12px", color: "#888", lineHeight: "18px" }}>
-            Lipe Moves — Mova-se melhor, respire mais fundo.
+            Lipe Moves — Move better, breathe deeper.
             <br />
-            Koh Phangan, Tailândia
+            Koh Phangan, Thailand
             <br />
             <Link href={unsubscribeUrl} style={{ color: "#888", textDecoration: "underline" }}>
-              Cancelar inscrição
+              Unsubscribe
             </Link>
           </Text>
         </Container>

@@ -29,7 +29,7 @@ export default function LoginForm() {
     setLoading(false)
 
     if (result?.error) {
-      setError("Email ou senha incorretos")
+      setError("Incorrect email or password")
       return
     }
 
@@ -41,9 +41,9 @@ export default function LoginForm() {
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <h1 className="font-heading text-3xl">Entrar</h1>
+          <h1 className="font-heading text-3xl">Sign in</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Acesse sua conta para assistir os v&iacute;deos
+            Access your account to watch the videos
           </p>
         </div>
 
@@ -65,13 +65,13 @@ export default function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="seu@email.com"
+              placeholder="you@email.com"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="text-sm font-medium">
-              Senha
+              Password
             </label>
             <input
               id="password"
@@ -90,7 +90,7 @@ export default function LoginForm() {
             disabled={loading}
             className="flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
@@ -99,7 +99,7 @@ export default function LoginForm() {
             <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">ou</span>
+            <span className="bg-background px-2 text-muted-foreground">or</span>
           </div>
         </div>
 
@@ -125,13 +125,13 @@ export default function LoginForm() {
               fill="#EA4335"
             />
           </svg>
-          Entrar com Google
+          Sign in with Google
         </button>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          N&atilde;o tem conta?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="font-medium text-primary hover:underline">
-            Criar conta
+            Create account
           </Link>
         </p>
       </div>

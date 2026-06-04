@@ -25,7 +25,7 @@ export default function BuyGuideButton({ slug }: BuyGuideButtonProps) {
       | null
 
     if (!response.ok || !data?.url) {
-      setError(data?.error ?? "Não foi possível abrir o checkout.")
+      setError(data?.error ?? "Couldn't open checkout.")
       setLoading(false)
       return
     }
@@ -40,7 +40,7 @@ export default function BuyGuideButton({ slug }: BuyGuideButtonProps) {
         disabled={loading}
         className="inline-flex h-12 items-center justify-center rounded-lg bg-primary px-8 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
       >
-        {loading ? "Abrindo checkout..." : "Comprar agora"}
+        {loading ? "Opening checkout..." : "Buy now"}
       </button>
       {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
     </div>

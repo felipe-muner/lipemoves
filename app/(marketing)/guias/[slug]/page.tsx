@@ -48,7 +48,7 @@ export default async function GuiaPage({ params }: PageProps) {
               {formatPrice(product.priceCents, product.currency)}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Pagamento único. Download imediato após a compra.
+              One-time payment. Instant download after purchase.
             </p>
             <div className="mt-6">
               <BuyGuideButton slug={product.slug} />

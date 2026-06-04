@@ -73,7 +73,7 @@ async function handlePdfPurchase(session: Stripe.Checkout.Session) {
     from: EMAIL_FROM,
     to: email,
     replyTo: EMAIL_REPLY_TO,
-    subject: `Seu ${product.name} está aqui`,
+    subject: `Your ${product.name} is here`,
     html,
   })
 

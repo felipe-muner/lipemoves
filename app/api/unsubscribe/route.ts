@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   }
 
   return new NextResponse(
-    `<!doctype html><html><body style="font-family:sans-serif;padding:48px;text-align:center;"><h1>Inscrição cancelada</h1><p>Você não receberá mais emails do Lipe Moves.</p></body></html>`,
+    `<!doctype html><html><body style="font-family:sans-serif;padding:48px;text-align:center;"><h1>Unsubscribed</h1><p>You will no longer receive emails from Lipe Moves.</p></body></html>`,
     { headers: { "content-type": "text/html; charset=utf-8" } },
   )
 }
