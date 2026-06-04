@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { Slider } from "@/components/ui/slider"
 
 import type {
   ClipState,
@@ -31,6 +32,46 @@ import type {
   SerializedJob,
   StudioConfig,
 } from "@/lib/studio/types"
+
+/** Grab a poster frame from an uploaded video, client-side, so the drill-label
+ *  editor has a real backdrop to drag the text onto without a server round-trip. */
+function extractPoster(
+  file: File,
+): Promise<{ url: string; aspect: number }> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video")
+    video.preload = "auto"
+    video.muted = true
+    video.playsInline = true
+    const src = URL.createObjectURL(file)
+    video.src = src
+    const cleanup = () => URL.revokeObjectURL(src)
+    video.onloadeddata = () => {
+      // Seek a touch in so we don't grab a black first frame.
+      video.currentTime = Math.min(0.15, (video.duration || 1) / 2)
+    }
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas")
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const ctx = canvas.getContext("2d")
+        if (!ctx) throw new Error("no canvas context")
+        ctx.drawImage(video, 0, 0)
+        const url = canvas.toDataURL("image/jpeg", 0.82)
+        cleanup()
+        resolve({ url, aspect: video.videoWidth / video.videoHeight })
+      } catch (e) {
+        cleanup()
+        reject(e instanceof Error ? e : new Error("poster failed"))
+      }
+    }
+    video.onerror = () => {
+      cleanup()
+      reject(new Error("Could not read this video for a preview frame"))
+    }
+  })
+}
 
 const pad2 = (n: number) => String(n).padStart(2, "0")
 const pad3 = (n: number) => String(n).padStart(3, "0")
@@ -42,6 +83,22 @@ interface ClipCfg {
   captionOn: boolean
   main: string
   sub: string
+}
+
+/** Per-clip drill label: text + free-drag placement, on its poster frame. */
+interface DrillCfg {
+  text: string
+  /** Free-drag center (fractions of the frame). */
+  x: number
+  y: number
+  /** Font size in cqw (% of preview width); set via the resize handle. */
+  size: number
+  /** Measured widest-line width as a fraction of the frame (preview → burn). */
+  width: number
+  /** Client-extracted poster frame (data URL), or null while extracting. */
+  poster: string | null
+  /** Poster aspect ratio (w/h) for the preview box. */
+  aspect: number
 }
 
 function statusIcon(status: ClipState["status"]) {
@@ -89,6 +146,9 @@ function CoverText({
   cx,
   cy,
   size,
+  color = "#00EF00",
+  opacity = 1,
+  outline = true,
   onMove,
   onResize,
   onMeasure,
@@ -97,6 +157,12 @@ function CoverText({
   cx: number
   cy: number
   size: number
+  /** Fill color (defaults to the cover's pure green). */
+  color?: string
+  /** Text opacity 0..1 (drill labels default to a ghosted 0.5). */
+  opacity?: number
+  /** Thick black stroke (cover) vs. a soft drop shadow (drill labels). */
+  outline?: boolean
   onMove: (x: number, y: number) => void
   onResize: (size: number) => void
   onMeasure: (widthFrac: number) => void
@@ -183,15 +249,25 @@ function CoverText({
           outline: hot || drag ? "1px dashed rgba(255,255,255,.85)" : "none",
           outlineOffset: "4px",
           fontFamily: '"Archivo Black", system-ui, sans-serif',
-          color: "#00EF00",
+          color,
+          opacity,
           fontSize: `${size}cqw`,
           lineHeight: 1.02,
-          // Match cover.sh's burned outline: a Disk:21 dilation at 220pt font is
-          // an OUTWARD-only black ring of 21/220 ≈ 0.0955 of the font size. With
-          // paint-order:stroke the green fill paints over the stroke's inner
-          // half, so the visible outward outline is strokeWidth/2 — hence 2×.
-          paintOrder: "stroke",
-          WebkitTextStroke: `${(size * 0.191).toFixed(3)}cqw #000`,
+          // Cover: match cover.sh's burned outline — a Disk:21 dilation at 220pt
+          // font is an OUTWARD-only black ring of 21/220 ≈ 0.0955 of the font
+          // size. With paint-order:stroke the fill paints over the stroke's
+          // inner half, so the visible outward outline is strokeWidth/2 — hence
+          // 2×. Drill labels: no stroke, just a soft shadow (matches
+          // label-video.sh's drop shadow).
+          ...(outline
+            ? {
+                paintOrder: "stroke",
+                WebkitTextStroke: `${(size * 0.191).toFixed(3)}cqw #000`,
+              }
+            : {
+                WebkitTextStroke: "0",
+                textShadow: "0 0.3cqw 1.2cqw rgba(0,0,0,.5)",
+              }),
         }}
       >
         {text.replace(/\\n/g, "\n")}
@@ -272,10 +348,29 @@ export function StudioClient() {
   const [files, setFiles] = React.useState<File[]>([])
   const [clipCfgs, setClipCfgs] = React.useState<ClipCfg[]>([])
 
-  const [mode, setMode] = React.useState<"kenburns" | "frames">("kenburns")
+  const [mode, setMode] = React.useState<"kenburns" | "frames" | "drills">(
+    "kenburns",
+  )
   const [fog, setFog] = React.useState(true)
   const [join, setJoin] = React.useState(true)
   const [fpStep, setFpStep] = React.useState("0.5")
+
+  // Drill-labels mode (phase 3): per-clip text/placement + a shared style.
+  const [drillCfgs, setDrillCfgs] = React.useState<DrillCfg[]>([])
+  const [selDrill, setSelDrill] = React.useState(0)
+  const [drillColor, setDrillColor] = React.useState("#FFFFFF")
+  const [drillOpacity, setDrillOpacity] = React.useState(0.5)
+  const [drillFade, setDrillFade] = React.useState(true)
+  // Latest measured widest-line width per clip (preview → burn). Kept in a ref
+  // (like the cover) so measuring never triggers a re-render loop.
+  const drillWidths = React.useRef<Record<number, number>>({})
+  const selDrillRef = React.useRef(0)
+  React.useEffect(() => {
+    selDrillRef.current = selDrill
+  }, [selDrill])
+  const reportDrillWidth = React.useCallback((frac: number) => {
+    drillWidths.current[selDrillRef.current] = frac
+  }, [])
 
   // Cover studio (phase 2).
   const [selClip, setSelClip] = React.useState(0)
@@ -305,10 +400,43 @@ export function StudioClient() {
     const arr = list ? Array.from(list) : []
     setFiles(arr)
     setClipCfgs(arr.map(() => ({ captionOn: false, main: "", sub: "" })))
+    setSelDrill(0)
+    // Seed drill configs: number-prefixed by upload order, centered, no poster
+    // yet. Posters are extracted asynchronously below.
+    setDrillCfgs(
+      arr.map((_, i) => ({
+        text: `${i + 1} — `,
+        x: 0.5,
+        y: 0.85,
+        size: 7,
+        width: 0.6,
+        poster: null,
+        aspect: 9 / 16,
+      })),
+    )
+    arr.forEach((file, i) => {
+      extractPoster(file)
+        .then(({ url, aspect }) =>
+          setDrillCfgs((prev) =>
+            prev.map((c, idx) =>
+              idx === i ? { ...c, poster: url, aspect } : c,
+            ),
+          ),
+        )
+        .catch(() => {
+          /* leave poster null — the editor shows a placeholder */
+        })
+    })
   }
 
   function setClip(i: number, patch: Partial<ClipCfg>) {
     setClipCfgs((prev) =>
+      prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
+    )
+  }
+
+  function setDrill(i: number, patch: Partial<DrillCfg>) {
+    setDrillCfgs((prev) =>
       prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
     )
   }
@@ -350,9 +478,29 @@ export function StudioClient() {
       fog,
       join,
       framepicker: mode === "frames" ? { step: Number(fpStep) || 0.5 } : null,
-      clips: clipCfgs.map((c) => ({
-        caption: c.captionOn && c.main.trim() ? { main: c.main, sub: c.sub } : null,
-      })),
+      drills:
+        mode === "drills"
+          ? { color: drillColor, opacity: drillOpacity, fade: drillFade }
+          : null,
+      clips: files.map((_, i) => {
+        const cap = clipCfgs[i]
+        const drill = drillCfgs[i]
+        return {
+          caption:
+            mode === "kenburns" && cap?.captionOn && cap.main.trim()
+              ? { main: cap.main, sub: cap.sub }
+              : null,
+          label:
+            mode === "drills" && drill?.text.trim()
+              ? {
+                  text: drill.text,
+                  x: drill.x,
+                  y: drill.y,
+                  width: drillWidths.current[i] ?? drill.width,
+                }
+              : null,
+        }
+      }),
     }
     const fd = new FormData()
     files.forEach((f) => fd.append("files", f))
@@ -435,6 +583,12 @@ export function StudioClient() {
             label="Frame contact sheet"
             desc="Extract frames per clip so you can pick + make a cover."
           />
+          <ModeOption
+            active={mode === "drills"}
+            onClick={() => setMode("drills")}
+            label="Drill labels"
+            desc="Label each clip with a number + name, then stitch the drills together."
+          />
           {mode === "frames" ? (
             <div className="flex items-center gap-1.5">
               <Label className="text-xs text-muted-foreground">Every</Label>
@@ -455,6 +609,14 @@ export function StudioClient() {
                 <Toggle checked={join} onChange={setJoin} label="Join" />
               ) : null}
               <Toggle checked={fog} onChange={setFog} label="Fog fade-in" />
+            </div>
+          ) : null}
+          {mode === "drills" && files.length ? (
+            <div className="ml-auto flex items-center gap-2">
+              {files.length > 1 ? (
+                <Toggle checked={join} onChange={setJoin} label="Stitch" />
+              ) : null}
+              <Toggle checked={drillFade} onChange={setDrillFade} label="Fade" />
             </div>
           ) : null}
         </div>
@@ -528,6 +690,105 @@ export function StudioClient() {
           ) : null}
         </div>
 
+        {/* Drill labels: shared color/opacity + per-clip text dragged on the
+            clip's own poster frame (extracted client-side). */}
+        {mode === "drills" && files.length ? (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Color</Label>
+                <input
+                  type="color"
+                  value={drillColor}
+                  onChange={(e) => setDrillColor(e.target.value)}
+                  className="h-8 w-10 cursor-pointer rounded border bg-transparent p-0.5"
+                  aria-label="Label color"
+                />
+              </div>
+              <div className="flex min-w-[200px] flex-1 items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Opacity</Label>
+                <Slider
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[Math.round(drillOpacity * 100)]}
+                  onValueChange={(v) => setDrillOpacity((v[0] ?? 50) / 100)}
+                  className="max-w-[220px]"
+                />
+                <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
+                  {Math.round(drillOpacity * 100)}%
+                </span>
+              </div>
+              {files.length > 1 ? (
+                <Select
+                  value={String(selDrill)}
+                  onValueChange={(v) => setSelDrill(Number(v))}
+                >
+                  <SelectTrigger className="h-8 w-48 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {files.map((f, i) => (
+                      <SelectItem key={i} value={String(i)}>
+                        {i + 1}. {f.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+            </div>
+
+            {drillCfgs[selDrill] ? (
+              <>
+                <Input
+                  placeholder="1 — Hip circles"
+                  value={drillCfgs[selDrill].text}
+                  onChange={(e) => setDrill(selDrill, { text: e.target.value })}
+                />
+                <div
+                  className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-lg bg-black"
+                  style={{
+                    aspectRatio: String(drillCfgs[selDrill].aspect),
+                    containerType: "inline-size",
+                  }}
+                >
+                  {drillCfgs[selDrill].poster ? (
+                    <Image
+                      src={drillCfgs[selDrill].poster as string}
+                      alt="Clip poster"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 grid place-items-center text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" />
+                    </div>
+                  )}
+                  {drillCfgs[selDrill].text.trim() ? (
+                    <CoverText
+                      text={drillCfgs[selDrill].text}
+                      cx={drillCfgs[selDrill].x}
+                      cy={drillCfgs[selDrill].y}
+                      size={drillCfgs[selDrill].size}
+                      color={drillColor}
+                      opacity={drillOpacity}
+                      outline={false}
+                      onMove={(x, y) => setDrill(selDrill, { x, y })}
+                      onResize={(s) => setDrill(selDrill, { size: s })}
+                      onMeasure={reportDrillWidth}
+                    />
+                  ) : null}
+                </div>
+                <p className="text-center text-xs text-muted-foreground">
+                  Drag to place · drag the corner dot to resize · color &amp;
+                  opacity apply to every clip
+                </p>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+
         <Button
           onClick={submit}
           size="sm"
@@ -596,7 +857,7 @@ export function StudioClient() {
                       {c.label}
                     </span>
                   </span>
-                  {c.videoName && job.kenburns ? (
+                  {c.videoName && (job.kenburns || job.drills) ? (
                     <a
                       href={fileUrl(c.videoName, true)}
                       className="flex shrink-0 items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
@@ -610,7 +871,7 @@ export function StudioClient() {
                 ) : null}
                 {/* In frames/contact-sheet mode skip the video player — only the
                     cover section below matters. */}
-                {c.videoName && !job.joinedName && job.kenburns ? (
+                {c.videoName && !job.joinedName && (job.kenburns || job.drills) ? (
                   <video
                     src={fileUrl(c.videoName)}
                     controls

@@ -21,9 +21,33 @@ export interface FramePickerConfig {
   step: number
 }
 
+/** A freely-placed drill label burned onto a whole clip (e.g. "1 — HIP
+ *  CIRCLES"). Color + opacity are global (DrillStyle); text + placement are
+ *  per clip, dragged on a poster frame in the studio. */
+export interface LabelConfig {
+  text: string
+  /** Free-drag center of the text block, as fractions of the frame (0..1). */
+  x: number
+  y: number
+  /** Widest line's width as a fraction of the frame (from the live preview). */
+  width: number
+}
+
+/** Global look for the drill-labels mode, shared by every clip. */
+export interface DrillStyle {
+  /** Hex text color, e.g. "#FFFFFF". */
+  color: string
+  /** Text opacity, 0..1 (default 0.5 = ghosted white). */
+  opacity: number
+  /** Fade the label in at the start and out at the end of each clip. */
+  fade: boolean
+}
+
 /** What to do with one uploaded clip. */
 export interface ClipInput {
   caption: CaptionConfig | null
+  /** Drill label to burn onto the whole clip (drill-labels mode). */
+  label: LabelConfig | null
 }
 
 export interface StudioConfig {
@@ -31,10 +55,12 @@ export interface StudioConfig {
   kenburns: boolean
   /** Caption animation style for all clips (fog fade-in vs static). */
   fog: boolean
-  /** Concatenate all processed clips into one final video (Ken Burns mode). */
+  /** Concatenate all processed clips into one final video. */
   join: boolean
   /** When set, extract a contact sheet + frames per clip to enable covers. */
   framepicker: FramePickerConfig | null
+  /** When set, burn each clip's per-clip label using this shared style. */
+  drills: DrillStyle | null
   /** One entry per uploaded file, in upload order. */
   clips: ClipInput[]
 }
@@ -84,6 +110,8 @@ export interface Job {
   status: JobStatus
   error?: string
   kenburns: boolean
+  /** True when this job burns per-clip drill labels (drill-labels mode). */
+  drills: boolean
   clips: ClipState[]
   /** Job-dir-relative path to the single joined video, when joining. */
   joinedName: string | null

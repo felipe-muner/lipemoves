@@ -83,6 +83,7 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString(),
     status: "queued",
     kenburns: config.kenburns,
+    drills: !!config.drills,
     clips,
     joinedName: null,
     dir,
