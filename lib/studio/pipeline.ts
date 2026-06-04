@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process"
 import { existsSync } from "node:fs"
-import { copyFile, mkdir, readdir, rename } from "node:fs/promises"
+import { copyFile, mkdir, readdir } from "node:fs/promises"
 import path from "node:path"
 
 import type { CoverRequest, Job, StudioConfig } from "./types"
@@ -66,8 +66,17 @@ async function joinClips(
   const n = paths.length
 
   const inputs = paths.flatMap((p) => ["-i", p])
-  const tag = paths.map((_, i) => (audio ? `[${i}:v][${i}:a]` : `[${i}:v]`)).join("")
-  let filter = `${tag}concat=n=${n}:v=1:a=${audio ? 1 : 0}[v]${audio ? "[a]" : ""}`
+  // Normalize every input to 1080x1920 (fill + center-crop) so clips of mixed
+  // sizes — e.g. an un-zoomed original next to a 1080x1920 zoomed clip — concat
+  // cleanly.
+  const norm = paths
+    .map(
+      (_, i) =>
+        `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[n${i}]`,
+    )
+    .join(";")
+  const tag = paths.map((_, i) => (audio ? `[n${i}][${i}:a]` : `[n${i}]`)).join("")
+  let filter = `${norm};${tag}concat=n=${n}:v=1:a=${audio ? 1 : 0}[v]${audio ? "[a]" : ""}`
   filter += hdr
     ? ";[v]format=yuv420p10le,setparams=colorspace=bt2020nc:color_primaries=bt2020:color_trc=arib-std-b67[vo]"
     : ";[v]format=yuv420p[vo]"
@@ -111,28 +120,8 @@ export async function runPipeline(
   const clipDir = (i: number) => path.join(dir, `clip${pad2(i)}`)
 
   try {
-    // --- Phase A: Ken Burns over all clips at once (alternating in/out). ---
-    if (config.kenburns) {
-      const kbIn = path.join(dir, "kb-in")
-      await mkdir(kbIn, { recursive: true })
-      for (let i = 0; i < job.clips.length; i++) {
-        const ext = path.extname(inputNames[i]) || ".mp4"
-        await copyFile(
-          path.join(clipDir(i), inputNames[i]),
-          path.join(kbIn, `clip${pad2(i)}${ext}`),
-        )
-      }
-      for (const c of job.clips) if (c.status === "pending") c.status = "running"
-      await run("bash", [path.join(SCRIPTS, "ken-burns.sh"), kbIn], dir)
-      for (let i = 0; i < job.clips.length; i++) {
-        const produced = path.join(kbIn, "edited", `clip${pad2(i)}-kb.mp4`)
-        if (existsSync(produced)) {
-          await rename(produced, path.join(clipDir(i), "kb.mp4"))
-        }
-      }
-    }
-
-    // --- Phase B: per clip — caption, then frames for the cover studio. ---
+    // --- Per clip: optional Ken Burns zoom, then optional text label, then
+    //     (Frames mode) extract frames for the cover studio. ---
     for (let i = 0; i < job.clips.length; i++) {
       const clip = job.clips[i]
       const cfg = config.clips[i]
@@ -141,47 +130,39 @@ export async function runPipeline(
       try {
         const input = path.join(cdir, inputNames[i])
         let finalVideo = input
-        // Cover/contact frames come from BEFORE the caption, so covers sit on
-        // a clean frame.
+        // Cover/contact frames come from AFTER the zoom (so they match the
+        // final framing) but BEFORE the label (so covers sit on a clean frame).
         let coverSource = input
         let edited = false
 
-        if (config.kenburns && existsSync(path.join(cdir, "kb.mp4"))) {
-          finalVideo = path.join(cdir, "kb.mp4")
-          coverSource = finalVideo
-          edited = true
-        }
-
-        if (cfg.caption && cfg.caption.main.trim()) {
-          const out = path.join(cdir, "cap.mp4")
-          const args = [
-            path.join(SCRIPTS, "add-caption.sh"),
-            finalVideo,
-            cfg.caption.main,
-            cfg.caption.sub,
-            out,
-          ]
-          if (!config.fog) args.push("--no-anim")
-          await run("bash", args, dir)
+        // Ken Burns zoom (per-clip direction).
+        if (cfg.zoom) {
+          const out = path.join(cdir, "kb.mp4")
+          await run(
+            "bash",
+            [path.join(SCRIPTS, "zoom-clip.sh"), finalVideo, out, cfg.zoom],
+            dir,
+          )
           finalVideo = out
+          coverSource = out
           edited = true
         }
 
-        // Drill label: burn a freely-placed line onto the whole clip.
-        if (config.drills && cfg.label && cfg.label.text.trim()) {
+        // Text label: burn a freely-placed line onto the whole clip.
+        if (config.text && cfg.label && cfg.label.text.trim()) {
           const out = path.join(cdir, "label.mp4")
           const args = [
             path.join(SCRIPTS, "label-video.sh"),
             finalVideo,
             cfg.label.text,
             out,
-            config.drills.color,
-            String(config.drills.opacity),
+            config.text.color,
+            String(config.text.opacity),
             String(cfg.label.x),
             String(cfg.label.y),
             String(cfg.label.width),
           ]
-          if (!config.drills.fade) args.push("--no-anim")
+          if (!config.text.fade) args.push("--no-anim")
           await run("bash", args, dir)
           finalVideo = out
           edited = true
@@ -250,7 +231,7 @@ export async function runPipeline(
     const finals = job.clips
       .filter((c) => c.status === "done" && c.videoName)
       .map((c) => path.join(dir, c.videoName as string))
-    if ((config.kenburns || config.drills) && config.join && finals.length >= 2) {
+    if (!config.framepicker && config.join && finals.length >= 2) {
       try {
         const out = path.join(dir, "joined.mp4")
         await joinClips(finals, out, dir)

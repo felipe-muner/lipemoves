@@ -1,6 +1,10 @@
 // Shared types for the local Video Studio. The Studio lets you upload one or
 // more clips and run them through the same scripts/*.sh used on the command
-// line (ken-burns, add-caption, frame-picker, cover) — one source of truth.
+// line (zoom-clip, label-video, frame-picker, cover) — one source of truth.
+//
+// "Compose" is the unified editing mode: per clip you can apply a Ken Burns
+// zoom (in/out) and/or burn a freely-placed text label, then optionally stitch
+// every clip into one video. "Frames" is the separate contact-sheet/cover flow.
 
 export type JobStatus = "queued" | "running" | "done" | "error"
 
@@ -10,20 +14,17 @@ export type ClipStatus =
   | "done"
   | "error"
 
-/** Per-clip caption text (fog animation is a global style on StudioConfig). */
-export interface CaptionConfig {
-  main: string
-  sub: string
-}
+/** Ken Burns zoom direction for a clip. */
+export type ZoomDir = "in" | "out"
 
 export interface FramePickerConfig {
   /** Seconds between sampled frames (0.5 = 2 frames/sec). */
   step: number
 }
 
-/** A freely-placed drill label burned onto a whole clip (e.g. "1 — HIP
- *  CIRCLES"). Color + opacity are global (DrillStyle); text + placement are
- *  per clip, dragged on a poster frame in the studio. */
+/** A freely-placed text label burned onto a whole clip (e.g. "1 — HIP
+ *  CIRCLES"). Color/opacity/fade are shared (TextStyle); the text + placement
+ *  are per clip, dragged on a poster frame in the studio. */
 export interface LabelConfig {
   text: string
   /** Free-drag center of the text block, as fractions of the frame (0..1). */
@@ -33,34 +34,32 @@ export interface LabelConfig {
   width: number
 }
 
-/** Global look for the drill-labels mode, shared by every clip. */
-export interface DrillStyle {
+/** Shared look for every clip's text label. */
+export interface TextStyle {
   /** Hex text color, e.g. "#FFFFFF". */
   color: string
-  /** Text opacity, 0..1 (default 0.5 = ghosted white). */
+  /** Text opacity, 0..1 (1 = fully opaque; lower it to ghost the text). */
   opacity: number
   /** Fade the label in at the start and out at the end of each clip. */
   fade: boolean
 }
 
-/** What to do with one uploaded clip. */
+/** What to do with one uploaded clip in Compose mode. */
 export interface ClipInput {
-  caption: CaptionConfig | null
-  /** Drill label to burn onto the whole clip (drill-labels mode). */
+  /** Ken Burns zoom direction, or null for no zoom. */
+  zoom: ZoomDir | null
+  /** Text label to burn onto the whole clip, or null for none. */
   label: LabelConfig | null
 }
 
 export interface StudioConfig {
-  /** Ken Burns zoom (alternating in/out) applied to every clip. */
-  kenburns: boolean
-  /** Caption animation style for all clips (fog fade-in vs static). */
-  fog: boolean
   /** Concatenate all processed clips into one final video. */
   join: boolean
-  /** When set, extract a contact sheet + frames per clip to enable covers. */
+  /** When set, extract a contact sheet + frames per clip to enable covers
+   *  (the separate Frames mode). Mutually exclusive with Compose. */
   framepicker: FramePickerConfig | null
-  /** When set, burn each clip's per-clip label using this shared style. */
-  drills: DrillStyle | null
+  /** Shared style for the per-clip text labels (Compose mode). */
+  text: TextStyle | null
   /** One entry per uploaded file, in upload order. */
   clips: ClipInput[]
 }
@@ -109,9 +108,9 @@ export interface Job {
   createdAt: string
   status: JobStatus
   error?: string
-  kenburns: boolean
-  /** True when this job burns per-clip drill labels (drill-labels mode). */
-  drills: boolean
+  /** True for Compose jobs (produces playable per-clip videos); false for the
+   *  frames-only flow, where only the cover section matters. */
+  compose: boolean
   clips: ClipState[]
   /** Job-dir-relative path to the single joined video, when joining. */
   joinedName: string | null
