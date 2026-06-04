@@ -148,24 +148,30 @@ export async function runPipeline(
           edited = true
         }
 
-        // Text label: burn a freely-placed line onto the whole clip.
-        if (config.text && cfg.label && cfg.label.text.trim()) {
-          const out = path.join(cdir, "label.mp4")
-          const args = [
-            path.join(SCRIPTS, "label-video.sh"),
-            finalVideo,
-            cfg.label.text,
-            out,
-            config.text.color,
-            String(config.text.opacity),
-            String(cfg.label.x),
-            String(cfg.label.y),
-            String(cfg.label.width),
-          ]
-          if (!config.text.fade) args.push("--no-anim")
-          await run("bash", args, dir)
-          finalVideo = out
-          edited = true
+        // Text labels: burn each freely-placed line (its own font) onto the
+        // whole clip, chaining one pass per label.
+        if (config.text) {
+          const labels = cfg.labels.filter((l) => l.text.trim())
+          for (let li = 0; li < labels.length; li++) {
+            const l = labels[li]
+            const out = path.join(cdir, `label${li}.mp4`)
+            const args = [
+              path.join(SCRIPTS, "label-video.sh"),
+              finalVideo,
+              l.text,
+              out,
+              config.text.color,
+              String(config.text.opacity),
+              String(l.x),
+              String(l.y),
+              String(l.width),
+              l.font,
+            ]
+            if (!config.text.fade) args.push("--no-anim")
+            await run("bash", args, dir)
+            finalVideo = out
+            edited = true
+          }
         }
 
         if (edited) {

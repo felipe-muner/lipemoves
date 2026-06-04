@@ -8,7 +8,9 @@ import {
   Film,
   ImageIcon,
   Loader2,
+  Plus,
   Upload,
+  X,
   XCircle,
 } from "lucide-react"
 
@@ -32,6 +34,13 @@ import type {
   SerializedJob,
   StudioConfig,
 } from "@/lib/studio/types"
+import {
+  DEFAULT_FONT,
+  FONTS,
+  fontCss,
+  fontWeight,
+  type FontKey,
+} from "@/lib/studio/fonts"
 
 /** Grab a poster frame from an uploaded video, client-side, so the drill-label
  *  editor has a real backdrop to drag the text onto without a server round-trip. */
@@ -81,12 +90,9 @@ const presetY = (p: CoverPosition) => (p === "top" ? 0.12 : p === "center" ? 0.5
 
 type ZoomMode = "off" | "in" | "out"
 
-/** Per-clip Compose settings: a Ken Burns zoom and/or a free-drag text label,
- *  edited on the clip's own poster frame. */
-interface ComposeCfg {
-  /** Ken Burns zoom direction (or off). */
-  zoom: ZoomMode
-  /** Label text ("" = no label). */
+/** One free-drag text box on a clip (its own font + placement). */
+interface TextBox {
+  id: string
   text: string
   /** Free-drag center (fractions of the frame). */
   x: number
@@ -95,10 +101,34 @@ interface ComposeCfg {
   size: number
   /** Measured widest-line width as a fraction of the frame (preview → burn). */
   width: number
+  font: FontKey
+}
+
+/** Per-clip Compose settings: a Ken Burns zoom and/or one or more text boxes,
+ *  edited on the clip's own poster frame. */
+interface ComposeCfg {
+  /** Ken Burns zoom direction (or off). */
+  zoom: ZoomMode
+  /** Text boxes to burn (in paint order). */
+  texts: TextBox[]
   /** Client-extracted poster frame (data URL), or null while extracting. */
   poster: string | null
   /** Poster aspect ratio (w/h) for the preview box. */
   aspect: number
+}
+
+let textBoxSeq = 0
+function newTextBox(): TextBox {
+  textBoxSeq += 1
+  return {
+    id: `t${textBoxSeq}`,
+    text: "",
+    x: 0.5,
+    y: 0.85,
+    size: 7,
+    width: 0.6,
+    font: DEFAULT_FONT,
+  }
 }
 
 function statusIcon(status: ClipState["status"]) {
@@ -149,6 +179,9 @@ function CoverText({
   color = "#00EF00",
   opacity = 1,
   outline = true,
+  fontFamily = '"Archivo Black", system-ui, sans-serif',
+  fontWeight,
+  uppercase = true,
   onMove,
   onResize,
   onMeasure,
@@ -159,10 +192,16 @@ function CoverText({
   size: number
   /** Fill color (defaults to the cover's pure green). */
   color?: string
-  /** Text opacity 0..1 (drill labels default to a ghosted 0.5). */
+  /** Text opacity 0..1 (labels default to a ghosted 0.5). */
   opacity?: number
-  /** Thick black stroke (cover) vs. a soft drop shadow (drill labels). */
+  /** Thick black stroke (cover) vs. a soft drop shadow (labels). */
   outline?: boolean
+  /** CSS font-family; must match the burn font for an accurate preview. */
+  fontFamily?: string
+  /** CSS font-weight (for variable/multi-weight families). */
+  fontWeight?: number
+  /** Force uppercase (cover look). Labels keep the text as typed. */
+  uppercase?: boolean
   onMove: (x: number, y: number) => void
   onResize: (size: number) => void
   onMeasure: (widthFrac: number) => void
@@ -217,7 +256,7 @@ function CoverText({
   }
 
   return (
-    <div ref={rootRef} className="absolute inset-0">
+    <div ref={rootRef} className="pointer-events-none absolute inset-0">
       {/* center guide: only while dragging; turns lime + glows when snapped */}
       {drag ? (
         <div
@@ -248,7 +287,9 @@ function CoverText({
           e.currentTarget.releasePointerCapture(e.pointerId)
           setDrag(false)
         }}
-        className="absolute -translate-x-1/2 -translate-y-1/2 select-none whitespace-pre text-center uppercase"
+        className={`pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 select-none whitespace-pre text-center ${
+          uppercase ? "uppercase" : ""
+        }`}
         style={{
           left: `${cx * 100}%`,
           top: `${cy * 100}%`,
@@ -256,7 +297,8 @@ function CoverText({
           touchAction: "none",
           outline: hot || drag ? "1px dashed rgba(255,255,255,.85)" : "none",
           outlineOffset: "4px",
-          fontFamily: '"Archivo Black", system-ui, sans-serif',
+          fontFamily,
+          fontWeight,
           color,
           opacity,
           fontSize: `${size}cqw`,
@@ -364,11 +406,12 @@ export function StudioClient() {
   const [textColor, setTextColor] = React.useState("#FFFFFF")
   const [textOpacity, setTextOpacity] = React.useState(1)
   const [textFade, setTextFade] = React.useState(true)
-  // Latest measured widest-line width per clip (preview → burn). Kept in a ref
-  // (like the cover) so measuring never triggers a re-render loop.
-  const labelWidths = React.useRef<Record<number, number>>({})
-  const setLabelWidth = React.useCallback((i: number, frac: number) => {
-    labelWidths.current[i] = frac
+  // Latest measured widest-line width per text box (preview → burn), keyed by
+  // text-box id. Kept in a ref (like the cover) so measuring never triggers a
+  // re-render loop.
+  const labelWidths = React.useRef<Record<string, number>>({})
+  const setLabelWidth = React.useCallback((id: string, frac: number) => {
+    labelWidths.current[id] = frac
   }, [])
 
   // Cover studio (phase 2).
@@ -400,15 +443,12 @@ export function StudioClient() {
     setFiles(arr)
     labelWidths.current = {}
     // Seed per-clip configs: zoom alternates in/out (the classic Ken Burns
-    // look, editable per clip), no label text yet. Posters load async below.
+    // look, editable per clip), no text boxes yet (add via "Add text").
+    // Posters load async below.
     setComposeCfgs(
       arr.map((_, i) => ({
         zoom: i % 2 === 0 ? "in" : "out",
-        text: "",
-        x: 0.5,
-        y: 0.85,
-        size: 7,
-        width: 0.6,
+        texts: [],
         poster: null,
         aspect: 9 / 16,
       })),
@@ -431,6 +471,36 @@ export function StudioClient() {
   function setCompose(i: number, patch: Partial<ComposeCfg>) {
     setComposeCfgs((prev) =>
       prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
+    )
+  }
+
+  function addText(i: number) {
+    setComposeCfgs((prev) =>
+      prev.map((c, idx) =>
+        idx === i ? { ...c, texts: [...c.texts, newTextBox()] } : c,
+      ),
+    )
+  }
+
+  function setText(i: number, id: string, patch: Partial<TextBox>) {
+    setComposeCfgs((prev) =>
+      prev.map((c, idx) =>
+        idx === i
+          ? {
+              ...c,
+              texts: c.texts.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+            }
+          : c,
+      ),
+    )
+  }
+
+  function removeText(i: number, id: string) {
+    delete labelWidths.current[id]
+    setComposeCfgs((prev) =>
+      prev.map((c, idx) =>
+        idx === i ? { ...c, texts: c.texts.filter((t) => t.id !== id) } : c,
+      ),
     )
   }
 
@@ -477,15 +547,18 @@ export function StudioClient() {
         const c = composeCfgs[i]
         return {
           zoom: mode === "compose" && c && c.zoom !== "off" ? c.zoom : null,
-          label:
-            mode === "compose" && c?.text.trim()
-              ? {
-                  text: c.text,
-                  x: c.x,
-                  y: c.y,
-                  width: labelWidths.current[i] ?? c.width,
-                }
-              : null,
+          labels:
+            mode === "compose" && c
+              ? c.texts
+                  .filter((t) => t.text.trim())
+                  .map((t) => ({
+                    text: t.text,
+                    x: t.x,
+                    y: t.y,
+                    width: labelWidths.current[t.id] ?? t.width,
+                    font: t.font,
+                  }))
+              : [],
         }
       }),
     }
@@ -673,20 +746,26 @@ export function StudioClient() {
                     <span className="pointer-events-none absolute left-1 top-1 z-10 rounded bg-black/70 px-1.5 text-[10px] font-bold text-emerald-400">
                       {i + 1}
                     </span>
-                    {c.text.trim() ? (
-                      <CoverText
-                        text={c.text}
-                        cx={c.x}
-                        cy={c.y}
-                        size={c.size}
-                        color={textColor}
-                        opacity={textOpacity}
-                        outline={false}
-                        onMove={(x, y) => setCompose(i, { x, y })}
-                        onResize={(s) => setCompose(i, { size: s })}
-                        onMeasure={(w) => setLabelWidth(i, w)}
-                      />
-                    ) : null}
+                    {c.texts.map((t) =>
+                      t.text.trim() ? (
+                        <CoverText
+                          key={t.id}
+                          text={t.text}
+                          cx={t.x}
+                          cy={t.y}
+                          size={t.size}
+                          color={textColor}
+                          opacity={textOpacity}
+                          outline={false}
+                          uppercase={false}
+                          fontFamily={fontCss(t.font)}
+                          fontWeight={fontWeight(t.font)}
+                          onMove={(x, y) => setText(i, t.id, { x, y })}
+                          onResize={(s) => setText(i, t.id, { size: s })}
+                          onMeasure={(w) => setLabelWidth(t.id, w)}
+                        />
+                      ) : null,
+                    )}
                   </div>
                   {/* per-clip Ken Burns zoom */}
                   <div className="flex gap-1">
@@ -705,18 +784,62 @@ export function StudioClient() {
                       </button>
                     ))}
                   </div>
-                  <Input
-                    placeholder="Label…"
-                    className="h-8 text-xs"
-                    value={c.text}
-                    onChange={(e) => setCompose(i, { text: e.target.value })}
-                  />
+                  {/* text boxes — each with its own font */}
+                  <div className="space-y-1.5">
+                    {c.texts.map((t) => (
+                      <div
+                        key={t.id}
+                        className="space-y-1 rounded-md border p-1.5"
+                      >
+                        <Input
+                          placeholder="Text…"
+                          className="h-7 text-xs"
+                          value={t.text}
+                          onChange={(e) =>
+                            setText(i, t.id, { text: e.target.value })
+                          }
+                        />
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={t.font}
+                            onChange={(e) =>
+                              setText(i, t.id, {
+                                font: e.target.value as FontKey,
+                              })
+                            }
+                            className="h-7 flex-1 rounded-md border border-input bg-background px-1.5 text-xs outline-none"
+                          >
+                            {FONTS.map((f) => (
+                              <option key={f.key} value={f.key}>
+                                {f.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => removeText(i, t.id)}
+                            title="Remove text"
+                            className="grid size-7 shrink-0 place-items-center rounded-md border border-border text-muted-foreground hover:bg-muted"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => addText(i)}
+                      className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted"
+                    >
+                      <Plus className="size-3.5" /> Add text
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Drag each label to place · corner dot resizes · zoom is per clip ·
-              color, opacity &amp; fade apply to all
+              Drag each text to place · corner dot resizes · each text has its own
+              font · zoom is per clip · color, opacity &amp; fade apply to all
             </p>
           </div>
         ) : null}

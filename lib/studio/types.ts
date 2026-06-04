@@ -6,6 +6,8 @@
 // zoom (in/out) and/or burn a freely-placed text label, then optionally stitch
 // every clip into one video. "Frames" is the separate contact-sheet/cover flow.
 
+import type { FontKey } from "./fonts"
+
 export type JobStatus = "queued" | "running" | "done" | "error"
 
 export type ClipStatus =
@@ -22,9 +24,9 @@ export interface FramePickerConfig {
   step: number
 }
 
-/** A freely-placed text label burned onto a whole clip (e.g. "1 — HIP
- *  CIRCLES"). Color/opacity/fade are shared (TextStyle); the text + placement
- *  are per clip, dragged on a poster frame in the studio. */
+/** A freely-placed text label burned onto a whole clip. A clip can have several
+ *  (each with its own font + placement); color/opacity/fade are shared
+ *  (TextStyle). Dragged on a poster frame in the studio. */
 export interface LabelConfig {
   text: string
   /** Free-drag center of the text block, as fractions of the frame (0..1). */
@@ -32,6 +34,8 @@ export interface LabelConfig {
   y: number
   /** Widest line's width as a fraction of the frame (from the live preview). */
   width: number
+  /** Font key (see lib/studio/fonts.ts). */
+  font: FontKey
 }
 
 /** Shared look for every clip's text label. */
@@ -48,8 +52,8 @@ export interface TextStyle {
 export interface ClipInput {
   /** Ken Burns zoom direction, or null for no zoom. */
   zoom: ZoomDir | null
-  /** Text label to burn onto the whole clip, or null for none. */
-  label: LabelConfig | null
+  /** Text labels to burn onto the whole clip (in paint order). */
+  labels: LabelConfig[]
 }
 
 export interface StudioConfig {

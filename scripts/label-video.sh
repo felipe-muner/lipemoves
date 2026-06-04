@@ -7,7 +7,8 @@
 #
 # Usage:
 #   ./scripts/label-video.sh <video> "TEXT" <out.mp4> <#hexColor> <opacity> \
-#                            <xFrac> <yFrac> <widthFrac> [--no-anim]
+#                            <xFrac> <yFrac> <widthFrac> [fontKey] [--no-anim]
+#   fontKey: outfit (default) | archivo | impact | georgia | script | mono
 #
 # Notes:
 #   - Use \n in the text to force line breaks.
@@ -35,11 +36,25 @@ OPACITY="${5:-0.5}"
 XFRAC="${6:-0.5}"
 YFRAC="${7:-0.5}"
 WFRAC="${8:-0.6}"
+FONTKEY="${9:-outfit}"
+[[ "$FONTKEY" == "--no-anim" ]] && FONTKEY="outfit"   # fontKey is optional
 ANIM=1
 for a in "$@"; do [[ "$a" == "--no-anim" ]] && ANIM=0; done
 
-FONT="$HOME/Library/Fonts/ArchivoBlack-Regular.ttf"
-[[ -f "$FONT" ]] || FONT="/System/Library/Fonts/Supplemental/Impact.ttf"
+# Repo root (this script lives in <repo>/scripts) for bundled fonts.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(dirname "$SCRIPT_DIR")"
+SUP="/System/Library/Fonts/Supplemental"
+case "$FONTKEY" in
+  outfit)  FONT="$REPO/assets/fonts/Outfit-600.ttf" ;;
+  archivo) FONT="$HOME/Library/Fonts/ArchivoBlack-Regular.ttf" ;;
+  impact)  FONT="$SUP/Impact.ttf" ;;
+  georgia) FONT="$SUP/Georgia Bold.ttf" ;;
+  script)  FONT="$SUP/Brush Script.ttf" ;;
+  mono)    FONT="$SUP/Courier New.ttf" ;;
+  *)       FONT="$REPO/assets/fonts/Outfit-600.ttf" ;;
+esac
+[[ -f "$FONT" ]] || FONT="$SUP/Impact.ttf"
 
 # ---- Look knobs -------------------------------------------------------------
 W=1080; H=1920               # output canvas (portrait)
