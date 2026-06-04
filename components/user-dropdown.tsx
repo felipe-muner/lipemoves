@@ -36,20 +36,20 @@ export function UserDropdown({ name, image, variant = "light" }: UserDropdownPro
     <DropdownMenu>
       <DropdownMenuTrigger className={`flex items-center gap-2 text-sm outline-none ${textClass}`}>
         <Avatar className="h-8 w-8">
-          <AvatarImage src={image ?? undefined} alt={name ?? "Usuário"} />
+          <AvatarImage src={image ?? undefined} alt={name ?? "User"} />
           <AvatarFallback className="text-xs">{initials}</AvatarFallback>
         </Avatar>
         <ChevronDown className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
-          <Link href="/account">Painel</Link>
+          <Link href="/account">Account</Link>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => signOut({ callbackUrl: "/" })}
           className="text-destructive focus:text-destructive"
         >
-          Sair
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

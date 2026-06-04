@@ -17,15 +17,15 @@ export function DeliveryEmail({
 }: DeliveryEmailProps) {
   return (
     <BaseEmail
-      preheader={`Seu download de ${productName} está pronto`}
+      preheader={`Your ${productName} download is ready`}
       unsubscribeUrl={unsubscribeUrl}
     >
       <Heading style={{ fontSize: "24px", margin: "0 0 16px" }}>
-        Obrigado pela compra!
+        Thank you for your purchase!
       </Heading>
       <Text style={{ fontSize: "16px", lineHeight: "26px", margin: "0 0 16px" }}>
-        Seu <strong>{productName}</strong> está pronto. Clique no botão abaixo para
-        baixar.
+        Your <strong>{productName}</strong> is ready. Click the button below to
+        download.
       </Text>
       <Button
         href={downloadUrl}
@@ -40,7 +40,7 @@ export function DeliveryEmail({
           display: "inline-block",
         }}
       >
-        Baixar PDF
+        Download PDF
       </Button>
       <Text
         style={{
@@ -50,11 +50,11 @@ export function DeliveryEmail({
           margin: "24px 0 0",
         }}
       >
-        O link expira em {expiresInHours} horas. Salve o PDF no seu dispositivo assim
-        que baixar.
+        The link expires in {expiresInHours} hours. Save the PDF to your device as
+        soon as you download it.
       </Text>
       <Text style={{ fontSize: "14px", lineHeight: "22px", color: "#666", margin: "16px 0 0" }}>
-        Dúvidas? Responde esse email.
+        Questions? Just reply to this email.
         <br />— Lipe
       </Text>
     </BaseEmail>

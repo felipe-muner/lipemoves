@@ -25,15 +25,15 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lipemoves.com"),
-  title: "Lipe Moves \u2014 Yoga, Movimento & Respira\u00e7\u00e3o",
+  title: "Lipe Moves \u2014 Yoga, Movement & Breathwork",
   description:
-    "Plataforma de v\u00eddeos de yoga, mobilidade, acrobacia e respira\u00e7\u00e3o. Assine e pratique onde e quando quiser.",
+    "A video platform for yoga, mobility, acrobatics and breathwork. Subscribe and practice anywhere, anytime.",
   openGraph: {
-    title: "Lipe Moves \u2014 Yoga, Movimento & Respira\u00e7\u00e3o",
+    title: "Lipe Moves \u2014 Yoga, Movement & Breathwork",
     description:
-      "V\u00eddeos de yoga, mobilidade, acrobacia e respira\u00e7\u00e3o para voc\u00ea praticar no seu ritmo.",
+      "Yoga, mobility, acrobatics and breathwork videos to practice at your own pace.",
     type: "website",
-    locale: "pt_BR",
+    locale: "en_US",
   },
   alternates: {
     canonical: "https://lipemoves.com",
@@ -66,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className={`${inter.variable} ${dmSerif.variable} ${outfit.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${dmSerif.variable} ${outfit.variable}`}>
       <body className="antialiased">
         <Providers>
           {children}
