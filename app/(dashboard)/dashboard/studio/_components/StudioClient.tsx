@@ -668,6 +668,10 @@ export function StudioClient() {
                             alt={`Frame ${n}`}
                             fill
                             unoptimized
+                            // eager: the strip scrolls horizontally, so off-screen
+                            // frames would never trip lazy-load's viewport check.
+                            loading="eager"
+                            sizes="96px"
                             className="object-cover"
                           />
                           <span className="absolute left-0.5 top-0.5 rounded bg-black/70 px-1 text-[10px] font-bold text-emerald-400">
