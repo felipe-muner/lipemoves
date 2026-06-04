@@ -11,6 +11,7 @@ import {
   Inbox,
   Film,
   ListChecks,
+  Timer,
   ChevronUp,
 } from "lucide-react"
 import Link from "next/link"
@@ -54,6 +55,7 @@ const NAV: NavLeaf[] = [
   { href: "/dashboard/ebooks", label: "Ebooks", icon: BookOpen },
   { href: "/dashboard/studio", label: "Studio", icon: Clapperboard },
   { href: "/dashboard/captions", label: "Captions", icon: Hash },
+  { href: "/dashboard/timer", label: "Timer", icon: Timer },
 ]
 
 function isActiveLeaf(pathname: string, href: string): boolean {

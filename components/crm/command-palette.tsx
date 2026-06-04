@@ -15,6 +15,7 @@ import {
   BookOpen,
   Inbox,
   Clapperboard,
+  Timer,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -108,6 +109,12 @@ const NAV_GROUPS: Group[] = [
         href: "/dashboard/captions",
         icon: Hash,
         keywords: "hashtags instagram tiktok youtube social posts copy",
+      },
+      {
+        label: "Timer",
+        href: "/dashboard/timer",
+        icon: Timer,
+        keywords: "emom interval beep minute countdown workout stopwatch",
       },
     ],
   },
