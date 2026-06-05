@@ -144,6 +144,16 @@ export function TimerClient() {
     setMinutes((m) => Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, m + delta)))
   }
 
+  function handleMinutesInput(value: string) {
+    if (value === "") {
+      setMinutes(MIN_MINUTES)
+      return
+    }
+    const parsed = parseInt(value, 10)
+    if (Number.isNaN(parsed)) return
+    setMinutes(Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, parsed)))
+  }
+
   const isActive = status === "running" || status === "paused"
   const label =
     status === "running"
@@ -174,8 +184,18 @@ export function TimerClient() {
         >
           <Minus className="size-4" />
         </Button>
-        <div className="min-w-28 text-center">
-          <span className="text-2xl font-semibold tabular-nums">{minutes}</span>
+        <div className="flex min-w-28 items-baseline justify-center">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={MIN_MINUTES}
+            max={MAX_MINUTES}
+            value={minutes}
+            onChange={(e) => handleMinutesInput(e.target.value)}
+            disabled={isActive}
+            aria-label="Minutes"
+            className="w-14 bg-transparent text-center text-2xl font-semibold tabular-nums outline-none focus:rounded-md focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
           <span className="ml-1 text-sm text-muted-foreground">min</span>
         </div>
         <Button
