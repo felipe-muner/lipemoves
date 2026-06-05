@@ -168,6 +168,12 @@ export async function runPipeline(
               l.font,
             ]
             if (!config.text.fade) args.push("--no-anim")
+            if (config.text.grunge) {
+              args.push("--grunge")
+              if (config.text.grungeThickness > 0) {
+                args.push(`--thick=${Math.round(config.text.grungeThickness)}`)
+              }
+            }
             await run("bash", args, dir)
             finalVideo = out
             edited = true
@@ -272,9 +278,11 @@ export async function applyCover(job: Job, req: CoverRequest): Promise<void> {
   const x = req.x === undefined ? "" : String(req.x)
   const y = req.y === undefined ? "" : String(req.y)
   const width = req.width === undefined ? "" : String(req.width)
+  const grunge = req.grunge ? "1" : "0"
+  const thicken = String(Math.round(req.grungeThickness ?? 0))
   await run(
     "bash",
-    [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position, x, y, width],
+    [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position, x, y, width, grunge, thicken],
     job.dir,
   )
   clip.coverName = `clip${pad2(req.clip)}/cover.jpg`

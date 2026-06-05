@@ -7,8 +7,11 @@
 #
 # Usage:
 #   ./scripts/label-video.sh <video> "TEXT" <out.mp4> <#hexColor> <opacity> \
-#                            <xFrac> <yFrac> <widthFrac> [fontKey] [--no-anim]
+#                            <xFrac> <yFrac> <widthFrac> [fontKey] \
+#                            [--no-anim] [--grunge] [--thick=N]
 #   fontKey: outfit (default) | archivo | impact | georgia | script | mono
+#   --grunge: distressed "stamp" look — keyline + rough edges + scratches + shadow.
+#   --thick=N: extra glyph dilation for a chunkier font (only with --grunge).
 #
 # Notes:
 #   - Use \n in the text to force line breaks.
@@ -37,9 +40,17 @@ XFRAC="${6:-0.5}"
 YFRAC="${7:-0.5}"
 WFRAC="${8:-0.6}"
 FONTKEY="${9:-outfit}"
-[[ "$FONTKEY" == "--no-anim" ]] && FONTKEY="outfit"   # fontKey is optional
+case "$FONTKEY" in --no-anim|--grunge|--thick=*) FONTKEY="outfit" ;; esac  # fontKey is optional
 ANIM=1
-for a in "$@"; do [[ "$a" == "--no-anim" ]] && ANIM=0; done
+GRUNGE=0
+THICKEN=0
+for a in "$@"; do
+  case "$a" in
+    --no-anim) ANIM=0 ;;
+    --grunge)  GRUNGE=1 ;;
+    --thick=*) THICKEN="${a#--thick=}" ;;
+  esac
+done
 
 # Repo root (this script lives in <repo>/scripts) for bundled fonts.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -73,13 +84,19 @@ trap 'rm -f "$TXT" "$REF"' EXIT
   -pointsize "$REF_PS" -gravity center "label:${TEXT}" "$REF"
 REF_W=$("$MAGICK" identify -format "%w" "$REF")
 
-# Colored text + a soft drop shadow for legibility on busy footage, then scale
-# to the target width and fade the whole layer's alpha to the chosen opacity.
-"$MAGICK" "$REF" \
-  \( +clone -background black -shadow "80x6+0+4" \) +swap \
-  -background none -layers merge +repage \
-  -channel A -evaluate multiply "$OPACITY" +channel \
-  "$TXT"
+# Colored text + a soft drop shadow for legibility on busy footage (or the
+# distressed "grunge" treatment), then scale to the target width and fade the
+# whole layer's alpha to the chosen opacity.
+if (( GRUNGE )); then
+  bash "$SCRIPT_DIR/grunge-text.sh" "$REF" "$TXT" "$COLOR" "$THICKEN"
+  "$MAGICK" "$TXT" -channel A -evaluate multiply "$OPACITY" +channel "$TXT"
+else
+  "$MAGICK" "$REF" \
+    \( +clone -background black -shadow "80x6+0+4" \) +swap \
+    -background none -layers merge +repage \
+    -channel A -evaluate multiply "$OPACITY" +channel \
+    "$TXT"
+fi
 
 TARGET_W=$(awk -v f="$WFRAC" -v w="$W" 'BEGIN { printf "%.2f", f*w }')
 SCALE=$(awk -v t="$TARGET_W" -v g="$REF_W" 'BEGIN { printf "%.4f", (t/g)*100 }')

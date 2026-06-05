@@ -66,6 +66,10 @@ export async function POST(request: Request, context: RouteContext) {
       x,
       y,
       width,
+      grunge: body.grunge === true,
+      grungeThickness: Number.isFinite(body.grungeThickness)
+        ? Math.min(40, Math.max(0, body.grungeThickness as number))
+        : 0,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Cover failed"

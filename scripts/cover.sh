@@ -4,10 +4,13 @@
 #
 # Usage:
 #   ./scripts/cover.sh <image> "YOUR PHRASE" [out.jpg] [top|bottom|center] \
-#                      [xFrac] [yFrac] [widthFrac]
+#                      [xFrac] [yFrac] [widthFrac] [grunge:0|1] [thickenPx]
 #
 # Notes:
 #   - Use \n in the phrase to force line breaks, e.g. "TRAIN LIKE\nOUR ANCESTORS"
+#   - grunge=1 swaps the thick green outline for a distressed "stamp" look:
+#     a thin dark keyline + rough edges + scratches + a soft drop shadow.
+#   - thickenPx dilates the glyphs for a chunkier font (only with grunge=1).
 #   - Output is forced to 1080x1920 portrait (Reels/TikTok). Source is
 #     center-cropped to fill if its aspect differs.
 #   - xFrac/yFrac (0..1) place the text block's CENTER (free-drag from studio).
@@ -19,6 +22,8 @@ set -euo pipefail
 MAGICK="$(command -v magick || true)"
 [[ -n "$MAGICK" ]] || { echo "ImageMagick (magick) not found. brew install imagemagick" >&2; exit 1; }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 IMG="${1:?image required}"
 TEXT="${2:?text required}"
 OUT="${3:-${IMG%.*}-cover.jpg}"
@@ -26,6 +31,8 @@ POS="${4:-bottom}"          # top | bottom | center (preset fallback)
 XFRAC="${5:-}"              # optional: text-block center X as 0..1 fraction
 YFRAC="${6:-}"             # optional: text-block center Y as 0..1 fraction
 WFRAC="${7:-}"            # optional: widest line width as fraction of frame
+GRUNGE="${8:-0}"         # optional: 1 = distressed grunge look instead of stroke
+THICKEN="${9:-0}"       # optional: extra glyph dilation (grunge only)
 
 # ---- Look knobs -------------------------------------------------------------
 W=1080; H=1920               # output canvas (portrait)
@@ -63,15 +70,20 @@ if [[ -n "$XFRAC" && -n "$YFRAC" && -n "$WFRAC" ]]; then
     -pointsize "$REF_PS" -gravity center "label:${TEXT}" "$GREEN_REF"
   GREEN_W=$("$MAGICK" identify -format "%w" "$GREEN_REF")
 
-  "$MAGICK" \
-    \( -background none -fill "$STROKE" -stroke none -font "$FONT" \
-       -pointsize "$REF_PS" -gravity center "label:${TEXT}" \
-       -bordercolor none -border "$REF_OUT" \
-       -channel A -morphology Dilate "Disk:${REF_OUT}" +channel \) \
-    \( -background none -fill "$GREEN" -stroke none -font "$FONT" \
-       -pointsize "$REF_PS" -gravity center "label:${TEXT}" \
-       -bordercolor none -border "$REF_OUT" \) \
-    -compose over -composite -colorspace sRGB -type TrueColorAlpha "$TXT"
+  if [[ "$GRUNGE" == "1" ]]; then
+    # Distressed look: grunge the plain coloured reference (no stroke ring).
+    bash "$SCRIPT_DIR/grunge-text.sh" "$GREEN_REF" "$TXT" "$GREEN" "$THICKEN"
+  else
+    "$MAGICK" \
+      \( -background none -fill "$STROKE" -stroke none -font "$FONT" \
+         -pointsize "$REF_PS" -gravity center "label:${TEXT}" \
+         -bordercolor none -border "$REF_OUT" \
+         -channel A -morphology Dilate "Disk:${REF_OUT}" +channel \) \
+      \( -background none -fill "$GREEN" -stroke none -font "$FONT" \
+         -pointsize "$REF_PS" -gravity center "label:${TEXT}" \
+         -bordercolor none -border "$REF_OUT" \) \
+      -compose over -composite -colorspace sRGB -type TrueColorAlpha "$TXT"
+  fi
 
   TARGET_W=$(awk -v f="$WFRAC" -v w="$W" 'BEGIN { printf "%.2f", f*w }')
   SCALE=$(awk -v t="$TARGET_W" -v g="$GREEN_W" 'BEGIN { printf "%.4f", (t/g)*100 }')
@@ -85,13 +97,22 @@ else
   # --- Auto-fit path (CLI default) -----------------------------------------
   # caption: auto-sizes the point size so the wrapped text fills the box; both
   # layers use identical font/size/text so they register exactly.
-  "$MAGICK" -size "${TEXT_W}x${BAND_H}" \
-    \( -background none -fill "$STROKE" -stroke none -font "$FONT" -gravity center \
-       "caption:${TEXT}" -bordercolor none -border "$OUTLINE" \
-       -channel A -morphology Dilate "Disk:${OUTLINE}" +channel \) \
-    \( -background none -fill "$GREEN" -stroke none -font "$FONT" -gravity center \
-       "caption:${TEXT}" -bordercolor none -border "$OUTLINE" \) \
-    -compose over -composite -colorspace sRGB -type TrueColorAlpha "$TXT"
+  if [[ "$GRUNGE" == "1" ]]; then
+    CAP=$(mktemp -t covercap).png
+    "$MAGICK" -size "${TEXT_W}x${BAND_H}" -background none -fill "$GREEN" \
+      -stroke none -font "$FONT" -gravity center "caption:${TEXT}" \
+      -trim +repage "$CAP"
+    bash "$SCRIPT_DIR/grunge-text.sh" "$CAP" "$TXT" "$GREEN" "$THICKEN"
+    rm -f "$CAP"
+  else
+    "$MAGICK" -size "${TEXT_W}x${BAND_H}" \
+      \( -background none -fill "$STROKE" -stroke none -font "$FONT" -gravity center \
+         "caption:${TEXT}" -bordercolor none -border "$OUTLINE" \
+         -channel A -morphology Dilate "Disk:${OUTLINE}" +channel \) \
+      \( -background none -fill "$GREEN" -stroke none -font "$FONT" -gravity center \
+         "caption:${TEXT}" -bordercolor none -border "$OUTLINE" \) \
+      -compose over -composite -colorspace sRGB -type TrueColorAlpha "$TXT"
+  fi
 
   case "$POS" in
     top)    GRAV="north"; OFFSET="+0+120" ;;
