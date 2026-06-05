@@ -332,25 +332,39 @@ function CoverText({
                 WebkitTextStroke: "0",
                 textShadow: "0 0.3cqw 1.2cqw rgba(0,0,0,.5)",
               }),
-          // Grunge preview: fill colour with thin diagonal dark scratches
-          // (clipped to the glyphs), a dark keyline (text-stroke painted under
-          // the fill), and a soft drop shadow — approximating the burned "stamp"
-          // so the preview matches the download.
+          // Grunge preview: solid fill colour + a thin dark keyline (text-stroke
+          // painted under the fill) + a soft drop shadow. The speckled edges and
+          // light grain are burn-only details, approximated here by the keyline.
           ...(grunge
             ? {
-                backgroundImage: `repeating-linear-gradient(125deg, ${color} 0 0.10em, rgba(0,0,0,.5) 0.10em 0.13em)`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                color: "transparent",
                 paintOrder: "stroke",
-                WebkitTextStroke: `${(size * 0.05 + grungeThickness * 0.02).toFixed(3)}cqw rgba(0,0,0,.92)`,
-                textShadow: "0 0.3cqw 1.4cqw rgba(0,0,0,.55)",
+                WebkitTextStroke: `${(size * 0.022 + grungeThickness * 0.015).toFixed(3)}cqw rgba(0,0,0,.92)`,
+                textShadow: "0 0.3cqw 1.2cqw rgba(0,0,0,.5)",
               }
             : null),
         }}
       >
         {text.replace(/\\n/g, "\n")}
+
+        {/* Grunge scratches: a duplicate of the text clipped to a fine diagonal
+            hatch, overlaid as light dark marks so the preview hints at the
+            burned scratches (the keyline stays on the base element). */}
+        {grunge ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 whitespace-pre text-center"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(122deg, transparent 0 0.03em, rgba(0,0,0,.5) 0.03em 0.045em)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              color: "transparent",
+            }}
+          >
+            {text.replace(/\\n/g, "\n")}
+          </span>
+        ) : null}
 
         {/* resize handle — drag out to enlarge, in to shrink */}
         <span
