@@ -46,6 +46,10 @@ export interface TextStyle {
   opacity: number
   /** Fade the label in at the start and out at the end of each clip. */
   fade: boolean
+  /** Distressed "stamp" look: keyline + rough edges + scratches + drop shadow. */
+  grunge: boolean
+  /** Extra glyph thickness (px at the reference render size) for grunge text. */
+  grungeThickness: number
 }
 
 /** What to do with one uploaded clip in Compose mode. */
@@ -87,6 +91,11 @@ export interface CoverRequest {
    *  Drives the burned font size so it matches what you sized on screen.
    *  Only honored together with x and y. */
   width?: number
+  /** Distressed "stamp" look: keyline + rough edges + scratches + drop shadow
+   *  (replaces the thick black outline). */
+  grunge?: boolean
+  /** Extra glyph thickness (px at the reference render size) for grunge text. */
+  grungeThickness?: number
 }
 
 /** Processing state + outputs for a single clip. */
