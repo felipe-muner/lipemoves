@@ -43,7 +43,7 @@ export function UserDropdown({ name, image, variant = "light" }: UserDropdownPro
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
-          <Link href="/account">Account</Link>
+          <Link href="/dashboard">Dashboard</Link>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => signOut({ callbackUrl: "/" })}
