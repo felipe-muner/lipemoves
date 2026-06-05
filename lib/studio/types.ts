@@ -96,6 +96,8 @@ export interface CoverRequest {
   grunge?: boolean
   /** Extra glyph thickness (px at the reference render size) for grunge text. */
   grungeThickness?: number
+  /** Fill colour (#hex). Defaults to the brand green when omitted. */
+  color?: string
 }
 
 /** Processing state + outputs for a single clip. */

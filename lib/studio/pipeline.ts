@@ -280,9 +280,10 @@ export async function applyCover(job: Job, req: CoverRequest): Promise<void> {
   const width = req.width === undefined ? "" : String(req.width)
   const grunge = req.grunge ? "1" : "0"
   const thicken = String(Math.round(req.grungeThickness ?? 0))
+  const color = req.color ?? "#00EF00"
   await run(
     "bash",
-    [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position, x, y, width, grunge, thicken],
+    [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position, x, y, width, grunge, thicken, color],
     job.dir,
   )
   clip.coverName = `clip${pad2(req.clip)}/cover.jpg`

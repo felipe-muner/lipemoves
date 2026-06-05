@@ -4,13 +4,15 @@
 #
 # Usage:
 #   ./scripts/cover.sh <image> "YOUR PHRASE" [out.jpg] [top|bottom|center] \
-#                      [xFrac] [yFrac] [widthFrac] [grunge:0|1] [thickenPx]
+#                      [xFrac] [yFrac] [widthFrac] [grunge:0|1] [thickenPx] \
+#                      [#fillColor]
 #
 # Notes:
 #   - Use \n in the phrase to force line breaks, e.g. "TRAIN LIKE\nOUR ANCESTORS"
-#   - grunge=1 swaps the thick green outline for a distressed "stamp" look:
+#   - grunge=1 swaps the thick outline for a distressed "stamp" look:
 #     a thin dark keyline + rough edges + scratches + a soft drop shadow.
 #   - thickenPx dilates the glyphs for a chunkier font (only with grunge=1).
+#   - fillColor (#hex) sets the text colour; defaults to the brand green.
 #   - Output is forced to 1080x1920 portrait (Reels/TikTok). Source is
 #     center-cropped to fill if its aspect differs.
 #   - xFrac/yFrac (0..1) place the text block's CENTER (free-drag from studio).
@@ -33,12 +35,13 @@ YFRAC="${6:-}"             # optional: text-block center Y as 0..1 fraction
 WFRAC="${7:-}"            # optional: widest line width as fraction of frame
 GRUNGE="${8:-0}"         # optional: 1 = distressed grunge look instead of stroke
 THICKEN="${9:-0}"       # optional: extra glyph dilation (grunge only)
+COLOR_IN="${10:-}"      # optional: fill colour (#hex); defaults to brand green
 
 # ---- Look knobs -------------------------------------------------------------
 W=1080; H=1920               # output canvas (portrait)
 FONT="$HOME/Library/Fonts/ArchivoBlack-Regular.ttf"  # wide+bold; matches ref
 [[ -f "$FONT" ]] || FONT="Impact"
-GREEN="#00EF00"              # pure green fill (matches the "3 SIMBA" cover)
+GREEN="${COLOR_IN:-#00EF00}" # fill colour (brand green by default)
 STROKE="#000000"            # black outline color
 OUTLINE=13                   # outline radius in px (auto-fit path)
 MARGIN=48                    # side padding so text isn't edge-to-edge raw
@@ -50,11 +53,13 @@ REF_OUT=21                   # outline at REF_PS — reproduces the original ~13
                              # the text when you resize.
 # -----------------------------------------------------------------------------
 
-# 1) Normalize the frame: fill 1080x1920, center-crop overflow.
+# 1) Normalize the frame: fill 1080x1920, center-crop overflow. Write PNG24 so
+#    the background is a true 3-channel RGB image — otherwise a grayscale source
+#    frame stays single-channel and flattens the coloured text to gray.
 BG=$(mktemp -t coverbg).png
-"$MAGICK" "$IMG" -auto-orient \
+"$MAGICK" "$IMG" -auto-orient -colorspace sRGB \
   -resize "${W}x${H}^" -gravity center -extent "${W}x${H}" \
-  "$BG"
+  "PNG24:$BG"
 
 TXT=$(mktemp -t covertxt).png
 
@@ -121,9 +126,10 @@ else
   esac
 fi
 
-# Place the text band on the frame.
+# Place the text band on the frame. Force true-colour sRGB output so coloured
+# text isn't flattened to grayscale when the source frame is monochrome.
 "$MAGICK" "$BG" "$TXT" -gravity "$GRAV" -geometry "$OFFSET" -composite \
-  -quality 92 "$OUT"
+  -colorspace sRGB -type TrueColor -quality 92 "$OUT"
 
 rm -f "$BG" "$TXT"
 echo "Cover written: $OUT"
