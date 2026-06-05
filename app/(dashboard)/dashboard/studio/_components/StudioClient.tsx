@@ -88,6 +88,13 @@ const pad3 = (n: number) => String(n).padStart(3, "0")
 /** Default vertical center (fraction of frame) for each position preset. */
 const presetY = (p: CoverPosition) => (p === "top" ? 0.12 : p === "center" ? 0.5 : 0.86)
 
+/** Quick cover-colour swatches (brand green first as the default). */
+const COVER_SWATCHES = [
+  { label: "Brand green", value: "#00EF00" },
+  { label: "White", value: "#FFFFFF" },
+  { label: "Black", value: "#000000" },
+] as const
+
 type ZoomMode = "off" | "in" | "out"
 
 /** One free-drag text box on a clip (its own font + placement). */
@@ -451,6 +458,8 @@ export function StudioClient() {
   const [coverSize, setCoverSize] = React.useState(13)
   const [coverGrunge, setCoverGrunge] = React.useState(false)
   const [coverGrungeThickness, setCoverGrungeThickness] = React.useState(0)
+  // Cover fill colour — defaults to the brand green (quick swatch below).
+  const [coverColor, setCoverColor] = React.useState("#00EF00")
   // Latest measured widest-line width as a fraction of the frame (preview → burn).
   const coverWidthRef = React.useRef(0.9)
   const reportCoverWidth = React.useCallback((frac: number) => {
@@ -553,6 +562,7 @@ export function StudioClient() {
     coverY,
     coverGrunge,
     coverGrungeThickness,
+    coverColor,
   ])
 
   const running = job?.status === "running" || job?.status === "queued"
@@ -644,6 +654,7 @@ export function StudioClient() {
           width: coverWidthRef.current,
           grunge: coverGrunge,
           grungeThickness: coverGrungeThickness,
+          color: coverColor,
         }),
       })
       const data = await res.json()
@@ -1107,6 +1118,31 @@ export function StudioClient() {
                       frame {selFrame} / {clipObj.frameCount}
                     </span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">Color</Label>
+                    <input
+                      type="color"
+                      value={coverColor}
+                      onChange={(e) => setCoverColor(e.target.value)}
+                      className="h-8 w-10 cursor-pointer rounded border bg-transparent p-0.5"
+                      aria-label="Cover text color"
+                    />
+                    {COVER_SWATCHES.map((sw) => (
+                      <button
+                        key={sw.value}
+                        type="button"
+                        onClick={() => setCoverColor(sw.value)}
+                        title={sw.label}
+                        aria-label={sw.label}
+                        className={`size-6 rounded-full border transition ${
+                          coverColor.toLowerCase() === sw.value.toLowerCase()
+                            ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-background"
+                            : "border-border hover:scale-110"
+                        }`}
+                        style={{ background: sw.value }}
+                      />
+                    ))}
+                  </div>
                   {coverGrunge ? (
                     <div className="flex items-center gap-2">
                       <Label className="text-xs text-muted-foreground">
@@ -1155,6 +1191,7 @@ export function StudioClient() {
                         cx={coverX}
                         cy={coverY}
                         size={coverSize}
+                        color={coverColor}
                         grunge={coverGrunge}
                         grungeThickness={coverGrungeThickness}
                         onMove={(x, y) => {
