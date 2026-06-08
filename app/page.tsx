@@ -7,6 +7,7 @@ import coachingImg from "@/public/ebooks/photos/z_kettlebell_rack.jpg"
 import { Check, ArrowRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { LandingNav, type NavItem } from "@/components/landing/LandingNav"
+import { Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal"
 import NewsletterForm from "@/components/NewsletterForm"
 import { Button } from "@/components/ui/button"
 import {
@@ -138,40 +139,46 @@ export default async function HomePage() {
 
       {/* ===== Hero ===== */}
       <section className="relative mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-20 pt-36 md:flex-row md:items-center md:pt-44">
-        <div className="flex-1">
-          <p className="text-xs uppercase tracking-[0.35em] text-white/40">
-            Movement · Mobility · Breath
-          </p>
-          <h1 className="mt-6 text-5xl font-extrabold uppercase leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
-            A body
-            <br />
-            <span className="text-[#39FF14]">built for life.</span>
-          </h1>
-          <p className="mt-7 max-w-md text-base leading-relaxed text-white/60">
-            Daily yoga, mobility, kettlebell and breath — practice at your own
-            pace, anywhere. Years in motion, distilled into one simple practice.
-          </p>
+        <RevealGroup className="flex-1">
+          <RevealItem>
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Movement · Mobility · Breath
+            </p>
+          </RevealItem>
+          <RevealItem>
+            <h1 className="mt-6 text-5xl font-extrabold uppercase leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+              A body
+              <br />
+              <span className="text-[#39FF14]">built for life.</span>
+            </h1>
+          </RevealItem>
+          <RevealItem>
+            <p className="mt-7 max-w-md text-base leading-relaxed text-white/60">
+              Daily yoga, mobility, kettlebell and breath — practice at your own
+              pace, anywhere. Years in motion, distilled into one simple practice.
+            </p>
+          </RevealItem>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <RevealItem className="mt-8 flex flex-wrap gap-3">
             <span className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/70">
               No equipment needed
             </span>
             <span className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/70">
               New classes weekly
             </span>
-          </div>
+          </RevealItem>
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <RevealItem className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Button asChild variant="lime" size="pill">
               <a href="#pricing">Start practicing</a>
             </Button>
             <Button asChild variant="glass" size="pill">
               <a href="#program">See the program</a>
             </Button>
-          </div>
-        </div>
+          </RevealItem>
+        </RevealGroup>
 
-        <div className="flex-1">
+        <Reveal className="flex-1" delay={0.15}>
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl md:ml-auto md:max-w-sm">
             <Image
               src={heroImg}
@@ -183,7 +190,7 @@ export default async function HomePage() {
               className="object-cover"
             />
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ===== Marquee band ===== */}
@@ -210,7 +217,7 @@ export default async function HomePage() {
       {/* ===== The Program ===== */}
       <section id="program" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-24 md:py-32">
         <div className="grid items-center gap-12 md:grid-cols-2">
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl">
+          <Reveal className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl">
             <Image
               src={yogaImg}
               alt="Movement practice"
@@ -219,37 +226,43 @@ export default async function HomePage() {
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
-              The program
-            </p>
-            <h2 className="mt-5 text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
-              Built for life,
-              <br />
-              <span className="text-[#39FF14]">not the mirror.</span>
-            </h2>
-            <p className="mt-6 max-w-md leading-relaxed text-white/60">
-              Mobility first, then flexibility, then stability and balance — and
-              only then muscle. Rebuilt from the ground up, the kind of body that
-              sits on the floor, lifts, twists, falls and gets back up.
-            </p>
-            <ul className="mt-8 space-y-3">
+          </Reveal>
+          <RevealGroup>
+            <RevealItem>
+              <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+                The program
+              </p>
+            </RevealItem>
+            <RevealItem>
+              <h2 className="mt-5 text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
+                Built for life,
+                <br />
+                <span className="text-[#39FF14]">not the mirror.</span>
+              </h2>
+            </RevealItem>
+            <RevealItem>
+              <p className="mt-6 max-w-md leading-relaxed text-white/60">
+                Mobility first, then flexibility, then stability and balance — and
+                only then muscle. Rebuilt from the ground up, the kind of body that
+                sits on the floor, lifts, twists, falls and gets back up.
+              </p>
+            </RevealItem>
+            <RevealItem className="mt-8 space-y-3">
               {METHOD_POINTS.map((point) => (
-                <li key={point} className="flex items-center gap-3 text-white/80">
+                <div key={point} className="flex items-center gap-3 text-white/80">
                   <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#39FF14] text-[11px] font-bold text-black">
                     ✓
                   </span>
                   {point}
-                </li>
+                </div>
               ))}
-            </ul>
-          </div>
+            </RevealItem>
+          </RevealGroup>
         </div>
 
-        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <RevealGroup className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {PILLARS.map((pillar) => (
-            <div
+            <RevealItem
               key={pillar.title}
               className="rounded-2xl border border-white/10 bg-white/[0.02] p-7 transition-colors hover:border-white/30"
             >
@@ -260,60 +273,68 @@ export default async function HomePage() {
               <p className="mt-3 text-sm leading-relaxed text-white/55">
                 {pillar.desc}
               </p>
-            </div>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </section>
 
       {/* ===== Who's It For ===== */}
       <section id="who" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
         <div className="mx-auto max-w-6xl">
-          <div className="max-w-xl">
+          <Reveal className="max-w-xl">
             <p className="text-xs uppercase tracking-[0.35em] text-white/40">
               Who's it for
             </p>
             <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
               Built for real bodies.
             </h2>
-          </div>
-          <div className="mt-14 grid gap-5 sm:grid-cols-2">
+          </Reveal>
+          <RevealGroup className="mt-14 grid gap-5 sm:grid-cols-2">
             {AUDIENCE.map((item) => (
-              <div
+              <RevealItem
                 key={item.title}
                 className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 transition-colors hover:border-white/30"
               >
                 <h3 className="text-xl font-semibold">{item.title}</h3>
                 <p className="mt-3 leading-relaxed text-white/55">{item.desc}</p>
-              </div>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* ===== Felipe (about) ===== */}
       <section id="felipe" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
         <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2">
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
-              Felipe Muner
-            </p>
-            <h2 className="mt-5 text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
-              Years in motion.
-            </h2>
-            <p className="mt-6 max-w-md leading-relaxed text-white/60">
-              Until I was 28 I lived the typical loop — desk, gym, mirror — with
-              a body that looked fine but couldn't do much. Everything changed
-              after 30: mobility, then flexibility, then strength. I'm going to
-              hit 40 feeling better than I did in my 20s — and I'm here to help
-              you get there too.
-            </p>
-            <p className="mt-8 text-2xl font-extrabold uppercase leading-snug tracking-tight">
-              “Build a body <span className="text-[#39FF14]">for life</span>,
-              <br />
-              not the mirror.”
-            </p>
-          </div>
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl md:order-first">
+          <RevealGroup>
+            <RevealItem>
+              <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+                Felipe Muner
+              </p>
+            </RevealItem>
+            <RevealItem>
+              <h2 className="mt-5 text-4xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
+                Years in motion.
+              </h2>
+            </RevealItem>
+            <RevealItem>
+              <p className="mt-6 max-w-md leading-relaxed text-white/60">
+                Until I was 28 I lived the typical loop — desk, gym, mirror — with
+                a body that looked fine but couldn't do much. Everything changed
+                after 30: mobility, then flexibility, then strength. I'm going to
+                hit 40 feeling better than I did in my 20s — and I'm here to help
+                you get there too.
+              </p>
+            </RevealItem>
+            <RevealItem>
+              <p className="mt-8 text-2xl font-extrabold uppercase leading-snug tracking-tight">
+                “Build a body <span className="text-[#39FF14]">for life</span>,
+                <br />
+                not the mirror.”
+              </p>
+            </RevealItem>
+          </RevealGroup>
+          <Reveal className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl md:order-first">
             <Image
               src={felipeImg}
               alt="Felipe Muner"
@@ -322,14 +343,14 @@ export default async function HomePage() {
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ===== Pricing ===== */}
       <section id="pricing" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
         <div className="mx-auto max-w-4xl">
-          <div className="text-center">
+          <Reveal className="text-center">
             <p className="text-xs uppercase tracking-[0.35em] text-white/40">
               Pricing
             </p>
@@ -339,11 +360,11 @@ export default async function HomePage() {
             <p className="mt-4 text-white/55">
               Every class, every pillar. No equipment. Cancel anytime.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="mt-14 grid items-start gap-6 sm:grid-cols-2">
+          <RevealGroup className="mt-14 grid items-start gap-6 sm:grid-cols-2">
             {/* Monthly */}
-            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
+            <RevealItem className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
               <p className="text-base text-white/70">Monthly</p>
               <p className="mt-4 flex items-end gap-2">
                 <span className="text-6xl font-extrabold leading-none">$35</span>
@@ -363,10 +384,10 @@ export default async function HomePage() {
                 </Link>
               </Button>
               <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
-            </div>
+            </RevealItem>
 
             {/* Annual */}
-            <div className="relative rounded-3xl bg-[#39FF14] p-8 text-black">
+            <RevealItem className="relative rounded-3xl bg-[#39FF14] p-8 text-black">
               <span className="absolute right-8 top-8 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
                 Best value
               </span>
@@ -394,8 +415,8 @@ export default async function HomePage() {
                 </Link>
               </Button>
               <p className="mt-4 text-center text-sm text-black/50">Cancel anytime</p>
-            </div>
-          </div>
+            </RevealItem>
+          </RevealGroup>
           <p className="mt-8 text-center text-sm text-white/40">
             No equipment · Cancel any time
           </p>
@@ -408,28 +429,36 @@ export default async function HomePage() {
         className="relative scroll-mt-20 overflow-hidden border-t border-white/10"
       >
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-24 md:grid-cols-2 md:py-32">
-          <div>
-            <h2 className="text-4xl font-extrabold uppercase leading-[0.95] tracking-tight md:text-6xl">
-              Inner circle.
-              <br />
-              <span className="text-[#39FF14]">1:1 coaching.</span>
-            </h2>
-            <p className="mt-7 max-w-md leading-relaxed text-white/60">
-              The highest tier — personal and hands-on. A few clients each month.
-              We build your movement, nutrition, fasting, rest and breath into one
-              plan that fits your body and goals, tracked with you daily.
-            </p>
-            <p className="mt-4 max-w-md leading-relaxed text-white/60">
-              By application only, for those ready to make a serious commitment to
-              long-term transformation.
-            </p>
-            <Button asChild variant="lime" size="pill" className="mt-9">
-              <a href={WA_INNER} target="_blank" rel="noopener noreferrer">
-                Apply on WhatsApp →
-              </a>
-            </Button>
-          </div>
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl">
+          <RevealGroup>
+            <RevealItem>
+              <h2 className="text-4xl font-extrabold uppercase leading-[0.95] tracking-tight md:text-6xl">
+                Inner circle.
+                <br />
+                <span className="text-[#39FF14]">1:1 coaching.</span>
+              </h2>
+            </RevealItem>
+            <RevealItem>
+              <p className="mt-7 max-w-md leading-relaxed text-white/60">
+                The highest tier — personal and hands-on. A few clients each month.
+                We build your movement, nutrition, fasting, rest and breath into one
+                plan that fits your body and goals, tracked with you daily.
+              </p>
+            </RevealItem>
+            <RevealItem>
+              <p className="mt-4 max-w-md leading-relaxed text-white/60">
+                By application only, for those ready to make a serious commitment to
+                long-term transformation.
+              </p>
+            </RevealItem>
+            <RevealItem>
+              <Button asChild variant="lime" size="pill" className="mt-9">
+                <a href={WA_INNER} target="_blank" rel="noopener noreferrer">
+                  Apply on WhatsApp →
+                </a>
+              </Button>
+            </RevealItem>
+          </RevealGroup>
+          <Reveal className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl">
             <Image
               src={coachingImg}
               alt="1:1 coaching"
@@ -438,35 +467,41 @@ export default async function HomePage() {
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ===== FAQ ===== */}
       <section id="faq" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
         <div className="mx-auto max-w-3xl">
-          <div className="text-center">
+          <Reveal className="text-center">
             <p className="text-xs uppercase tracking-[0.35em] text-white/40">
               FAQ
             </p>
             <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
               Questions, answered.
             </h2>
-          </div>
+          </Reveal>
           <Accordion
             type="single"
             collapsible
-            className="mt-12 border-y border-white/10 [&>*]:border-white/10"
+            className="mt-12 border-y border-white/10"
           >
-            {FAQ.map((item) => (
-              <AccordionItem key={item.q} value={item.q}>
-                <AccordionTrigger className="py-5 text-lg font-medium text-white hover:no-underline [&>svg]:text-[#39FF14] [&>svg]:size-5">
-                  {item.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-base leading-relaxed text-white/55">
-                  {item.a}
-                </AccordionContent>
-              </AccordionItem>
+            {FAQ.map((item, i) => (
+              <Reveal
+                key={item.q}
+                delay={i * 0.08}
+                className="border-b border-white/10 last:border-b-0"
+              >
+                <AccordionItem value={item.q} className="border-b-0">
+                  <AccordionTrigger className="py-5 text-lg font-medium text-white hover:no-underline [&>svg]:text-[#39FF14] [&>svg]:size-5">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base leading-relaxed text-white/55">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              </Reveal>
             ))}
           </Accordion>
         </div>
@@ -474,32 +509,40 @@ export default async function HomePage() {
 
       {/* ===== Guide / Newsletter ===== */}
       <section className="border-t border-white/10 px-6 py-24 md:py-32">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-white/40">
-            Free guide
-          </p>
-          <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
-            Start with the foundations.
-          </h2>
-          <p className="mt-4 text-white/55">
-            Five base movements that free the hips, shoulders and spine in 10
-            minutes a day. Free, straight to your inbox.
-          </p>
-          <div className="mt-8">
+        <RevealGroup className="mx-auto max-w-2xl text-center">
+          <RevealItem>
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Free guide
+            </p>
+          </RevealItem>
+          <RevealItem>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
+              Start with the foundations.
+            </h2>
+          </RevealItem>
+          <RevealItem>
+            <p className="mt-4 text-white/55">
+              Five base movements that free the hips, shoulders and spine in 10
+              minutes a day. Free, straight to your inbox.
+            </p>
+          </RevealItem>
+          <RevealItem className="mt-8">
             <NewsletterForm source="homepage" />
-          </div>
-        </div>
+          </RevealItem>
+        </RevealGroup>
       </section>
 
       {/* ===== Footer ===== */}
       <footer className="relative overflow-hidden border-t border-white/10">
         {/* tagline + legal + social, constrained */}
         <div className="mx-auto max-w-6xl px-6 pt-16">
-          <p className="text-3xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
-            Move better.{" "}
-            <br className="md:hidden" />
-            <span className="whitespace-nowrap text-[#39FF14]">For life.</span>
-          </p>
+          <Reveal>
+            <p className="text-3xl font-extrabold uppercase leading-tight tracking-tight md:text-5xl">
+              Move better.{" "}
+              <br className="md:hidden" />
+              <span className="whitespace-nowrap text-[#39FF14]">For life.</span>
+            </p>
+          </Reveal>
           <div className="mt-12 flex flex-col justify-between gap-8 border-t border-white/10 pb-14 pt-8 md:flex-row md:items-center">
             <p className="text-sm text-white/40">
               © {new Date().getFullYear()} Lipe Moves. All rights reserved.
