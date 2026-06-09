@@ -1,21 +1,8 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, DM_Serif_Display, Outfit } from "next/font/google"
+import { Outfit } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-})
-
-const dmSerif = DM_Serif_Display({
-  subsets: ["latin"],
-  variable: "--font-dm-serif",
-  weight: "400",
-  display: "swap",
-})
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -66,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${dmSerif.variable} ${outfit.variable}`}>
+    <html lang="en" suppressHydrationWarning className={outfit.variable}>
       <body className="antialiased">
         <Providers>
           {children}
