@@ -94,16 +94,23 @@ export async function requestEbookDownload(formData: FormData): Promise<Subscrib
           unsubscribeUrl: unsubscribeUrl(subscriber.unsubscribeToken),
         }),
       )
-      await resend.emails.send({
+      // Resend reports failures in the response object, not by throwing —
+      // so we must inspect `error` explicitly or sends fail silently.
+      const { data, error } = await resend.emails.send({
         from: EMAIL_FROM,
         replyTo: EMAIL_REPLY_TO,
         to: email,
         subject: `${ebook.title} — your copy (${langLabel})`,
         html,
       })
+      if (error) {
+        console.error("[ebook-subscribe] welcome email rejected:", error)
+      } else {
+        console.log("[ebook-subscribe] welcome email sent:", data?.id, "→", email)
+      }
     } catch (err) {
-      // Log but don't surface — user still gets instant download.
-      console.error("[ebook-subscribe] welcome email failed:", err)
+      // Network/SDK throw — log but don't surface; user still gets the download.
+      console.error("[ebook-subscribe] welcome email threw:", err)
     }
     return { ok: true, downloadUrl: edition.file, langLabel }
   }
