@@ -63,7 +63,7 @@ export default function PricingContent() {
           <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
             <p className="text-base text-white/70">Monthly</p>
             <p className="mt-4 flex items-end gap-2">
-              <span className="text-6xl font-extrabold leading-none">R$97</span>
+              <span className="text-6xl font-extrabold leading-none">$35</span>
               <span className="pb-1 text-base text-white/40">/ month</span>
             </p>
             <ul className="mt-8 space-y-4 text-sm">
@@ -93,11 +93,11 @@ export default function PricingContent() {
             </span>
             <p className="text-base text-black/70">Annual</p>
             <p className="mt-4 flex items-end gap-2">
-              <span className="text-6xl font-extrabold leading-none">R$970</span>
+              <span className="text-6xl font-extrabold leading-none">$250</span>
               <span className="pb-1 text-base text-black/50">/ year</span>
             </p>
             <span className="mt-5 inline-block rounded-full bg-black/15 px-3 py-1 text-xs font-bold">
-              Save R$194 · Billed yearly
+              Save 40% · Billed yearly
             </span>
             <ul className="mt-6 space-y-4 text-sm">
               {ANNUAL_FEATURES.map((feature) => (
