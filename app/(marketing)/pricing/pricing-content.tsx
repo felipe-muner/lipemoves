@@ -8,7 +8,7 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const MONTHLY_FEATURES = ["Access to all videos", "New classes every week", "Cancel anytime"]
-const ANNUAL_FEATURES = ["Everything in the monthly plan", "2 months free", "Priority access"]
+const ANNUAL_FEATURES = ["Everything in the monthly plan", "Save $170 vs monthly", "Priority access"]
 
 const MONTHLY_ENV = "NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID"
 const ANNUAL_ENV = "NEXT_PUBLIC_STRIPE_ANNUAL_PRICE_ID"
@@ -59,33 +59,6 @@ export default function PricingContent() {
         </div>
 
         <div className="mt-14 grid items-start gap-6 sm:grid-cols-2">
-          {/* Monthly */}
-          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
-            <p className="text-base text-white/70">Monthly</p>
-            <p className="mt-4 flex items-end gap-2">
-              <span className="text-6xl font-extrabold leading-none">$35</span>
-              <span className="pb-1 text-base text-white/40">/ month</span>
-            </p>
-            <ul className="mt-8 space-y-4 text-sm">
-              {MONTHLY_FEATURES.map((feature) => (
-                <li key={feature} className="flex items-start gap-3 text-white/80">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#39FF14]" strokeWidth={3} />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Button
-              variant="white"
-              size="pill-lg"
-              className="mt-9 w-full"
-              disabled={loading === MONTHLY_ENV}
-              onClick={() => handleSubscribe(MONTHLY_ENV)}
-            >
-              {loading === MONTHLY_ENV ? "Loading…" : "Begin Monthly"}
-            </Button>
-            <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
-          </div>
-
           {/* Annual */}
           <div className="relative rounded-3xl bg-[#39FF14] p-8 text-black">
             <span className="absolute right-8 top-8 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
@@ -117,6 +90,33 @@ export default function PricingContent() {
               {loading === ANNUAL_ENV ? "Loading…" : "Begin Annual"}
             </Button>
             <p className="mt-4 text-center text-sm text-black/50">Cancel anytime</p>
+          </div>
+
+          {/* Monthly */}
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
+            <p className="text-base text-white/70">Monthly</p>
+            <p className="mt-4 flex items-end gap-2">
+              <span className="text-6xl font-extrabold leading-none">$35</span>
+              <span className="pb-1 text-base text-white/40">/ month</span>
+            </p>
+            <ul className="mt-8 space-y-4 text-sm">
+              {MONTHLY_FEATURES.map((feature) => (
+                <li key={feature} className="flex items-start gap-3 text-white/80">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#39FF14]" strokeWidth={3} />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <Button
+              variant="white"
+              size="pill-lg"
+              className="mt-9 w-full"
+              disabled={loading === MONTHLY_ENV}
+              onClick={() => handleSubscribe(MONTHLY_ENV)}
+            >
+              {loading === MONTHLY_ENV ? "Loading…" : "Begin Monthly"}
+            </Button>
+            <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
           </div>
         </div>
 
