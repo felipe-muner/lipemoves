@@ -38,24 +38,32 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
+    <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-6 text-white antialiased">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <h1 className="font-heading text-3xl">Sign in</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <Link
+            href="/"
+            className="text-xl font-extrabold uppercase tracking-[0.04em] text-white"
+          >
+            Lipe <span className="text-[#39FF14]">Moves</span>
+          </Link>
+          <h1 className="mt-8 text-3xl font-extrabold uppercase tracking-tight">
+            Sign in
+          </h1>
+          <p className="mt-2 text-sm text-white/55">
             Access your account to watch the videos
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           {error && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="text-sm font-medium">
+            <label htmlFor="email" className="text-sm font-medium text-white/80">
               Email
             </label>
             <input
@@ -64,13 +72,13 @@ export default function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="mt-1.5 flex h-11 w-full rounded-full border border-white/15 bg-white/5 px-5 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#39FF14] focus:ring-2 focus:ring-[#39FF14]/30"
               placeholder="you@email.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="text-sm font-medium">
+            <label htmlFor="password" className="text-sm font-medium text-white/80">
               Password
             </label>
             <input
@@ -80,7 +88,7 @@ export default function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="mt-1.5 flex h-11 w-full rounded-full border border-white/15 bg-white/5 px-5 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#39FF14] focus:ring-2 focus:ring-[#39FF14]/30"
               placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
             />
           </div>
@@ -88,7 +96,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center rounded-full bg-[#39FF14] text-sm font-semibold text-black transition-transform hover:scale-[1.02] disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
@@ -96,16 +104,16 @@ export default function LoginForm() {
 
         <div className="relative mt-6">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
+            <span className="w-full border-t border-white/10" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">or</span>
+            <span className="bg-[#0a0a0a] px-2 text-white/40">or</span>
           </div>
         </div>
 
         <button
           onClick={() => signIn("google", { callbackUrl })}
-          className="mt-6 flex h-10 w-full items-center justify-center gap-2 rounded-md border border-input text-sm font-medium hover:bg-accent"
+          className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-white/15 text-sm font-medium text-white hover:bg-white/10"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path
@@ -128,13 +136,13 @@ export default function LoginForm() {
           Sign in with Google
         </button>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-6 text-center text-sm text-white/50">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-primary hover:underline">
+          <Link href="/register" className="font-medium text-[#39FF14] hover:underline">
             Create account
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   )
 }
