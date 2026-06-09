@@ -30,12 +30,12 @@ export function DeliveryEmail({
       <Button
         href={downloadUrl}
         style={{
-          backgroundColor: "#111",
-          color: "#fff",
+          backgroundColor: "#39FF14",
+          color: "#0a0a0a",
           padding: "14px 24px",
-          borderRadius: "8px",
+          borderRadius: "9999px",
           fontSize: "15px",
-          fontWeight: 600,
+          fontWeight: 700,
           textDecoration: "none",
           display: "inline-block",
         }}

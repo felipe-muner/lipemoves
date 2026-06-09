@@ -35,12 +35,12 @@ export function EbookWelcomeEmail({
         <Button
           href={downloadUrl}
           style={{
-            background: "#0a0a0a",
-            color: "#fff",
-            padding: "12px 20px",
-            borderRadius: "8px",
+            background: "#39FF14",
+            color: "#0a0a0a",
+            padding: "14px 24px",
+            borderRadius: "9999px",
             fontSize: "15px",
-            fontWeight: 600,
+            fontWeight: 700,
             textDecoration: "none",
           }}
         >
