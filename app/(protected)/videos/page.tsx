@@ -46,7 +46,7 @@ export default async function VideosLibraryPage() {
           <h1 className="text-3xl font-extrabold uppercase tracking-tight">
             The library
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-white/55">
             Kettlebell & mobility — practice at your own pace.
           </p>
         </div>
@@ -56,7 +56,7 @@ export default async function VideosLibraryPage() {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#39FF14]/40 bg-[#39FF14]/5 p-5">
           <div>
             <p className="font-semibold">You don&apos;t have an active membership.</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-white/60">
               Unlock the full library — free previews are open to everyone.
             </p>
           </div>
@@ -70,14 +70,14 @@ export default async function VideosLibraryPage() {
       ) : null}
 
       {vids.length === 0 ? (
-        <p className="mt-12 text-sm text-muted-foreground">
+        <p className="mt-12 text-sm text-white/50">
           No videos published yet — check back soon.
         </p>
       ) : (
         <div className="mt-10 space-y-12">
           {orderedCats.map((cat) => (
             <section key={cat.id}>
-              <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+              <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
                 {cat.name}
               </h2>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -85,7 +85,7 @@ export default async function VideosLibraryPage() {
                   const locked = !v.isFree && !subscribed
                   const inner = (
                     <>
-                      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
+                      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-white/10">
                         <Image
                           src={getThumbnailUrl(v.bunnyVideoId)}
                           alt={v.title}

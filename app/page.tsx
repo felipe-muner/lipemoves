@@ -130,7 +130,11 @@ const WA_INNER =
 export default async function HomePage() {
   const session = await auth()
   const user = session?.user
-    ? { name: session.user.name, image: session.user.image }
+    ? {
+        name: session.user.name,
+        image: session.user.image,
+        isStaff: Boolean(session.user.role),
+      }
     : null
 
   return (

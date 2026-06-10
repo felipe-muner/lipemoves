@@ -15,20 +15,34 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="font-heading text-xl">
-            Lipe Moves
+    <div className="min-h-screen bg-[#0a0a0a] text-white antialiased">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-lg">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link
+            href="/videos"
+            className="text-lg font-extrabold uppercase tracking-tight"
+          >
+            Lipe <span className="text-[#39FF14]">Moves</span>
           </Link>
           <nav className="flex items-center gap-6">
             <Link
               href="/videos"
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="text-sm text-white/70 transition-colors hover:text-white"
             >
               Videos
             </Link>
-            <UserDropdown name={session.user.name} image={session.user.image} />
+            <Link
+              href="/account"
+              className="hidden text-sm text-white/70 transition-colors hover:text-white sm:inline"
+            >
+              Account
+            </Link>
+            <UserDropdown
+              name={session.user.name}
+              image={session.user.image}
+              variant="dark"
+              showDashboard={Boolean(session.user.role)}
+            />
           </nav>
         </div>
       </header>
