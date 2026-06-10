@@ -41,7 +41,7 @@ export default async function VideoPlayerPage({
     <main className="mx-auto max-w-4xl px-6 py-8">
       <Link
         href="/videos"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-2 text-sm text-white/60 transition-colors hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to library
@@ -51,9 +51,9 @@ export default async function VideoPlayerPage({
         <VideoPlayer src={src} poster={poster} />
       </div>
 
-      <h1 className="mt-6 text-2xl font-bold tracking-tight">{video.title}</h1>
+      <h1 className="mt-6 text-2xl font-extrabold uppercase tracking-tight md:text-3xl">{video.title}</h1>
       {video.description ? (
-        <p className="mt-2 leading-relaxed text-muted-foreground">
+        <p className="mt-2 leading-relaxed text-white/60">
           {video.description}
         </p>
       ) : null}

@@ -15,9 +15,16 @@ interface UserDropdownProps {
   name: string | null | undefined
   image: string | null | undefined
   variant?: "light" | "dark"
+  /** Staff only — members never see the dashboard link. */
+  showDashboard?: boolean
 }
 
-export function UserDropdown({ name, image, variant = "light" }: UserDropdownProps) {
+export function UserDropdown({
+  name,
+  image,
+  variant = "light",
+  showDashboard = false,
+}: UserDropdownProps) {
   const initials = name
     ? name
         .split(" ")
@@ -42,8 +49,13 @@ export function UserDropdown({ name, image, variant = "light" }: UserDropdownPro
         <ChevronDown className="h-4 w-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {showDashboard ? (
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/account">Account</Link>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => signOut({ callbackUrl: "/" })}

@@ -29,6 +29,7 @@ export default async function Header() {
               name={session.user.name}
               image={session.user.image}
               variant="dark"
+              showDashboard={Boolean(session.user.role)}
             />
           ) : (
             <Link

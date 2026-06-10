@@ -21,7 +21,11 @@ export function LandingNav({
   user,
 }: {
   items: NavItem[]
-  user: { name?: string | null; image?: string | null } | null
+  user: {
+    name?: string | null
+    image?: string | null
+    isStaff?: boolean
+  } | null
 }) {
   const [active, setActive] = useState<string>("")
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -74,7 +78,12 @@ export function LandingNav({
 
         <div className="flex items-center gap-3">
           {user ? (
-            <UserDropdown name={user.name} image={user.image} variant="dark" />
+            <UserDropdown
+              name={user.name}
+              image={user.image}
+              variant="dark"
+              showDashboard={user.isStaff}
+            />
           ) : (
             <Link
               href="/login"
