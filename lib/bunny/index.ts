@@ -6,26 +6,40 @@ interface SignedUrlParams {
   expiresInHours?: number
 }
 
+function tokenFor(hashable: string): string {
+  return createHash("sha256")
+    .update(hashable)
+    .digest("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "")
+}
+
+/**
+ * Path-embedded directory token (Bunny token auth v2). HLS playlists reference
+ * variants/segments with relative paths, which resolve inside the token prefix
+ * so every sub-request inherits authentication.
+ */
 export function getSignedVideoUrl({ videoId, expiresInHours = 6 }: SignedUrlParams): string {
   const cdnHostname = process.env.BUNNY_CDN_HOSTNAME!
   const tokenKey = process.env.BUNNY_TOKEN_KEY!
 
   const expires = getUnixTime(addHours(new Date(), expiresInHours))
-  const path = `/${videoId}/playlist.m3u8`
-  const url = `https://${cdnHostname}${path}`
+  const dir = `/${videoId}/`
+  // The token_path value is hashed raw (unencoded) but sent URL-encoded.
+  const token = tokenFor(`${tokenKey}${dir}${expires}token_path=${dir}`)
 
-  const hashableBase = `${tokenKey}${path}${expires}`
-  const token = createHash("sha256")
-    .update(hashableBase)
-    .digest("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "")
-
-  return `${url}?token=${token}&expires=${expires}`
+  return `https://${cdnHostname}/bcdn_token=${token}&expires=${expires}&token_path=${encodeURIComponent(dir)}${dir}playlist.m3u8`
 }
 
 export function getThumbnailUrl(videoId: string): string {
-  const libraryId = process.env.BUNNY_LIBRARY_ID!
-  return `https://vz-${libraryId}.b-cdn.net/${videoId}/thumbnail.jpg`
+  const cdnHostname = process.env.BUNNY_CDN_HOSTNAME!
+  const tokenKey = process.env.BUNNY_TOKEN_KEY!
+
+  // Token auth is zone-wide, so thumbnails must be signed too.
+  const expires = getUnixTime(addHours(new Date(), 6))
+  const path = `/${videoId}/thumbnail.jpg`
+  const token = tokenFor(`${tokenKey}${path}${expires}`)
+
+  return `https://${cdnHostname}${path}?token=${token}&expires=${expires}`
 }

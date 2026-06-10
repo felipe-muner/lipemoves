@@ -129,19 +129,33 @@ export async function POST(request: Request) {
       const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
       const item = stripeSubscription.items.data[0]
 
-      await db.insert(subscriptions).values({
-        userId,
+      const subscriptionValues = {
         stripeCustomerId: customerId,
         stripeSubscriptionId: subscriptionId,
         stripePriceId: item?.price.id ?? null,
-        status: "active",
+        status: "active" as const,
         currentPeriodStart: item?.current_period_start
           ? formatISO(new Date(item.current_period_start * 1000))
           : null,
         currentPeriodEnd: item?.current_period_end
           ? formatISO(new Date(item.current_period_end * 1000))
           : null,
-      })
+      }
+
+      const [existingForUser] = await db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.userId, userId))
+        .limit(1)
+
+      if (existingForUser) {
+        await db
+          .update(subscriptions)
+          .set({ ...subscriptionValues, updatedAt: formatISO(new Date()) })
+          .where(eq(subscriptions.id, existingForUser.id))
+      } else {
+        await db.insert(subscriptions).values({ userId, ...subscriptionValues })
+      }
       break
     }
 
