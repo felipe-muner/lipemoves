@@ -5,9 +5,14 @@ import { stripe } from "@/lib/stripe"
 import { db } from "@/lib/db"
 import {
   subscriptions,
+  payments,
+  users,
+  emailSubscribers,
   digitalProducts,
   digitalPurchases,
 } from "@/lib/db/schema"
+import { planFromPriceId, PLAN_LABEL } from "@/lib/stripe/plans"
+import { WelcomeEmail } from "@/lib/email/templates/WelcomeEmail"
 import { eq } from "drizzle-orm"
 import { addHours, formatISO } from "date-fns"
 import { render } from "@react-email/components"
@@ -126,7 +131,10 @@ export async function POST(request: Request) {
           ? session.customer
           : session.customer.id
 
-      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const stripeSubscription = await stripe.subscriptions.retrieve(
+        subscriptionId,
+        { expand: ["latest_invoice"] },
+      )
       const item = stripeSubscription.items.data[0]
 
       const subscriptionValues = {
@@ -148,14 +156,138 @@ export async function POST(request: Request) {
         .where(eq(subscriptions.userId, userId))
         .limit(1)
 
+      let subscriptionRowId: string
       if (existingForUser) {
         await db
           .update(subscriptions)
           .set({ ...subscriptionValues, updatedAt: formatISO(new Date()) })
           .where(eq(subscriptions.id, existingForUser.id))
+        subscriptionRowId = existingForUser.id
       } else {
-        await db.insert(subscriptions).values({ userId, ...subscriptionValues })
+        const [inserted] = await db
+          .insert(subscriptions)
+          .values({ userId, ...subscriptionValues })
+          .returning({ id: subscriptions.id })
+        subscriptionRowId = inserted.id
       }
+
+      const plan = planFromPriceId(item?.price.id)
+
+      // Record the first payment. invoice.payment_succeeded usually arrives
+      // before this event, so upsert to enrich that row with plan + links.
+      const latestInvoice =
+        typeof stripeSubscription.latest_invoice === "object"
+          ? stripeSubscription.latest_invoice
+          : null
+      if (latestInvoice?.id && latestInvoice.status === "paid") {
+        await db
+          .insert(payments)
+          .values({
+            userId,
+            subscriptionId: subscriptionRowId,
+            source: "stripe",
+            stripeInvoiceId: latestInvoice.id,
+            amountCents: latestInvoice.amount_paid,
+            currency: latestInvoice.currency,
+            plan,
+            paidAt: formatISO(
+              new Date(
+                (latestInvoice.status_transitions?.paid_at ??
+                  latestInvoice.created) * 1000,
+              ),
+            ),
+          })
+          .onConflictDoUpdate({
+            target: payments.stripeInvoiceId,
+            set: { userId, subscriptionId: subscriptionRowId, plan },
+          })
+      }
+
+      // Welcome email — never fail the webhook over it.
+      try {
+        const [member] = await db
+          .select({ email: users.email, name: users.name })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1)
+        if (member) {
+          const baseUrl = process.env.AUTH_URL ?? "http://localhost:3000"
+          const [subscriber] = await db
+            .select({ token: emailSubscribers.unsubscribeToken })
+            .from(emailSubscribers)
+            .where(eq(emailSubscribers.email, member.email))
+            .limit(1)
+          const html = await render(
+            WelcomeEmail({
+              name: member.name,
+              planLabel:
+                plan === "unknown" ? "LipeMoves" : PLAN_LABEL[plan],
+              libraryUrl: `${baseUrl}/videos`,
+              accountUrl: `${baseUrl}/account`,
+              unsubscribeUrl: subscriber
+                ? `${baseUrl}/api/unsubscribe?token=${subscriber.token}`
+                : `${baseUrl}/account`,
+            }),
+          )
+          await getResend().emails.send({
+            from: EMAIL_FROM,
+            to: member.email,
+            replyTo: EMAIL_REPLY_TO,
+            subject: "Welcome to LipeMoves — your membership is active",
+            html,
+          })
+        }
+      } catch (error) {
+        console.error("welcome email error:", error)
+      }
+      break
+    }
+
+    case "invoice.payment_succeeded": {
+      const invoice = event.data.object as Stripe.Invoice
+      const customerId =
+        typeof invoice.customer === "string"
+          ? invoice.customer
+          : invoice.customer?.id
+
+      if (!invoice.id || !customerId) break
+
+      // Resolve the member: subscription row first, then user by email
+      // (the first invoice can arrive before checkout.session.completed).
+      const [subRow] = await db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.stripeCustomerId, customerId))
+        .limit(1)
+
+      let payingUserId = subRow?.userId ?? null
+      if (!payingUserId && invoice.customer_email) {
+        const [u] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.email, invoice.customer_email.toLowerCase()))
+          .limit(1)
+        payingUserId = u?.id ?? null
+      }
+      if (!payingUserId) break
+
+      await db
+        .insert(payments)
+        .values({
+          userId: payingUserId,
+          subscriptionId: subRow?.id ?? null,
+          source: "stripe",
+          stripeInvoiceId: invoice.id,
+          amountCents: invoice.amount_paid,
+          currency: invoice.currency,
+          plan: planFromPriceId(subRow?.stripePriceId),
+          paidAt: formatISO(
+            new Date(
+              (invoice.status_transitions?.paid_at ?? invoice.created) * 1000,
+            ),
+          ),
+        })
+        .onConflictDoNothing({ target: payments.stripeInvoiceId })
       break
     }
 

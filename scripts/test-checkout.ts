@@ -42,16 +42,34 @@ async function main() {
 
   console.log("→ filling Stripe Checkout with test card…")
   await page.goto(checkoutUrl)
-  await page.waitForSelector("#cardNumber", { timeout: 30000 })
-  await page.fill("#cardNumber", "4242 4242 4242 4242")
-  await page.fill("#cardExpiry", "12 / 34")
-  await page.fill("#cardCvc", "123")
-  await page.fill("#billingName", "Felipe Muner")
-  const country = page.locator("#billingCountry")
-  if (await country.count()) await country.selectOption("BR")
-  const postal = page.locator("#billingPostalCode")
-  if ((await postal.count()) && (await postal.isVisible()))
-    await postal.fill("84000-000")
+
+  // Returning customers get the Stripe Link wallet (email OTP) — skip it.
+  const payWithoutLink = page.locator('button:has-text("Pay without Link")')
+  if (await payWithoutLink.waitFor({ timeout: 8000 }).then(() => true).catch(() => false)) {
+    console.log("  Link wallet detected, choosing card payment")
+    await payWithoutLink.click()
+  }
+
+  const cardNumber = page.locator("#cardNumber")
+  const hasCardForm = await cardNumber
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+
+  if (hasCardForm) {
+    await page.fill("#cardNumber", "4242 4242 4242 4242")
+    await page.fill("#cardExpiry", "12 / 34")
+    await page.fill("#cardCvc", "123")
+    await page.fill("#billingName", "Felipe Muner")
+    const country = page.locator("#billingCountry")
+    if (await country.count()) await country.selectOption("BR")
+    const postal = page.locator("#billingPostalCode")
+    if ((await postal.count()) && (await postal.isVisible()))
+      await postal.fill("84000-000")
+  } else {
+    // Returning customer — Stripe shows the saved card, just confirm.
+    console.log("  saved card detected, paying one-click")
+  }
 
   await page.click('button[type="submit"].SubmitButton, .SubmitButton')
   console.log("→ submitted, waiting for redirect…")

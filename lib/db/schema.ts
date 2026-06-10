@@ -106,6 +106,31 @@ export const subscriptions = pgTable("subscriptions", {
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 })
 
+/** One row per successful charge — Stripe invoices and manual payments. */
+export const payments = pgTable("payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").references(() => subscriptions.id, {
+    onDelete: "set null",
+  }),
+  /** "stripe" | "manual" */
+  source: varchar("source", { length: 20 }).notNull().default("stripe"),
+  /** Idempotency key for Stripe webhooks — null for manual payments. */
+  stripeInvoiceId: varchar("stripe_invoice_id", { length: 255 }).unique(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: varchar("currency", { length: 10 }).notNull(),
+  /** "monthly" | "annual" | "one_to_one" | "unknown" */
+  plan: varchar("plan", { length: 30 }),
+  // timestamptz: stored as UTC, rendered in the viewer's timezone client-side.
+  paidAt: timestamp("paid_at", { withTimezone: true, mode: "string" }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .defaultNow()
+    .notNull(),
+})
+
 // ─── Categories ──────────────────────────────────────────
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
