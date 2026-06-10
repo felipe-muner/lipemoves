@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { eq } from "drizzle-orm"
 import { formatISO } from "date-fns"
 import { db } from "@/lib/db"
-import { users, subscriptions } from "@/lib/db/schema"
+import { users, subscriptions, payments } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
 
 async function requireAdmin() {
@@ -52,16 +52,30 @@ export async function addManualMember(formData: FormData) {
   }
 
   const now = formatISO(new Date())
-  await db.insert(subscriptions).values({
+  const [subscription] = await db
+    .insert(subscriptions)
+    .values({
+      userId: user.id,
+      source: "manual",
+      plan,
+      amountCents: Math.round(amount * 100),
+      currency,
+      billingInterval,
+      status: "active",
+      currentPeriodStart: startsOn ? formatISO(new Date(startsOn)) : now,
+      currentPeriodEnd: endsOn ? formatISO(new Date(endsOn)) : null,
+    })
+    .returning({ id: subscriptions.id })
+
+  // Record the payment they made offline.
+  await db.insert(payments).values({
     userId: user.id,
+    subscriptionId: subscription.id,
     source: "manual",
-    plan,
     amountCents: Math.round(amount * 100),
     currency,
-    billingInterval,
-    status: "active",
-    currentPeriodStart: startsOn ? formatISO(new Date(startsOn)) : now,
-    currentPeriodEnd: endsOn ? formatISO(new Date(endsOn)) : null,
+    plan,
+    paidAt: startsOn ? formatISO(new Date(startsOn)) : now,
   })
 
   revalidatePath("/dashboard/members")

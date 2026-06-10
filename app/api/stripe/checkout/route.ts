@@ -28,6 +28,17 @@ export async function POST(request: Request) {
       .where(eq(subscriptions.userId, session.user.id))
       .limit(1)
 
+    // Already a member — never double-charge; manage the plan instead.
+    if (
+      existingSub &&
+      (existingSub.status === "active" || existingSub.status === "trialing")
+    ) {
+      return NextResponse.json(
+        { error: "already_subscribed" },
+        { status: 409 }
+      )
+    }
+
     let customerId = existingSub?.stripeCustomerId
 
     if (!customerId) {

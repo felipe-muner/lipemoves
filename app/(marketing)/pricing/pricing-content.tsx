@@ -40,6 +40,12 @@ export default function PricingContent() {
     const data = await res.json()
     setLoading(null)
 
+    if (res.status === 409 && data.error === "already_subscribed") {
+      // Already a member — manage the plan instead of paying twice.
+      router.push("/account")
+      return
+    }
+
     if (data.url) {
       router.push(data.url)
     }
