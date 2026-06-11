@@ -131,15 +131,69 @@ export async function POST(request: Request) {
           ? session.customer
           : session.customer.id
 
+      // --- duplicate-subscription guard ---------------------------------
+      // The pricing page blocks re-subscribing, but two checkout tabs opened
+      // before the first payment completes can both be paid — two live
+      // subscriptions double-billing one customer. Converge on a single
+      // survivor: keep the newest active subscription, cancel + refund the
+      // rest. Every completed session runs this, so any event order ends in
+      // the same state and the DB row below always points at the survivor.
+      let survivorId = subscriptionId
+      try {
+        const current = await stripe.subscriptions.retrieve(subscriptionId)
+        const active = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 10,
+        })
+        const byId = new Map(active.data.map((s) => [s.id, s]))
+        byId.set(current.id, current)
+        const sorted = [...byId.values()]
+          .filter((s) => s.status === "active")
+          .sort((a, b) => b.created - a.created || b.id.localeCompare(a.id))
+        if (sorted.length > 0) survivorId = sorted[0].id
+        for (const dup of sorted.slice(1)) {
+          await stripe.subscriptions.cancel(dup.id)
+          try {
+            const invoiceId =
+              typeof dup.latest_invoice === "string"
+                ? dup.latest_invoice
+                : dup.latest_invoice?.id
+            if (invoiceId) {
+              const inv = await stripe.invoices.retrieve(invoiceId, {
+                expand: ["payments"],
+              })
+              const payment = inv.payments?.data[0]?.payment
+              const pi =
+                payment?.type === "payment_intent"
+                  ? payment.payment_intent
+                  : null
+              const piId = typeof pi === "string" ? pi : pi?.id
+              if (piId) await stripe.refunds.create({ payment_intent: piId })
+            }
+          } catch (refundError) {
+            console.error(
+              `refund for duplicate subscription ${dup.id} failed:`,
+              refundError,
+            )
+          }
+          console.warn(
+            `duplicate subscription ${dup.id} canceled (kept ${survivorId})`,
+          )
+        }
+      } catch (guardError) {
+        console.error("duplicate subscription guard error:", guardError)
+      }
+
       const stripeSubscription = await stripe.subscriptions.retrieve(
-        subscriptionId,
+        survivorId,
         { expand: ["latest_invoice"] },
       )
       const item = stripeSubscription.items.data[0]
 
       const subscriptionValues = {
         stripeCustomerId: customerId,
-        stripeSubscriptionId: subscriptionId,
+        stripeSubscriptionId: survivorId,
         stripePriceId: item?.price.id ?? null,
         status: "active" as const,
         currentPeriodStart: item?.current_period_start
