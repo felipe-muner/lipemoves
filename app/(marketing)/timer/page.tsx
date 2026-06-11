@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 export default function PublicTimerPage() {
   return (
     <main className="dark min-h-screen bg-[#0a0a0a] text-white antialiased">
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10">
+      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-5 sm:px-6">
         <header className="flex items-center justify-between">
           <Link
             href="/"
@@ -40,24 +40,24 @@ export default function PublicTimerPage() {
           </Link>
         </header>
 
-        <div className="mt-12 text-center">
+        <div className="mt-6 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-white/40">
             Free tool
           </p>
-          <h1 className="mt-4 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
+          <h1 className="mt-2 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
             Interval <span className="text-[#39FF14]">timer.</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-white/55">
+          <p className="mx-auto mt-2 max-w-xl text-white/55">
             A countdown that beeps every minute — set the minutes, hit start,
             work the top of each minute and rest until the next beep.
           </p>
         </div>
 
-        <div className="mt-12 flex-1">
+        <div className="mt-6 flex-1">
           <TimerClient />
         </div>
 
-        <footer className="mt-16 pb-4 text-center text-sm text-white/40">
+        <footer className="mt-8 pb-2 text-center text-sm text-white/40">
           Yoga · Mobility · Kettlebell · Calisthenics —{" "}
           <Link href="/" className="text-[#39FF14] hover:underline">
             lipemoves.com
