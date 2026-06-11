@@ -367,29 +367,6 @@ export default async function HomePage() {
           </Reveal>
 
           <RevealGroup className="mt-14 grid items-start gap-6 sm:grid-cols-2">
-            {/* Monthly */}
-            <RevealItem className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
-              <p className="text-base text-white/70">Monthly</p>
-              <p className="mt-4 flex items-end gap-2">
-                <span className="text-6xl font-extrabold leading-none">$35</span>
-                <span className="pb-1 text-base text-white/40">/ month</span>
-              </p>
-              <ul className="mt-8 space-y-4 text-sm">
-                {MONTHLY_FEATURES.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-white/80">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#39FF14]" strokeWidth={3} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Button asChild variant="white" size="pill-lg" className="mt-9 w-full">
-                <Link href="/register">
-                  Begin Monthly <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
-            </RevealItem>
-
             {/* Annual */}
             <RevealItem className="relative rounded-3xl bg-[#39FF14] p-8 text-black">
               <span className="absolute right-8 top-8 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
@@ -419,6 +396,29 @@ export default async function HomePage() {
                 </Link>
               </Button>
               <p className="mt-4 text-center text-sm text-black/50">Cancel anytime</p>
+            </RevealItem>
+
+            {/* Monthly */}
+            <RevealItem className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
+              <p className="text-base text-white/70">Monthly</p>
+              <p className="mt-4 flex items-end gap-2">
+                <span className="text-6xl font-extrabold leading-none">$35</span>
+                <span className="pb-1 text-base text-white/40">/ month</span>
+              </p>
+              <ul className="mt-8 space-y-4 text-sm">
+                {MONTHLY_FEATURES.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3 text-white/80">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#39FF14]" strokeWidth={3} />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button asChild variant="white" size="pill-lg" className="mt-9 w-full">
+                <Link href="/register">
+                  Begin Monthly <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
             </RevealItem>
           </RevealGroup>
           <p className="mt-8 text-center text-sm text-white/40">
