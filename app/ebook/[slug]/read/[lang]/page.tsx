@@ -4,7 +4,6 @@ import { getEbook, type EbookLang } from "@/lib/ebooks"
 import { EbookRenderer } from "@/components/ebook/ebook-renderer"
 import { moveBetter } from "@/content/ebooks/move-better"
 import { moveBetterPt } from "@/content/ebooks/move-better.pt"
-import { moveBetterEs } from "@/content/ebooks/move-better.es"
 import { moveBetterDe } from "@/content/ebooks/move-better.de"
 import { moveBetterRu } from "@/content/ebooks/move-better.ru"
 import { moveBetterHe } from "@/content/ebooks/move-better.he"
@@ -18,7 +17,6 @@ const CONTENT: ContentMap = {
   "move-better": {
     en: moveBetter,
     pt: moveBetterPt,
-    es: moveBetterEs,
     de: moveBetterDe,
     he: moveBetterHe,
     ru: moveBetterRu,

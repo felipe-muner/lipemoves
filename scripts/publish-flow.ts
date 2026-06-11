@@ -7,7 +7,7 @@
  * Skips conversion when the file is already SDR.
  */
 import { execFileSync } from "node:child_process"
-import { existsSync, statSync, readFileSync } from "node:fs"
+import { existsSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getBunnyVideo, type BunnyVideo } from "@/lib/bunny/api"
@@ -48,7 +48,9 @@ function isHdr(file: string): boolean {
     "-show_entries", "stream=color_transfer",
     "-of", "csv=p=0",
     file,
-  ]).toString().trim()
+  // csv output can carry a trailing comma (e.g. "arib-std-b67,") — strip it,
+  // otherwise HDR files are silently treated as SDR and skip the tonemap.
+  ]).toString().trim().replace(/,+$/, "")
   return out === "arib-std-b67" || out === "smpte2084"
 }
 
@@ -109,11 +111,18 @@ async function main() {
   })
 
   console.log(`→ uploading ${sizeMb} MB…`)
-  await bunny(`/videos/${created.guid}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/octet-stream" },
-    body: readFileSync(converted),
-  })
+  // curl streams from disk (readFileSync caps out at 2 GiB).
+  execFileSync(
+    "curl",
+    [
+      "-sfS",
+      "-H", `AccessKey: ${process.env.BUNNY_API_KEY}`,
+      "-H", "Content-Type: application/octet-stream",
+      "-T", converted,
+      `${API_BASE}/library/${process.env.BUNNY_LIBRARY_ID}/videos/${created.guid}`,
+    ],
+    { stdio: "inherit" },
+  )
 
   if (tags.length > 0) {
     console.log(`→ tagging: ${tags.join(", ")}`)

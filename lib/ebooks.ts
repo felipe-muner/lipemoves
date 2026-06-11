@@ -4,12 +4,11 @@
  * once its PDF lives in /public/ebooks/.
  */
 
-export type EbookLang = "en" | "pt" | "es" | "de" | "he" | "ru"
+export type EbookLang = "en" | "pt" | "de" | "he" | "ru"
 
 export const LANG_LABEL: Record<EbookLang, string> = {
   en: "English",
   pt: "Português",
-  es: "Español",
   de: "Deutsch",
   he: "עברית",
   ru: "Русский",
@@ -18,7 +17,6 @@ export const LANG_LABEL: Record<EbookLang, string> = {
 export const LANG_FLAG: Record<EbookLang, string> = {
   en: "🇬🇧",
   pt: "🇧🇷",
-  es: "🇪🇸",
   de: "🇩🇪",
   he: "🇮🇱",
   ru: "🇷🇺",
