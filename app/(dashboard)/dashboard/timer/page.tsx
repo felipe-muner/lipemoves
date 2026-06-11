@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 import { PageHeader } from "@/components/crm/page-header"
 
-import { TimerClient } from "./_components/TimerClient"
+import { TimerClient } from "@/components/timer/TimerClient"
 
 export const metadata: Metadata = {
   title: "Timer — Lipe Moves",
