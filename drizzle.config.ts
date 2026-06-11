@@ -7,6 +7,8 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    // Prefer the direct (unpooled) connection for DDL — pgbouncer pools
+    // (Vercel's DATABASE_URL) can choke on migration statements.
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL!,
   },
 })
