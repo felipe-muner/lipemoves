@@ -1,20 +1,19 @@
-import { asc, desc } from "drizzle-orm"
+import { desc } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { videos, categories } from "@/lib/db/schema"
+import { videos } from "@/lib/db/schema"
 import { requireDashboardSession } from "@/lib/auth/dashboard"
 import {
-  createCategory,
-  createVideo,
+  syncVideosFromBunny,
   togglePublish,
+  toggleFree,
+  updateVideoTags,
   deleteVideo,
-  deleteCategory,
 } from "@/lib/actions/videos"
 import { PageHeader } from "@/components/crm/page-header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { EntitySelectField } from "@/components/crm/entity-select-field"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -23,125 +22,68 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { RefreshCw } from "lucide-react"
 
 export const dynamic = "force-dynamic"
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return "—"
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${String(s).padStart(2, "0")}`
+}
 
 export default async function VideosAdminPage() {
   await requireDashboardSession()
 
-  const [cats, vids] = await Promise.all([
-    db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.name)),
-    db.select().from(videos).orderBy(desc(videos.createdAt)),
-  ])
-  const catName = new Map(cats.map((c) => [c.id, c.name]))
+  const vids = await db.select().from(videos).orderBy(desc(videos.createdAt))
+  const published = vids.filter((v) => v.isPublished).length
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Videos"
-        subtitle={`${vids.length} videos · ${cats.length} groups — your kettlebell & mobility library.`}
+        subtitle={`${vids.length} videos · ${published} published — synced from Bunny.`}
+        actions={
+          <form action={syncVideosFromBunny}>
+            <Button type="submit" variant="outline">
+              <RefreshCw className="h-4 w-4" />
+              Sync from Bunny
+            </Button>
+          </form>
+        }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Add category */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Add group</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form action={createCategory} className="flex gap-2">
-              <Input name="name" placeholder="e.g. Hinge, Shoulders…" required />
-              <Button type="submit">Add</Button>
-            </form>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {cats.map((c) => (
-                <form action={deleteCategory} key={c.id}>
-                  <input type="hidden" name="id" value={c.id} />
-                  <button
-                    type="submit"
-                    className="group inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs hover:border-destructive hover:text-destructive"
-                    title="Delete group"
-                  >
-                    {c.name}
-                    <span className="text-muted-foreground group-hover:text-destructive">
-                      ×
-                    </span>
-                  </button>
-                </form>
-              ))}
-              {cats.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No groups yet.</p>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Add video */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Add video</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form action={createVideo} className="grid gap-3 sm:grid-cols-2">
-              <Input name="title" placeholder="Title" required />
-              <Input
-                name="bunnyVideoId"
-                placeholder="Bunny video ID (GUID)"
-                required
-              />
-              <EntitySelectField
-                name="categoryId"
-                defaultValue="none"
-                searchPlaceholder="Search groups..."
-                items={[
-                  { id: "none", label: "No group" },
-                  ...cats.map((c) => ({ id: c.id, label: c.name })),
-                ]}
-              />
-              <Input
-                name="durationSeconds"
-                type="number"
-                min="0"
-                placeholder="Duration (seconds, optional)"
-              />
-              <Input
-                name="description"
-                placeholder="Short description (optional)"
-                className="sm:col-span-2"
-              />
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="isFree" className="size-4" />
-                Free preview
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="isPublished"
-                  defaultChecked
-                  className="size-4"
-                />
-                Published
-              </label>
-              <div className="sm:col-span-2">
-                <Button type="submit">Add video</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Upload videos at{" "}
+        <a
+          href="https://dash.bunny.net/stream"
+          target="_blank"
+          rel="noreferrer"
+          className="underline hover:text-foreground"
+        >
+          dash.bunny.net → Stream
+        </a>{" "}
+        — they appear here (and for members) automatically once encoding
+        finishes. Tags come from the video&apos;s <code>tags</code> meta tag,
+        or use <code>pnpm flow:publish</code> to convert, upload and tag in one
+        command.
+      </p>
 
       <Card>
         <CardContent className="p-0">
           {vids.length === 0 ? (
             <div className="py-16 text-center text-sm text-muted-foreground">
-              No videos yet. Upload to Bunny, then paste the video ID above.
+              No videos yet. Upload to Bunny and hit Sync — or just wait for
+              the webhook.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
-                  <TableHead>Group</TableHead>
+                  <TableHead>Tags</TableHead>
+                  <TableHead>Duration</TableHead>
                   <TableHead>Flags</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -155,8 +97,25 @@ export default async function VideosAdminPage() {
                         {v.bunnyVideoId}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <form
+                        action={updateVideoTags}
+                        className="flex max-w-[260px] items-center gap-1"
+                      >
+                        <input type="hidden" name="id" value={v.id} />
+                        <Input
+                          name="tags"
+                          defaultValue={(v.tags ?? []).join(", ")}
+                          placeholder="hip, shoulder…"
+                          className="h-8 text-xs"
+                        />
+                        <Button type="submit" variant="ghost" size="sm">
+                          Save
+                        </Button>
+                      </form>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {v.categoryId ? catName.get(v.categoryId) ?? "—" : "—"}
+                      {formatDuration(v.durationSeconds)}
                     </TableCell>
                     <TableCell className="space-x-1">
                       <Badge
@@ -173,6 +132,17 @@ export default async function VideosAdminPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <form action={toggleFree}>
+                          <input type="hidden" name="id" value={v.id} />
+                          <input
+                            type="hidden"
+                            name="next"
+                            value={(!v.isFree).toString()}
+                          />
+                          <Button type="submit" variant="ghost" size="sm">
+                            {v.isFree ? "Make paid" : "Make free"}
+                          </Button>
+                        </form>
                         <form action={togglePublish}>
                           <input type="hidden" name="id" value={v.id} />
                           <input

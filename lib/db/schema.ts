@@ -153,6 +153,8 @@ export const videos = pgTable("videos", {
   bunnyVideoId: varchar("bunny_video_id", { length: 255 }).notNull(),
   thumbnailUrl: text("thumbnail_url"),
   durationSeconds: integer("duration_seconds"),
+  /** Searchable tags, e.g. ["hip", "shoulder", "kettlebell"]. */
+  tags: text("tags").array(),
   isFree: boolean("is_free").default(false),
   isPublished: boolean("is_published").default(false),
   sortOrder: integer("sort_order").default(0),

@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { videos, categories } from "@/lib/db/schema"
+import { videos } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
+import { syncAllFromBunny } from "@/lib/bunny/sync"
+import { deleteBunnyVideo, setBunnyVideoTags } from "@/lib/bunny/api"
 
 async function requireAdmin() {
   const session = await auth()
@@ -13,58 +15,12 @@ async function requireAdmin() {
   }
 }
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80)
-}
-
-export async function createCategory(formData: FormData) {
+/** Pull the whole Bunny library: upsert videos + tags, unpublish deleted. */
+export async function syncVideosFromBunny() {
   await requireAdmin()
-  const name = String(formData.get("name") ?? "").trim()
-  if (!name) throw new Error("Name is required")
-  const slug = slugify(name)
-  await db
-    .insert(categories)
-    .values({ name, slug })
-    .onConflictDoNothing({ target: categories.slug })
+  await syncAllFromBunny()
   revalidatePath("/dashboard/videos")
-}
-
-export async function deleteCategory(formData: FormData) {
-  await requireAdmin()
-  const id = String(formData.get("id") ?? "")
-  if (!id) return
-  await db.delete(categories).where(eq(categories.id, id))
-  revalidatePath("/dashboard/videos")
-}
-
-export async function createVideo(formData: FormData) {
-  await requireAdmin()
-  const title = String(formData.get("title") ?? "").trim()
-  const bunnyVideoId = String(formData.get("bunnyVideoId") ?? "").trim()
-  if (!title) throw new Error("Title is required")
-  if (!bunnyVideoId) throw new Error("Bunny video ID is required")
-
-  const categoryRaw = String(formData.get("categoryId") ?? "")
-  const categoryId = categoryRaw && categoryRaw !== "none" ? categoryRaw : ""
-  const description = String(formData.get("description") ?? "").trim()
-  const durationRaw = String(formData.get("durationSeconds") ?? "").trim()
-
-  await db.insert(videos).values({
-    title,
-    slug: slugify(title),
-    description: description || null,
-    categoryId: categoryId || null,
-    bunnyVideoId,
-    durationSeconds: durationRaw ? Number(durationRaw) : null,
-    isFree: formData.get("isFree") === "on",
-    isPublished: formData.get("isPublished") === "on",
-  })
-  revalidatePath("/dashboard/videos")
+  revalidatePath("/videos")
 }
 
 export async function togglePublish(formData: FormData) {
@@ -76,10 +32,70 @@ export async function togglePublish(formData: FormData) {
   revalidatePath("/dashboard/videos")
 }
 
+/** Update tags in the DB and on Bunny (kept in sync both ways). */
+export async function updateVideoTags(formData: FormData) {
+  await requireAdmin()
+  const id = String(formData.get("id") ?? "")
+  if (!id) return
+
+  const tags = [
+    ...new Set(
+      String(formData.get("tags") ?? "")
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ]
+
+  const [video] = await db
+    .select({ bunnyVideoId: videos.bunnyVideoId })
+    .from(videos)
+    .where(eq(videos.id, id))
+    .limit(1)
+  if (!video) return
+
+  await db.update(videos).set({ tags }).where(eq(videos.id, id))
+  try {
+    await setBunnyVideoTags(video.bunnyVideoId, tags)
+  } catch (error) {
+    console.error("bunny tags update error:", error)
+  }
+
+  revalidatePath("/dashboard/videos")
+  revalidatePath("/videos")
+}
+
+export async function toggleFree(formData: FormData) {
+  await requireAdmin()
+  const id = String(formData.get("id") ?? "")
+  const next = formData.get("next") === "true"
+  if (!id) return
+  await db.update(videos).set({ isFree: next }).where(eq(videos.id, id))
+  revalidatePath("/dashboard/videos")
+  revalidatePath("/videos")
+}
+
+/** Deletes on Bunny too — otherwise the next sync would resurrect the row. */
 export async function deleteVideo(formData: FormData) {
   await requireAdmin()
   const id = String(formData.get("id") ?? "")
   if (!id) return
+
+  const [video] = await db
+    .select({ bunnyVideoId: videos.bunnyVideoId })
+    .from(videos)
+    .where(eq(videos.id, id))
+    .limit(1)
+
+  if (video?.bunnyVideoId) {
+    try {
+      await deleteBunnyVideo(video.bunnyVideoId)
+    } catch (error) {
+      console.error("bunny delete error:", error)
+    }
+  }
+
   await db.delete(videos).where(eq(videos.id, id))
   revalidatePath("/dashboard/videos")
+  revalidatePath("/videos")
 }
