@@ -18,11 +18,7 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "incomplete",
 ])
 
-export const userRoleEnum = pgEnum("user_role", [
-  "admin",
-  "manager",
-  "teacher",
-])
+export const userRoleEnum = pgEnum("user_role", ["admin"])
 
 // ─── Users ───────────────────────────────────────────────
 export const users = pgTable("users", {
@@ -179,37 +175,4 @@ export const emailSubscribers = pgTable("email_subscribers", {
   unsubscribeToken: uuid("unsubscribe_token").defaultRandom().notNull().unique(),
   subscribedAt: timestamp("subscribed_at", { mode: "string" }).defaultNow().notNull(),
   unsubscribedAt: timestamp("unsubscribed_at", { mode: "string" }),
-})
-
-// ─── Digital Products (one-time PDFs, etc.) ──────────────
-export const digitalProducts = pgTable("digital_products", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  slug: varchar("slug", { length: 100 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  stripePriceId: varchar("stripe_price_id", { length: 255 }).notNull(),
-  filePath: varchar("file_path", { length: 500 }).notNull(),
-  priceCents: integer("price_cents").notNull(),
-  currency: varchar("currency", { length: 10 }).notNull().default("brl"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-})
-
-export const digitalPurchases = pgTable("digital_purchases", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  productId: uuid("product_id")
-    .notNull()
-    .references(() => digitalProducts.id, { onDelete: "restrict" }),
-  email: varchar("email", { length: 255 }).notNull(),
-  name: varchar("name", { length: 255 }),
-  downloadToken: uuid("download_token").defaultRandom().notNull().unique(),
-  stripeSessionId: varchar("stripe_session_id", { length: 255 }).unique(),
-  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
-  amountPaidCents: integer("amount_paid_cents").notNull(),
-  currency: varchar("currency", { length: 10 }).notNull(),
-  downloadCount: integer("download_count").notNull().default(0),
-  maxDownloads: integer("max_downloads").notNull().default(10),
-  expiresAt: timestamp("expires_at", { mode: "string" }).notNull(),
-  deliveredAt: timestamp("delivered_at", { mode: "string" }),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 })

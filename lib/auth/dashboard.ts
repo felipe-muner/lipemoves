@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
-export type DashboardRole = "admin" | "manager" | "teacher"
+export type DashboardRole = "admin"
 
 export interface DashboardSession {
   userId: string

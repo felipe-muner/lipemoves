@@ -95,7 +95,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
       }
       session.user.role =
-        (token.role as "admin" | "manager" | "teacher" | null) ?? null
+        (token.role as "admin" | null) ?? null
       return session
     },
   },

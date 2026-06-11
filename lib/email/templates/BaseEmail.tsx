@@ -74,6 +74,15 @@ export function BaseEmail({ preheader, unsubscribeUrl, children }: BaseEmailProp
               Lipe Moves — Move better, breathe deeper.
               <br />
               Koh Phangan, Thailand
+              <br />
+              This address can&apos;t receive email — to reach me, write to{" "}
+              <Link
+                href="mailto:felipe.muner@gmail.com"
+                style={{ color: "#888", textDecoration: "underline" }}
+              >
+                felipe.muner@gmail.com
+              </Link>
+              .
               {unsubscribeUrl ? (
                 <>
                   <br />

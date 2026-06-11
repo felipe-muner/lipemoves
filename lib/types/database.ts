@@ -9,8 +9,6 @@ import type {
   categories,
   videos,
   emailSubscribers,
-  digitalProducts,
-  digitalPurchases,
 } from "@/lib/db/schema"
 
 // ─── Select types (read from DB) ────────────────────────
@@ -23,8 +21,6 @@ export type Payment = InferSelectModel<typeof payments>
 export type Category = InferSelectModel<typeof categories>
 export type Video = InferSelectModel<typeof videos>
 export type EmailSubscriber = InferSelectModel<typeof emailSubscribers>
-export type DigitalProduct = InferSelectModel<typeof digitalProducts>
-export type DigitalPurchase = InferSelectModel<typeof digitalPurchases>
 
 // ─── Insert types (write to DB) ─────────────────────────
 export type NewUser = InferInsertModel<typeof users>
@@ -36,5 +32,3 @@ export type NewPayment = InferInsertModel<typeof payments>
 export type NewCategory = InferInsertModel<typeof categories>
 export type NewVideo = InferInsertModel<typeof videos>
 export type NewEmailSubscriber = InferInsertModel<typeof emailSubscribers>
-export type NewDigitalProduct = InferInsertModel<typeof digitalProducts>
-export type NewDigitalPurchase = InferInsertModel<typeof digitalPurchases>

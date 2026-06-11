@@ -13,8 +13,8 @@ export function getResend(): Resend {
   return client
 }
 
-export const EMAIL_FROM = process.env.EMAIL_FROM ?? "Lipe <lipe@lipemoves.com>"
-export const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO ?? "lipe@lipemoves.com"
+export const EMAIL_FROM = process.env.EMAIL_FROM ?? "Lipe Moves <info@lipemoves.com>"
+export const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO ?? "info@lipemoves.com"
 
 export function unsubscribeUrl(token: string) {
   const base = process.env.AUTH_URL ?? "http://localhost:3000"
