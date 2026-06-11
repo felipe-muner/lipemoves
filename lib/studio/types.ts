@@ -48,19 +48,43 @@ export interface TextStyle {
   fade: boolean
 }
 
+/** Default center of the enumerate badge (fractions of the frame) — roughly
+ *  the old fixed bottom-left spot. Shared by the editor preview and the burn. */
+export const BADGE_DEFAULT_X = 0.2
+export const BADGE_DEFAULT_Y = 0.82
+/** Default badge font size as a fraction of the frame width (72px on 1080). */
+export const BADGE_DEFAULT_SIZE = 72 / 1080
+
+/** The enumerate badge for one clip, edited on the poster preview before
+ *  rendering: draggable center, resizable font, free text (default
+ *  "✅ 1/5" — edit it to drop the check, renumber, etc.). */
+export interface BadgeConfig {
+  /** What the badge says. */
+  text: string
+  /** Free-drag center, as fractions of the frame (0..1). */
+  x: number
+  y: number
+  /** Font size as a fraction of the frame width (pill scales with it). */
+  size: number
+}
+
 /** What to do with one uploaded clip in Compose mode. */
 export interface ClipInput {
   /** Ken Burns zoom direction, or null for no zoom. */
   zoom: ZoomDir | null
   /** Text labels to burn onto the whole clip (in paint order). */
   labels: LabelConfig[]
+  /** Enumerate badge, or null to skip it on this clip (enumerate off, or the
+   *  badge text was cleared in the editor). */
+  badge: BadgeConfig | null
 }
 
 export interface StudioConfig {
   /** Concatenate all processed clips into one final video. */
   join: boolean
-  /** Burn a "✅ 1/5"-style counter badge (bottom-left) onto each clip, in
-   *  upload order — for drill-series reels (Compose mode). */
+  /** Burn a "✅ 1/5"-style counter badge onto each clip, in upload order —
+   *  for drill-series reels (Compose mode). Placed per clip via
+   *  ClipInput.badge before rendering. */
   enumerate: boolean
   /** When set, extract a contact sheet + frames per clip to enable covers
    *  (the separate Frames mode). Mutually exclusive with Compose. */

@@ -3,7 +3,14 @@ import { existsSync } from "node:fs"
 import { copyFile, mkdir, readdir } from "node:fs/promises"
 import path from "node:path"
 
-import type { CoverRequest, Job, StudioConfig } from "./types"
+import {
+  BADGE_DEFAULT_SIZE,
+  BADGE_DEFAULT_X,
+  BADGE_DEFAULT_Y,
+  type CoverRequest,
+  type Job,
+  type StudioConfig,
+} from "./types"
 import { withBadgeRenderer } from "./badge"
 
 const SCRIPTS = path.join(process.cwd(), "scripts")
@@ -164,13 +171,21 @@ export async function runPipeline(
 
   try {
     // Pre-render every enumerate badge ("✅ 1/5" …) in one browser session.
+    // A clip whose badge was cleared in the editor has badge: null — skip it.
     const enumerate = config.enumerate && !config.framepicker
-    if (enumerate) {
+    const hasBadge = (i: number) =>
+      enumerate && !!config.clips[i]?.badge?.text.trim()
+    if (enumerate && job.clips.some((_, i) => hasBadge(i))) {
       await withBadgeRenderer(async (render) => {
         for (let i = 0; i < job.clips.length; i++) {
+          if (!hasBadge(i)) continue
+          const b = config.clips[i].badge!
           await render(
-            `✅ ${i + 1}/${job.clips.length}`,
+            b.text,
             path.join(clipDir(i), "badge.png"),
+            b.x ?? BADGE_DEFAULT_X,
+            b.y ?? BADGE_DEFAULT_Y,
+            b.size ?? BADGE_DEFAULT_SIZE,
           )
         }
       })
@@ -231,7 +246,7 @@ export async function runPipeline(
         }
 
         // Enumerate badge ("✅ 2/5") — last pass, so it sits above labels.
-        if (enumerate) {
+        if (hasBadge(i)) {
           const out = path.join(cdir, "enum.mp4")
           await overlayBadge(finalVideo, path.join(cdir, "badge.png"), out, dir)
           finalVideo = out
