@@ -16,10 +16,14 @@ type Status = "idle" | "running" | "paused" | "done"
 const BEEP_MS = 1000
 const BEEP_FREQ = 880 // A5 — cuts through gym noise nicely
 const END_FREQ = 1046 // C6 — higher, distinct "you're done" pitch
+const REST_FREQ = 523 // C5 — clearly lower than the GO beep; played twice
 
 const MIN_MINUTES = 1
 const MAX_MINUTES = 60
 const MAX_EXERCISES = 10
+// Work/rest split inside each minute (work + rest = 60s, e.g. 30/30, 40/20).
+const MIN_WORK_SEC = 5
+const MAX_WORK_SEC = 55
 
 function fmt(totalSeconds: number): string {
   const s = Math.max(0, Math.ceil(totalSeconds))
@@ -29,7 +33,8 @@ function fmt(totalSeconds: number): string {
 }
 
 export function TimerClient() {
-  const [minutes, setMinutes] = useState(20)
+  const [minutes, setMinutes] = useState(30)
+  const [workSec, setWorkSec] = useState(30) // rest is always 60 − work
   const [exercises, setExercises] = useState(3)
   const [exerciseNames, setExerciseNames] = useState<string[]>(["", "", ""])
   const [status, setStatus] = useState<Status>("idle")
@@ -37,6 +42,7 @@ export function TimerClient() {
 
   const startRef = useRef(0) // performance.now() baseline
   const lastMinuteRef = useRef(-1) // highest minute index already beeped
+  const lastRestRef = useRef(-1) // highest minute index already rest-cued
   const audioRef = useRef<AudioContext | null>(null)
 
   const totalSec = minutes * 60
@@ -91,6 +97,21 @@ export function TimerClient() {
     tone(ctx, END_FREQ, 1100, 1.2)
   }, [ensureAudio, tone])
 
+  /** Two short low blips — "stop moving, rest until the next GO". */
+  const beepRest = useCallback(() => {
+    const ctx = ensureAudio()
+    tone(ctx, REST_FREQ, 220, 0)
+    tone(ctx, REST_FREQ, 220, 0.32)
+  }, [ensureAudio, tone])
+
+  /** Preview both cues: one GO beep, then the double REST blip. */
+  const beepTest = useCallback(() => {
+    const ctx = ensureAudio()
+    tone(ctx, BEEP_FREQ, 600, 0)
+    tone(ctx, REST_FREQ, 220, 1.0)
+    tone(ctx, REST_FREQ, 220, 1.32)
+  }, [ensureAudio, tone])
+
   // --- ticking -----------------------------------------------------------
 
   useEffect(() => {
@@ -111,6 +132,18 @@ export function TimerClient() {
         beepMinute()
       }
 
+      // Rest cue: work seconds of the current minute are done — double blip
+      // so you can stop without watching the screen.
+      if (
+        minuteIdx < minutes &&
+        e - minuteIdx * 60 >= workSec &&
+        lastRestRef.current < minuteIdx &&
+        e < totalSec
+      ) {
+        lastRestRef.current = minuteIdx
+        beepRest()
+      }
+
       if (e >= totalSec) {
         setElapsed(totalSec)
         setStatus("done")
@@ -123,7 +156,7 @@ export function TimerClient() {
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [status, minutes, totalSec, beepMinute, beepEnd])
+  }, [status, minutes, totalSec, workSec, beepMinute, beepRest, beepEnd])
 
   // --- controls ----------------------------------------------------------
 
@@ -141,6 +174,7 @@ export function TimerClient() {
     setStatus("idle")
     setElapsed(0)
     lastMinuteRef.current = -1
+    lastRestRef.current = -1
   }
 
   function changeMinutes(delta: number) {
@@ -166,6 +200,26 @@ export function TimerClient() {
     const parsed = parseInt(value, 10)
     if (Number.isNaN(parsed)) return
     setMinutes(Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, parsed)))
+  }
+
+  // Work and rest always sum to one minute — editing either side rebalances
+  // the other (30/30, 40/20, 45/15, …).
+  function setWorkClamped(v: number) {
+    setWorkSec(Math.min(MAX_WORK_SEC, Math.max(MIN_WORK_SEC, v)))
+  }
+
+  function handleWorkInput(value: string) {
+    if (value === "") return
+    const parsed = parseInt(value, 10)
+    if (Number.isNaN(parsed)) return
+    setWorkClamped(parsed)
+  }
+
+  function handleRestInput(value: string) {
+    if (value === "") return
+    const parsed = parseInt(value, 10)
+    if (Number.isNaN(parsed)) return
+    setWorkClamped(60 - parsed)
   }
 
   const isActive = status === "running" || status === "paused"
@@ -249,6 +303,36 @@ export function TimerClient() {
           </select>
           <span className="text-sm text-muted-foreground">exercises</span>
         </div>
+
+        {/* Work/rest split — locked while running, always sums to 60s */}
+        <div className="ml-4 flex items-center gap-2">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={MIN_WORK_SEC}
+            max={MAX_WORK_SEC}
+            step={5}
+            value={workSec}
+            onChange={(e) => handleWorkInput(e.target.value)}
+            disabled={isActive}
+            aria-label="Work seconds per minute"
+            className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums text-emerald-600 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:text-emerald-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          <span className="text-sm text-muted-foreground">work</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={60 - MAX_WORK_SEC}
+            max={60 - MIN_WORK_SEC}
+            step={5}
+            value={60 - workSec}
+            onChange={(e) => handleRestInput(e.target.value)}
+            disabled={isActive}
+            aria-label="Rest seconds per minute"
+            className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          <span className="text-sm text-muted-foreground">rest&nbsp;· s</span>
+        </div>
       </div>
 
       {/* Names · ring+controls · minute dots — side by side, no scrolling */}
@@ -316,7 +400,20 @@ export function TimerClient() {
           <span className="text-6xl font-bold tabular-nums tracking-tight">
             {fmt(remaining)}
           </span>
-          <span className="mt-1 text-sm text-muted-foreground">{label}</span>
+          {status === "running" ? (
+            <span
+              className={cn(
+                "mt-1 text-sm font-extrabold tracking-[0.25em]",
+                elapsed % 60 < workSec
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-amber-600 dark:text-amber-400",
+              )}
+            >
+              {elapsed % 60 < workSec ? "GO" : "REST"}
+            </span>
+          ) : (
+            <span className="mt-1 text-sm text-muted-foreground">{label}</span>
+          )}
           {status === "running" || status === "paused" ? (
             <span className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
               exercise {currentExercise}/{exercises}
@@ -351,8 +448,8 @@ export function TimerClient() {
         <Button
           variant="ghost"
           size="lg"
-          onClick={beepMinute}
-          title="Test the beep volume"
+          onClick={beepTest}
+          title="Test the GO beep and the REST double-blip"
         >
           <Volume2 className="size-4" /> test beep
         </Button>

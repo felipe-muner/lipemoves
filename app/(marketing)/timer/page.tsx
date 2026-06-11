@@ -8,6 +8,16 @@ export const metadata: Metadata = {
   description:
     "Free EMOM interval timer with a beep every minute. Set the minutes and your exercises, hit start, work the top of each minute.",
   alternates: { canonical: "https://lipemoves.com/timer" },
+  openGraph: {
+    title: "Free Interval Timer — Lipe Moves",
+    description:
+      "A countdown that beeps every minute — set the minutes, hit start, work the top of each minute.",
+    images: [{ url: "/og/timer.jpg", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/timer.jpg"],
+  },
 }
 
 export default function PublicTimerPage() {

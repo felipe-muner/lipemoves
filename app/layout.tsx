@@ -22,6 +22,11 @@ export const metadata: Metadata = {
       "Yoga, mobility, acrobatics and breathwork videos to practice at your own pace.",
     type: "website",
     locale: "en_US",
+    images: [{ url: "/og/home.jpg", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/home.jpg"],
   },
   alternates: {
     canonical: "https://lipemoves.com",
