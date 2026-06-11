@@ -27,6 +27,7 @@
     "story:render": "remotion render remotion/src/index.ts StoryReel out/story-reel.mp4",
     "presentation:studio": "remotion studio remotion/src/index.ts",
     "product:create": "tsx --env-file=.env.local scripts/create-digital-product.ts",
+    "flow:publish": "tsx --env-file=.env.local scripts/publish-flow.ts",
     "reel:post": "tsx --env-file=.env.local scripts/post-reel.ts",
     "cover": "tsx scripts/make-cover.ts",
     "caption": "tsx scripts/caption.ts"

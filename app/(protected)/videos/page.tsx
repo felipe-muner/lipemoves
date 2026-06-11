@@ -1,12 +1,11 @@
 import Link from "next/link"
-import Image from "next/image"
 import { asc, eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { videos, categories } from "@/lib/db/schema"
+import { videos } from "@/lib/db/schema"
 import { hasActiveSubscription } from "@/lib/stripe/subscription"
 import { getThumbnailUrl } from "@/lib/bunny"
-import { Lock, Play } from "lucide-react"
+import { LibraryGrid, type LibraryVideo } from "@/components/library-grid"
 
 export const dynamic = "force-dynamic"
 
@@ -15,29 +14,20 @@ export default async function VideosLibraryPage() {
   const userId = session!.user.id
   const subscribed = await hasActiveSubscription(userId)
 
-  const [cats, vids] = await Promise.all([
-    db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.name)),
-    db
-      .select()
-      .from(videos)
-      .where(eq(videos.isPublished, true))
-      .orderBy(asc(videos.sortOrder), asc(videos.title)),
-  ])
+  const vids = await db
+    .select()
+    .from(videos)
+    .where(eq(videos.isPublished, true))
+    .orderBy(asc(videos.sortOrder), asc(videos.title))
 
-  // Group videos by category id (null = "Other").
-  const groups = new Map<string, typeof vids>()
-  for (const v of vids) {
-    const key = v.categoryId ?? "__none__"
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(v)
-  }
-
-  const orderedCats = [
-    ...cats.filter((c) => groups.has(c.id)),
-    ...(groups.has("__none__")
-      ? [{ id: "__none__", name: "Other", slug: "other" }]
-      : []),
-  ]
+  const items: LibraryVideo[] = vids.map((v) => ({
+    slug: v.slug,
+    title: v.title,
+    thumbnailUrl: getThumbnailUrl(v.bunnyVideoId),
+    tags: v.tags ?? [],
+    isFree: Boolean(v.isFree),
+    locked: !v.isFree && !subscribed,
+  }))
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -69,78 +59,7 @@ export default async function VideosLibraryPage() {
         </div>
       ) : null}
 
-      {vids.length === 0 ? (
-        <p className="mt-12 text-sm text-white/50">
-          No videos published yet — check back soon.
-        </p>
-      ) : (
-        <div className="mt-10 space-y-12">
-          {orderedCats.map((cat) => (
-            <section key={cat.id}>
-              <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
-                {cat.name}
-              </h2>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                {(groups.get(cat.id) ?? []).map((v) => {
-                  const locked = !v.isFree && !subscribed
-                  const inner = (
-                    <>
-                      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-white/10">
-                        <Image
-                          src={getThumbnailUrl(v.bunnyVideoId)}
-                          alt={v.title}
-                          fill
-                          sizes="(max-width: 768px) 50vw, 25vw"
-                          className="object-cover"
-                          unoptimized
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
-                          {locked ? (
-                            <Lock className="h-6 w-6 text-white" />
-                          ) : (
-                            <Play className="h-7 w-7 text-white" fill="white" />
-                          )}
-                        </div>
-                        {v.isFree ? (
-                          <span className="absolute left-2 top-2 rounded-full bg-[#39FF14] px-2 py-0.5 text-[10px] font-bold text-black">
-                            FREE
-                          </span>
-                        ) : null}
-                        {locked ? (
-                          <span className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5">
-                            <Lock className="h-3 w-3 text-white" />
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 line-clamp-2 text-sm font-medium">
-                        {v.title}
-                      </p>
-                    </>
-                  )
-                  return locked ? (
-                    <Link
-                      key={v.id}
-                      href="/pricing"
-                      className="group block"
-                      title="Subscribe to unlock"
-                    >
-                      {inner}
-                    </Link>
-                  ) : (
-                    <Link
-                      key={v.id}
-                      href={`/videos/${v.slug}`}
-                      className="group block"
-                    >
-                      {inner}
-                    </Link>
-                  )
-                })}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+      <LibraryGrid videos={items} />
     </main>
   )
 }
