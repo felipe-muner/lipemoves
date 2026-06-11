@@ -4,6 +4,7 @@ import { copyFile, mkdir, readdir } from "node:fs/promises"
 import path from "node:path"
 
 import type { CoverRequest, Job, StudioConfig } from "./types"
+import { withBadgeRenderer } from "./badge"
 
 const SCRIPTS = path.join(process.cwd(), "scripts")
 const FFMPEG = existsSync("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
@@ -52,6 +53,48 @@ function hasAudio(video: string): Promise<boolean> {
       (_e, stdout) => resolve(!!(stdout || "").trim()),
     )
   })
+}
+
+/**
+ * Overlay a full-frame transparent PNG (the enumerate badge) onto a clip,
+ * normalizing to 1080x1920 and preserving HDR — same mechanics as
+ * label-video.sh.
+ */
+async function overlayBadge(
+  video: string,
+  png: string,
+  out: string,
+  cwd: string,
+): Promise<void> {
+  const trc = await probe(video, "stream=color_transfer")
+  const hdr = trc === "arib-std-b67" || trc === "smpte2084"
+  const audio = await hasAudio(video)
+
+  let filter =
+    "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[bg];[bg][1:v]overlay=0:0[v]"
+  filter += hdr
+    ? ";[v]format=yuv420p10le,setparams=colorspace=bt2020nc:color_primaries=bt2020:color_trc=arib-std-b67[vo]"
+    : ";[v]format=yuv420p[vo]"
+
+  const args = [
+    "-y", "-hide_banner", "-loglevel", "error",
+    "-i", video,
+    "-i", png,
+    "-filter_complex", filter,
+    "-map", "[vo]",
+  ]
+  if (audio) args.push("-map", "0:a", "-c:a", "copy")
+  args.push("-c:v", "libx265", "-preset", "medium", "-crf", "18", "-tag:v", "hvc1")
+  if (hdr) {
+    args.push(
+      "-x265-params",
+      "colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc:range=limited",
+      "-color_primaries", "bt2020", "-colorspace", "bt2020nc",
+      "-color_trc", "arib-std-b67", "-color_range", "tv",
+    )
+  }
+  args.push("-movflags", "+faststart", out)
+  await run(FFMPEG, args, cwd)
 }
 
 /** Concatenate clips into one video (re-encode), preserving HDR if present. */
@@ -120,6 +163,19 @@ export async function runPipeline(
   const clipDir = (i: number) => path.join(dir, `clip${pad2(i)}`)
 
   try {
+    // Pre-render every enumerate badge ("✅ 1/5" …) in one browser session.
+    const enumerate = config.enumerate && !config.framepicker
+    if (enumerate) {
+      await withBadgeRenderer(async (render) => {
+        for (let i = 0; i < job.clips.length; i++) {
+          await render(
+            `✅ ${i + 1}/${job.clips.length}`,
+            path.join(clipDir(i), "badge.png"),
+          )
+        }
+      })
+    }
+
     // --- Per clip: optional Ken Burns zoom, then optional text label, then
     //     (Frames mode) extract frames for the cover studio. ---
     for (let i = 0; i < job.clips.length; i++) {
@@ -168,16 +224,18 @@ export async function runPipeline(
               l.font,
             ]
             if (!config.text.fade) args.push("--no-anim")
-            if (config.text.grunge) {
-              args.push("--grunge")
-              if (config.text.grungeThickness > 0) {
-                args.push(`--thick=${Math.round(config.text.grungeThickness)}`)
-              }
-            }
             await run("bash", args, dir)
             finalVideo = out
             edited = true
           }
+        }
+
+        // Enumerate badge ("✅ 2/5") — last pass, so it sits above labels.
+        if (enumerate) {
+          const out = path.join(cdir, "enum.mp4")
+          await overlayBadge(finalVideo, path.join(cdir, "badge.png"), out, dir)
+          finalVideo = out
+          edited = true
         }
 
         if (edited) {
@@ -278,12 +336,11 @@ export async function applyCover(job: Job, req: CoverRequest): Promise<void> {
   const x = req.x === undefined ? "" : String(req.x)
   const y = req.y === undefined ? "" : String(req.y)
   const width = req.width === undefined ? "" : String(req.width)
-  const grunge = req.grunge ? "1" : "0"
-  const thicken = String(Math.round(req.grungeThickness ?? 0))
   const color = req.color ?? "#00EF00"
+  // cover.sh's grunge/thicken args are always off — the feature was removed.
   await run(
     "bash",
-    [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position, x, y, width, grunge, thicken, color],
+    [path.join(SCRIPTS, "cover.sh"), frame, req.text, out, req.position, x, y, width, "0", "0", color],
     job.dir,
   )
   clip.coverName = `clip${pad2(req.clip)}/cover.jpg`

@@ -46,10 +46,6 @@ export interface TextStyle {
   opacity: number
   /** Fade the label in at the start and out at the end of each clip. */
   fade: boolean
-  /** Distressed "stamp" look: keyline + rough edges + scratches + drop shadow. */
-  grunge: boolean
-  /** Extra glyph thickness (px at the reference render size) for grunge text. */
-  grungeThickness: number
 }
 
 /** What to do with one uploaded clip in Compose mode. */
@@ -63,6 +59,9 @@ export interface ClipInput {
 export interface StudioConfig {
   /** Concatenate all processed clips into one final video. */
   join: boolean
+  /** Burn a "✅ 1/5"-style counter badge (bottom-left) onto each clip, in
+   *  upload order — for drill-series reels (Compose mode). */
+  enumerate: boolean
   /** When set, extract a contact sheet + frames per clip to enable covers
    *  (the separate Frames mode). Mutually exclusive with Compose. */
   framepicker: FramePickerConfig | null
@@ -91,11 +90,6 @@ export interface CoverRequest {
    *  Drives the burned font size so it matches what you sized on screen.
    *  Only honored together with x and y. */
   width?: number
-  /** Distressed "stamp" look: keyline + rough edges + scratches + drop shadow
-   *  (replaces the thick black outline). */
-  grunge?: boolean
-  /** Extra glyph thickness (px at the reference render size) for grunge text. */
-  grungeThickness?: number
   /** Fill colour (#hex). Defaults to the brand green when omitted. */
   color?: string
 }
