@@ -66,10 +66,6 @@ export async function POST(request: Request, context: RouteContext) {
       x,
       y,
       width,
-      grunge: body.grunge === true,
-      grungeThickness: Number.isFinite(body.grungeThickness)
-        ? Math.min(40, Math.max(0, body.grungeThickness as number))
-        : 0,
       // Only accept a well-formed #hex colour; otherwise fall back to brand green.
       color:
         typeof body.color === "string" && /^#[0-9a-fA-F]{6}$/.test(body.color)

@@ -186,8 +186,6 @@ function CoverText({
   color = "#00EF00",
   opacity = 1,
   outline = true,
-  grunge = false,
-  grungeThickness = 0,
   fontFamily = '"Archivo Black", system-ui, sans-serif',
   fontWeight,
   uppercase = true,
@@ -205,11 +203,6 @@ function CoverText({
   opacity?: number
   /** Thick black stroke (cover) vs. a soft drop shadow (labels). */
   outline?: boolean
-  /** Distressed "stamp" preview: keyline + diagonal scratches + drop shadow,
-   *  approximating the burned grunge look. */
-  grunge?: boolean
-  /** Extra glyph thickness for the grunge preview (heavier keyline). */
-  grungeThickness?: number
   /** CSS font-family; must match the burn font for an accurate preview. */
   fontFamily?: string
   /** CSS font-weight (for variable/multi-weight families). */
@@ -323,7 +316,7 @@ function CoverText({
           // inner half, so the visible outward outline is strokeWidth/2 — hence
           // 2×. Drill labels: no stroke, just a soft shadow (matches
           // label-video.sh's drop shadow).
-          ...(outline && !grunge
+          ...(outline
             ? {
                 paintOrder: "stroke",
                 WebkitTextStroke: `${(size * 0.191).toFixed(3)}cqw #000`,
@@ -332,39 +325,10 @@ function CoverText({
                 WebkitTextStroke: "0",
                 textShadow: "0 0.3cqw 1.2cqw rgba(0,0,0,.5)",
               }),
-          // Grunge preview: solid fill colour + a thin dark keyline (text-stroke
-          // painted under the fill) + a soft drop shadow. The speckled edges and
-          // light grain are burn-only details, approximated here by the keyline.
-          ...(grunge
-            ? {
-                paintOrder: "stroke",
-                WebkitTextStroke: `${(size * 0.022 + grungeThickness * 0.015).toFixed(3)}cqw rgba(0,0,0,.92)`,
-                textShadow: "0 0.3cqw 1.2cqw rgba(0,0,0,.5)",
-              }
-            : null),
         }}
       >
         {text.replace(/\\n/g, "\n")}
 
-        {/* Grunge scratches: a duplicate of the text clipped to a fine diagonal
-            hatch, overlaid as light dark marks so the preview hints at the
-            burned scratches (the keyline stays on the base element). */}
-        {grunge ? (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 whitespace-pre text-center"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(122deg, transparent 0 0.03em, rgba(0,0,0,.5) 0.03em 0.045em)",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              color: "transparent",
-            }}
-          >
-            {text.replace(/\\n/g, "\n")}
-          </span>
-        ) : null}
 
         {/* resize handle — drag out to enlarge, in to shrink */}
         <span
@@ -450,8 +414,7 @@ export function StudioClient() {
   const [textColor, setTextColor] = React.useState("#FFFFFF")
   const [textOpacity, setTextOpacity] = React.useState(1)
   const [textFade, setTextFade] = React.useState(true)
-  const [textGrunge, setTextGrunge] = React.useState(false)
-  const [textGrungeThickness, setTextGrungeThickness] = React.useState(0)
+  const [enumerate, setEnumerate] = React.useState(false)
   // Latest measured widest-line width per text box (preview → burn), keyed by
   // text-box id. Kept in a ref (like the cover) so measuring never triggers a
   // re-render loop.
@@ -470,8 +433,6 @@ export function StudioClient() {
   const [coverY, setCoverY] = React.useState(0.86)
   // Cover font size, in cqw (% of the preview width). Resized via a corner handle.
   const [coverSize, setCoverSize] = React.useState(13)
-  const [coverGrunge, setCoverGrunge] = React.useState(false)
-  const [coverGrungeThickness, setCoverGrungeThickness] = React.useState(0)
   // Cover fill colour — defaults to the brand green (quick swatch below).
   const [coverColor, setCoverColor] = React.useState("#00EF00")
   // Latest measured widest-line width as a fraction of the frame (preview → burn).
@@ -574,8 +535,6 @@ export function StudioClient() {
     coverPos,
     coverX,
     coverY,
-    coverGrunge,
-    coverGrungeThickness,
     coverColor,
   ])
 
@@ -598,6 +557,7 @@ export function StudioClient() {
     setBurnedUrl(null)
     const config: StudioConfig = {
       join,
+      enumerate: mode === "compose" && enumerate,
       framepicker: mode === "frames" ? { step: Number(fpStep) || 0.5 } : null,
       text:
         mode === "compose"
@@ -605,8 +565,6 @@ export function StudioClient() {
               color: textColor,
               opacity: textOpacity,
               fade: textFade,
-              grunge: textGrunge,
-              grungeThickness: textGrungeThickness,
             }
           : null,
       clips: files.map((_, i) => {
@@ -666,8 +624,6 @@ export function StudioClient() {
           x: coverX,
           y: coverY,
           width: coverWidthRef.current,
-          grunge: coverGrunge,
-          grungeThickness: coverGrungeThickness,
           color: coverColor,
         }),
       })
@@ -733,9 +689,9 @@ export function StudioClient() {
               ) : null}
               <Toggle checked={textFade} onChange={setTextFade} label="Fade" />
               <Toggle
-                checked={textGrunge}
-                onChange={setTextGrunge}
-                label="Grunge"
+                checked={enumerate}
+                onChange={setEnumerate}
+                label={`Enumerate \u2705 1/${files.length || 1}`}
               />
             </div>
           ) : null}
@@ -791,24 +747,6 @@ export function StudioClient() {
                   {Math.round(textOpacity * 100)}%
                 </span>
               </div>
-              {textGrunge ? (
-                <div className="flex min-w-[180px] items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Thickness
-                  </Label>
-                  <Slider
-                    min={0}
-                    max={18}
-                    step={1}
-                    value={[textGrungeThickness]}
-                    onValueChange={(v) => setTextGrungeThickness(v[0] ?? 0)}
-                    className="max-w-[160px]"
-                  />
-                  <span className="w-6 text-right text-xs tabular-nums text-muted-foreground">
-                    {textGrungeThickness}
-                  </span>
-                </div>
-              ) : null}
             </div>
 
             {/* one small editor per clip — scroll horizontally if many */}
@@ -849,8 +787,6 @@ export function StudioClient() {
                           color={textColor}
                           opacity={textOpacity}
                           outline={false}
-                          grunge={textGrunge}
-                          grungeThickness={textGrungeThickness}
                           uppercase={false}
                           fontFamily={fontCss(t.font)}
                           fontWeight={fontWeight(t.font)}
@@ -1123,11 +1059,6 @@ export function StudioClient() {
                         <SelectItem value="bottom">Bottom</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Toggle
-                      checked={coverGrunge}
-                      onChange={setCoverGrunge}
-                      label="Grunge"
-                    />
                     <span className="ml-auto text-xs text-muted-foreground">
                       frame {selFrame} / {clipObj.frameCount}
                     </span>
@@ -1157,26 +1088,6 @@ export function StudioClient() {
                       />
                     ))}
                   </div>
-                  {coverGrunge ? (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground">
-                        Thickness
-                      </Label>
-                      <Slider
-                        min={0}
-                        max={18}
-                        step={1}
-                        value={[coverGrungeThickness]}
-                        onValueChange={(v) =>
-                          setCoverGrungeThickness(v[0] ?? 0)
-                        }
-                        className="max-w-[220px]"
-                      />
-                      <span className="w-6 text-right text-xs tabular-nums text-muted-foreground">
-                        {coverGrungeThickness}
-                      </span>
-                    </div>
-                  ) : null}
 
                   {/* live preview (result) */}
                   <div
@@ -1206,8 +1117,6 @@ export function StudioClient() {
                         cy={coverY}
                         size={coverSize}
                         color={coverColor}
-                        grunge={coverGrunge}
-                        grungeThickness={coverGrungeThickness}
                         onMove={(x, y) => {
                           setCoverX(x)
                           setCoverY(y)
