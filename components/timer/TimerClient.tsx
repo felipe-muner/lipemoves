@@ -158,6 +158,51 @@ export function TimerClient() {
     return () => cancelAnimationFrame(frame)
   }, [status, minutes, totalSec, workSec, beepMinute, beepRest, beepEnd])
 
+  // --- screen wake lock ----------------------------------------------------
+  // Keep the phone/laptop screen on while the timer runs; release on
+  // pause/reset/done. The OS drops the lock when the tab is hidden, so we
+  // re-acquire when it becomes visible again.
+
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+
+  useEffect(() => {
+    const release = () => {
+      void wakeLockRef.current?.release().catch(() => {})
+      wakeLockRef.current = null
+    }
+
+    if (status !== "running") {
+      release()
+      return
+    }
+
+    let cancelled = false
+    const acquire = async () => {
+      if (!("wakeLock" in navigator)) return // unsupported — timer still works
+      try {
+        const lock = await navigator.wakeLock.request("screen")
+        if (cancelled) {
+          void lock.release().catch(() => {})
+          return
+        }
+        wakeLockRef.current = lock
+      } catch {
+        // denied (e.g. battery saver) — nothing to do, the timer keeps going
+      }
+    }
+
+    void acquire()
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void acquire()
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => {
+      cancelled = true
+      document.removeEventListener("visibilitychange", onVisibility)
+      release()
+    }
+  }, [status])
+
   // --- controls ----------------------------------------------------------
 
   function start() {
