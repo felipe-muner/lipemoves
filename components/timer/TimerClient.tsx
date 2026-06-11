@@ -318,127 +318,145 @@ export function TimerClient() {
   const dashOffset = C * (1 - ringProgress)
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      {/* Minutes selector — only editable while idle */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => changeMinutes(-1)}
-          disabled={isActive || minutes <= MIN_MINUTES}
-          aria-label="Decrease minutes"
-        >
-          <Minus className="size-4" />
-        </Button>
-        <div className="flex min-w-28 items-baseline justify-center">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={MIN_MINUTES}
-            max={MAX_MINUTES}
-            value={minutes}
-            onChange={(e) => handleMinutesInput(e.target.value)}
-            disabled={isActive}
-            aria-label="Minutes"
-            className="w-14 bg-transparent text-center text-2xl font-semibold tabular-nums outline-none focus:rounded-md focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          />
-          <span className="ml-1 text-sm text-muted-foreground">min</span>
-        </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => changeMinutes(1)}
-          disabled={isActive || minutes >= MAX_MINUTES}
-          aria-label="Increase minutes"
-        >
-          <Plus className="size-4" />
-        </Button>
+    <div className="flex flex-col items-center gap-6">
+      {/* Setup panel — settings and controls live together: configure the
+          session, then hit start. Settings only editable while idle. */}
+      <div className="flex w-full max-w-2xl flex-col items-center gap-4 rounded-2xl border bg-card/50 p-4 sm:p-5 lg:w-auto lg:max-w-none lg:flex-row lg:gap-7 lg:px-8">
+        <div className="flex w-full flex-wrap items-start justify-center gap-x-8 gap-y-5 lg:order-3 lg:w-auto lg:flex-nowrap">
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => changeMinutes(-1)}
+                disabled={isActive || minutes <= MIN_MINUTES}
+                aria-label="Decrease minutes"
+              >
+                <Minus className="size-4" />
+              </Button>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={MIN_MINUTES}
+                max={MAX_MINUTES}
+                value={minutes}
+                onChange={(e) => handleMinutesInput(e.target.value)}
+                disabled={isActive}
+                aria-label="Minutes"
+                className="w-16 bg-transparent text-center text-2xl font-semibold tabular-nums outline-none focus:rounded-md focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => changeMinutes(1)}
+                disabled={isActive || minutes >= MAX_MINUTES}
+                aria-label="Increase minutes"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              minutes
+            </span>
+          </div>
 
-        <div className="ml-4 flex items-center gap-2">
-          <select
-            value={exercises}
-            onChange={(e) => changeExercises(Number(e.target.value))}
-            disabled={isActive}
-            aria-label="Exercises per round"
-            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+          <div className="flex flex-col items-center gap-1.5">
+            <select
+              value={exercises}
+              onChange={(e) => changeExercises(Number(e.target.value))}
+              disabled={isActive}
+              aria-label="Exercises per round"
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+            >
+              {Array.from({ length: MAX_EXERCISES }, (_, i) => i + 1).map(
+                (n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ),
+              )}
+            </select>
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              exercises
+            </span>
+          </div>
+
+          {/* Work/rest split — locked while running, always sums to 60s */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={MIN_WORK_SEC}
+                max={MAX_WORK_SEC}
+                step={5}
+                value={workSec}
+                onChange={(e) => handleWorkInput(e.target.value)}
+                disabled={isActive}
+                aria-label="Work seconds per minute"
+                className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums text-emerald-600 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:text-emerald-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <span className="text-sm text-muted-foreground">/</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={60 - MAX_WORK_SEC}
+                max={60 - MIN_WORK_SEC}
+                step={5}
+                value={60 - workSec}
+                onChange={(e) => handleRestInput(e.target.value)}
+                disabled={isActive}
+                aria-label="Rest seconds per minute"
+                className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+            </div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              work / rest · sec
+            </span>
+          </div>
+        </div>
+
+        <div className="h-px w-full bg-border/60 lg:order-2 lg:h-12 lg:w-px lg:self-center" />
+
+        {/* Controls — left side of the panel on desktop */}
+        <div className="flex flex-wrap items-center justify-center gap-3 lg:order-1">
+          {status === "running" ? (
+            <Button variant="outline" size="lg" onClick={pause}>
+              <Pause className="size-4" /> pause
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              size="lg"
+              onClick={start}
+              disabled={status === "done"}
+            >
+              <Play className="size-4" />
+              {status === "paused" ? "resume" : "start"}
+            </Button>
+          )}
+          <Button variant="outline" size="lg" onClick={reset}>
+            <RotateCcw className="size-4" /> reset
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={beepTest}
+            title="Test the GO beep and the REST double-blip"
           >
-            {Array.from({ length: MAX_EXERCISES }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-          <span className="text-sm text-muted-foreground">exercises</span>
-        </div>
-
-        {/* Work/rest split — locked while running, always sums to 60s */}
-        <div className="ml-4 flex items-center gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={MIN_WORK_SEC}
-            max={MAX_WORK_SEC}
-            step={5}
-            value={workSec}
-            onChange={(e) => handleWorkInput(e.target.value)}
-            disabled={isActive}
-            aria-label="Work seconds per minute"
-            className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums text-emerald-600 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:text-emerald-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          />
-          <span className="text-sm text-muted-foreground">work</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={60 - MAX_WORK_SEC}
-            max={60 - MIN_WORK_SEC}
-            step={5}
-            value={60 - workSec}
-            onChange={(e) => handleRestInput(e.target.value)}
-            disabled={isActive}
-            aria-label="Rest seconds per minute"
-            className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          />
-          <span className="text-sm text-muted-foreground">rest&nbsp;· s</span>
+            <Volume2 className="size-4" /> test beep
+          </Button>
         </div>
       </div>
 
-      {/* Names · ring+controls · minute dots — side by side, no scrolling */}
-      <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-14">
-        {/* Exercise names — write them down, screenshot for members */}
-        <div className="order-2 flex flex-col gap-2 lg:order-1">
-          {exerciseNames.map((name, i) => {
-            const live = isActive && i + 1 === currentExercise
-            return (
-              <div key={i} className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors",
-                    live
-                      ? "bg-emerald-500 text-white"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {i + 1}
-                </span>
-                <input
-                  value={name}
-                  onChange={(e) => renameExercise(i, e.target.value)}
-                  placeholder={`Exercise ${i + 1}`}
-                  aria-label={`Exercise ${i + 1} name`}
-                  className="h-9 w-48 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Circular timer + controls */}
-        <div className="order-1 flex flex-col items-center gap-5 lg:order-2">
+      {/* Ring+controls on the left · names+dots column on the right */}
+      <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:gap-14">
+        {/* Circular timer */}
+        <div className="flex flex-col items-center">
       <div className="relative grid place-items-center">
         <svg
-          width={(R + STROKE) * 2}
-          height={(R + STROKE) * 2}
-          className="-rotate-90"
+          viewBox={`0 0 ${(R + STROKE) * 2} ${(R + STROKE) * 2}`}
+          className="size-64 -rotate-90 sm:size-72"
         >
           <circle
             cx={R + STROKE}
@@ -464,97 +482,123 @@ export function TimerClient() {
           />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className="text-6xl font-bold tabular-nums tracking-tight">
+          {/* Equal-height zones above and below keep the big number dead
+              center in the ring, whatever appears around it. */}
+          <div className="flex h-14 items-end pb-2">
+            <Badge variant="secondary" className="tabular-nums">
+              {(ringProgress * 100).toFixed(1)}%
+            </Badge>
+          </div>
+          <span className="text-5xl font-bold tabular-nums tracking-tight sm:text-6xl">
             {fmt(remaining)}
           </span>
-          {status === "running" ? (
+          <div className="flex h-14 flex-col items-center pt-1.5">
+            {status === "running" ? (
+              <span
+                className={cn(
+                  "text-sm font-extrabold tracking-[0.25em] transition-colors duration-300",
+                  elapsed % 60 < workSec
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-amber-600 dark:text-amber-400",
+                )}
+              >
+                {elapsed % 60 < workSec ? "GO" : "REST"}
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">{label}</span>
+            )}
+            {/* Always rendered so the ring content never jumps when the
+                timer starts — it just fades in/out. */}
             <span
+              aria-hidden={!isActive}
               className={cn(
-                "mt-1 text-sm font-extrabold tracking-[0.25em]",
-                elapsed % 60 < workSec
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-amber-600 dark:text-amber-400",
+                "mt-1 text-sm font-semibold text-emerald-600 transition-opacity duration-300 dark:text-emerald-400",
+                isActive ? "opacity-100" : "opacity-0",
               )}
             >
-              {elapsed % 60 < workSec ? "GO" : "REST"}
-            </span>
-          ) : (
-            <span className="mt-1 text-sm text-muted-foreground">{label}</span>
-          )}
-          {status === "running" || status === "paused" ? (
-            <span className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
               exercise {currentExercise}/{exercises}
             </span>
-          ) : null}
-          <Badge variant="secondary" className="mt-2 tabular-nums">
-            {(ringProgress * 100).toFixed(1)}%
-          </Badge>
+          </div>
         </div>
       </div>
+        </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-3">
-        {status === "running" ? (
-          <Button variant="outline" size="lg" onClick={pause}>
-            <Pause className="size-4" /> pause
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            size="lg"
-            onClick={start}
-            disabled={status === "done"}
+        {/* Names + minute dots — they belong together, one column on the
+            right; both blocks pin to the left edge of the column */}
+        <div className="flex min-w-0 max-w-full flex-col items-start gap-4">
+          {/* Exercise names — write them down, screenshot for members */}
+          <div className="flex flex-col gap-2">
+            {exerciseNames.map((name, i) => {
+              const live = isActive && i + 1 === currentExercise
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors duration-300",
+                      live
+                        ? "bg-emerald-500 text-white"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {i + 1}
+                  </span>
+                  <input
+                    value={name}
+                    onChange={(e) => renameExercise(i, e.target.value)}
+                    placeholder={`Exercise ${i + 1}`}
+                    aria-label={`Exercise ${i + 1} name`}
+                    className="h-9 w-48 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Minute dots — one row per exercise, one column per round;
+              fills top-to-bottom then left-to-right (1,2,3 → 4,5,6) */}
+          <div
+            className="grid w-fit max-w-full grid-flow-col gap-1.5 overflow-x-auto sm:gap-2"
+            style={{
+              gridTemplateRows: `repeat(${exercises}, minmax(0, 1fr))`,
+            }}
           >
-            <Play className="size-4" />
-            {status === "paused" ? "resume" : "start"}
-          </Button>
-        )}
-        <Button variant="outline" size="lg" onClick={reset}>
-          <RotateCcw className="size-4" /> reset
-        </Button>
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={beepTest}
-          title="Test the GO beep and the REST double-blip"
-        >
-          <Volume2 className="size-4" /> test beep
-        </Button>
-      </div>
+            {Array.from({ length: minutes }, (_, i) => {
+              const n = i + 1
+              // The minute we're currently in counts as filled — dot 1 fills
+              // the moment the timer starts.
+              const current = isActive && n === completedMinutes + 1
+              const filled =
+                status === "done" || n <= completedMinutes || current
+              // Shrink dots only for long sessions (many columns) — depends
+              // on minutes alone so changing exercises never resizes them.
+              const compact = minutes > 30
+              return (
+                <span
+                  key={n}
+                  className={cn(
+                    "relative grid place-items-center overflow-hidden rounded-full border tabular-nums transition-colors duration-500",
+                    compact
+                      ? "size-6 text-[10px] sm:size-8 sm:text-xs"
+                      : "size-10 text-sm sm:size-11 sm:text-sm",
+                    filled
+                      ? "border-emerald-500 text-white"
+                      : "border-border text-muted-foreground",
+                    current && status === "running" && "animate-pulse",
+                  )}
+                >
+                  {/* Fill grows from the center instead of snapping on */}
+                  <span
+                    className={cn(
+                      "absolute inset-0 rounded-full bg-emerald-500 transition-transform duration-500 ease-out",
+                      filled ? "scale-100" : "scale-0",
+                    )}
+                  />
+                  <span className="relative">{n}</span>
+                </span>
+              )
+            })}
+          </div>
         </div>
-
-      {/* Minute dots — one row per round, one column per exercise */}
-      <div
-        className="order-3 grid w-fit gap-1.5 self-center"
-        style={{ gridTemplateColumns: `repeat(${exercises}, minmax(0, 1fr))` }}
-      >
-        {Array.from({ length: minutes }, (_, i) => {
-          const n = i + 1
-          // The minute we're currently in counts as filled — dot 1 fills the
-          // moment the timer starts.
-          const current = isActive && n === completedMinutes + 1
-          const filled =
-            status === "done" || n <= completedMinutes || current
-          // Shrink dots when there are many rounds so the column never
-          // grows taller than the ring (no page scrolling).
-          const compact = minutes / exercises > 8
-          return (
-            <span
-              key={n}
-              className={cn(
-                "grid place-items-center rounded-full border tabular-nums transition-colors",
-                compact ? "size-6 text-[10px]" : "size-8 text-xs",
-                filled
-                  ? "border-emerald-500 bg-emerald-500 text-white"
-                  : "border-border text-muted-foreground",
-                current && status === "running" && "animate-pulse",
-              )}
-            >
-              {n}
-            </span>
-          )
-        })}
-      </div>
       </div>
     </div>
   )
