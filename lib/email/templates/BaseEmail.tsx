@@ -13,7 +13,8 @@ import * as React from "react"
 
 interface BaseEmailProps {
   preheader?: string
-  unsubscribeUrl: string
+  /** Omit for transactional emails (password reset, receipts) — hides the unsubscribe link. */
+  unsubscribeUrl?: string
   children: React.ReactNode
 }
 
@@ -73,13 +74,17 @@ export function BaseEmail({ preheader, unsubscribeUrl, children }: BaseEmailProp
               Lipe Moves — Move better, breathe deeper.
               <br />
               Koh Phangan, Thailand
-              <br />
-              <Link
-                href={unsubscribeUrl}
-                style={{ color: "#888", textDecoration: "underline" }}
-              >
-                Unsubscribe
-              </Link>
+              {unsubscribeUrl ? (
+                <>
+                  <br />
+                  <Link
+                    href={unsubscribeUrl}
+                    style={{ color: "#888", textDecoration: "underline" }}
+                  >
+                    Unsubscribe
+                  </Link>
+                </>
+              ) : null}
             </Text>
           </Section>
         </Container>
