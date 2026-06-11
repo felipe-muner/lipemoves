@@ -28,11 +28,14 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 
-import type {
-  ClipState,
-  CoverPosition,
-  SerializedJob,
-  StudioConfig,
+import {
+  BADGE_DEFAULT_SIZE,
+  BADGE_DEFAULT_X,
+  BADGE_DEFAULT_Y,
+  type ClipState,
+  type CoverPosition,
+  type SerializedJob,
+  type StudioConfig,
 } from "@/lib/studio/types"
 import {
   DEFAULT_FONT,
@@ -118,6 +121,14 @@ interface ComposeCfg {
   zoom: ZoomMode
   /** Text boxes to burn (in paint order). */
   texts: TextBox[]
+  /** Free-drag center of the enumerate badge (fractions of the frame). */
+  badgeX: number
+  badgeY: number
+  /** Badge font size in cqw (% of preview width); set via the resize handle. */
+  badgeSize: number
+  /** Badge content; null = the "✅ n/total" default. Clear it to skip the
+   *  badge on this clip. */
+  badgeText: string | null
   /** Client-extracted poster frame (data URL), or null while extracting. */
   poster: string | null
   /** Poster aspect ratio (w/h) for the preview box. */
@@ -362,6 +373,115 @@ function CoverText({
   )
 }
 
+/** Draggable + resizable enumerate-badge overlay ("✅ 1/5"). Mirrors the
+ *  burned badge's look (lib/studio/badge.ts — pill metrics in em so they scale
+ *  with the font) so where you drop it in the preview is where it burns. */
+function EnumBadge({
+  text,
+  cx,
+  cy,
+  size,
+  onMove,
+  onResize,
+}: {
+  text: string
+  cx: number
+  cy: number
+  /** Font size in cqw (% of preview width). */
+  size: number
+  onMove: (x: number, y: number) => void
+  onResize: (size: number) => void
+}) {
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  const [drag, setDrag] = React.useState(false)
+  const [hot, setHot] = React.useState(false)
+  const rz = React.useRef<{ startDist: number; startSize: number } | null>(null)
+
+  function moveTo(e: React.PointerEvent) {
+    const r = rootRef.current!.getBoundingClientRect()
+    const x = Math.min(0.95, Math.max(0.05, (e.clientX - r.left) / r.width))
+    const y = Math.min(0.95, Math.max(0.05, (e.clientY - r.top) / r.height))
+    onMove(x, y)
+  }
+
+  // Screen-space center of the badge (for the resize math).
+  function blockCenter() {
+    const r = rootRef.current!.getBoundingClientRect()
+    return { x: r.left + cx * r.width, y: r.top + cy * r.height }
+  }
+
+  return (
+    <div ref={rootRef} className="pointer-events-none absolute inset-0 z-10">
+      <div
+        onPointerEnter={() => setHot(true)}
+        onPointerLeave={() => {
+          if (!drag) setHot(false)
+        }}
+        onPointerDown={(e) => {
+          e.preventDefault()
+          e.currentTarget.setPointerCapture(e.pointerId)
+          setDrag(true)
+          moveTo(e)
+        }}
+        onPointerMove={(e) => {
+          if (drag) moveTo(e)
+        }}
+        onPointerUp={(e) => {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+          setDrag(false)
+        }}
+        className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-extrabold"
+        style={{
+          left: `${cx * 100}%`,
+          top: `${cy * 100}%`,
+          cursor: drag ? "grabbing" : "grab",
+          touchAction: "none",
+          outline: hot || drag ? "1px dashed rgba(255,255,255,.85)" : "none",
+          outlineOffset: "3px",
+          padding: "0.306em 0.556em",
+          borderRadius: "0.389em",
+          background: "rgba(232,232,232,0.62)",
+          color: "#161616",
+          fontSize: `${size}cqw`,
+          lineHeight: 1,
+          letterSpacing: "0.01em",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {text}
+
+        {/* resize handle — drag out to enlarge, in to shrink */}
+        <span
+          onPointerDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            e.currentTarget.setPointerCapture(e.pointerId)
+            const c = blockCenter()
+            rz.current = {
+              startDist: Math.hypot(e.clientX - c.x, e.clientY - c.y),
+              startSize: size,
+            }
+          }}
+          onPointerMove={(e) => {
+            if (!rz.current) return
+            e.stopPropagation()
+            const c = blockCenter()
+            const dist = Math.hypot(e.clientX - c.x, e.clientY - c.y)
+            const { startDist, startSize } = rz.current
+            onResize(Math.min(20, Math.max(3, (startSize * dist) / startDist)))
+          }}
+          onPointerUp={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId)
+            rz.current = null
+          }}
+          className="absolute -bottom-2.5 -right-2.5 block size-4 cursor-nwse-resize rounded-full border-2 border-white bg-emerald-500 shadow"
+          style={{ touchAction: "none" }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function ModeOption({
   active,
   onClick,
@@ -460,6 +580,10 @@ export function StudioClient() {
       arr.map((_, i) => ({
         zoom: i % 2 === 0 ? "in" : "out",
         texts: [],
+        badgeX: BADGE_DEFAULT_X,
+        badgeY: BADGE_DEFAULT_Y,
+        badgeSize: BADGE_DEFAULT_SIZE * 100,
+        badgeText: null,
         poster: null,
         aspect: 9 / 16,
       })),
@@ -569,6 +693,9 @@ export function StudioClient() {
           : null,
       clips: files.map((_, i) => {
         const c = composeCfgs[i]
+        const badgeText = (
+          c?.badgeText ?? `✅ ${i + 1}/${files.length}`
+        ).trim()
         return {
           zoom: mode === "compose" && c && c.zoom !== "off" ? c.zoom : null,
           labels:
@@ -583,6 +710,15 @@ export function StudioClient() {
                     font: t.font,
                   }))
               : [],
+          badge:
+            mode === "compose" && enumerate && c && badgeText
+              ? {
+                  text: badgeText,
+                  x: c.badgeX,
+                  y: c.badgeY,
+                  size: c.badgeSize / 100,
+                }
+              : null,
         }
       }),
     }
@@ -751,7 +887,11 @@ export function StudioClient() {
 
             {/* one small editor per clip — scroll horizontally if many */}
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {composeCfgs.map((c, i) => (
+              {composeCfgs.map((c, i) => {
+                // null = untouched default; cleared text skips this clip's badge.
+                const badgeText =
+                  c.badgeText ?? `✅ ${i + 1}/${composeCfgs.length}`
+                return (
                 <div key={i} className="w-[180px] shrink-0 space-y-2">
                   <div
                     className="relative overflow-hidden rounded-lg bg-black"
@@ -796,7 +936,31 @@ export function StudioClient() {
                         />
                       ) : null,
                     )}
+                    {enumerate && badgeText.trim() ? (
+                      <EnumBadge
+                        text={badgeText}
+                        cx={c.badgeX}
+                        cy={c.badgeY}
+                        size={c.badgeSize}
+                        onMove={(x, y) =>
+                          setCompose(i, { badgeX: x, badgeY: y })
+                        }
+                        onResize={(s) => setCompose(i, { badgeSize: s })}
+                      />
+                    ) : null}
                   </div>
+                  {/* badge content — edit freely (drop the ✅, renumber…);
+                      clear it to skip the badge on this clip */}
+                  {enumerate ? (
+                    <Input
+                      placeholder="No badge on this clip"
+                      className="h-7 text-xs"
+                      value={badgeText}
+                      onChange={(e) =>
+                        setCompose(i, { badgeText: e.target.value })
+                      }
+                    />
+                  ) : null}
                   {/* per-clip Ken Burns zoom */}
                   <div className="flex gap-1">
                     {(["off", "in", "out"] as const).map((z) => (
@@ -865,11 +1029,19 @@ export function StudioClient() {
                     </button>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
             <p className="text-xs text-muted-foreground">
               Drag each text to place · corner dot resizes · each text has its own
               font · zoom is per clip · color, opacity &amp; fade apply to all
+              {enumerate ? (
+                <>
+                  {" "}
+                  · drag the ✅ badge to place it, corner dot resizes, edit its
+                  text below each clip (clear it to skip that clip)
+                </>
+              ) : null}
             </p>
           </div>
         ) : null}
