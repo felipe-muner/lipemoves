@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Pause, Play, RotateCcw, Volume2, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 type Status = "idle" | "running" | "paused" | "done"
@@ -18,6 +19,7 @@ const END_FREQ = 1046 // C6 — higher, distinct "you're done" pitch
 
 const MIN_MINUTES = 1
 const MAX_MINUTES = 60
+const MAX_EXERCISES = 10
 
 function fmt(totalSeconds: number): string {
   const s = Math.max(0, Math.ceil(totalSeconds))
@@ -28,6 +30,8 @@ function fmt(totalSeconds: number): string {
 
 export function TimerClient() {
   const [minutes, setMinutes] = useState(20)
+  const [exercises, setExercises] = useState(3)
+  const [exerciseNames, setExerciseNames] = useState<string[]>(["", "", ""])
   const [status, setStatus] = useState<Status>("idle")
   const [elapsed, setElapsed] = useState(0) // seconds, fractional
 
@@ -37,7 +41,6 @@ export function TimerClient() {
 
   const totalSec = minutes * 60
   const remaining = Math.max(0, totalSec - elapsed)
-  const progress = totalSec > 0 ? Math.min(1, elapsed / totalSec) : 0
   const completedMinutes = Math.min(minutes, Math.floor(elapsed / 60))
 
   // --- audio -------------------------------------------------------------
@@ -144,6 +147,17 @@ export function TimerClient() {
     setMinutes((m) => Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, m + delta)))
   }
 
+  function changeExercises(count: number) {
+    setExercises(count)
+    setExerciseNames((names) =>
+      Array.from({ length: count }, (_, i) => names[i] ?? ""),
+    )
+  }
+
+  function renameExercise(index: number, value: string) {
+    setExerciseNames((names) => names.map((n, i) => (i === index ? value : n)))
+  }
+
   function handleMinutesInput(value: string) {
     if (value === "") {
       setMinutes(MIN_MINUTES)
@@ -155,6 +169,8 @@ export function TimerClient() {
   }
 
   const isActive = status === "running" || status === "paused"
+  // Each minute is one exercise slot; a row of dots is one full round.
+  const currentExercise = (completedMinutes % exercises) + 1
   const label =
     status === "running"
       ? "running"
@@ -166,10 +182,19 @@ export function TimerClient() {
 
   // --- ring geometry -----------------------------------------------------
 
+  // Smooth per-second sweep proportional to the total: each elapsed minute
+  // adds exactly 1/minutes of the circle, completing on the final second.
+  const ringProgress =
+    status === "done"
+      ? 1
+      : totalSec > 0
+        ? Math.min(1, elapsed / totalSec)
+        : 0
+
   const R = 130
   const STROKE = 14
   const C = 2 * Math.PI * R
-  const dashOffset = C * (1 - progress)
+  const dashOffset = C * (1 - ringProgress)
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -207,9 +232,57 @@ export function TimerClient() {
         >
           <Plus className="size-4" />
         </Button>
+
+        <div className="ml-4 flex items-center gap-2">
+          <select
+            value={exercises}
+            onChange={(e) => changeExercises(Number(e.target.value))}
+            disabled={isActive}
+            aria-label="Exercises per round"
+            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+          >
+            {Array.from({ length: MAX_EXERCISES }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-muted-foreground">exercises</span>
+        </div>
       </div>
 
-      {/* Circular timer */}
+      {/* Names · ring+controls · minute dots — side by side, no scrolling */}
+      <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-14">
+        {/* Exercise names — write them down, screenshot for members */}
+        <div className="order-2 flex flex-col gap-2 lg:order-1">
+          {exerciseNames.map((name, i) => {
+            const live = isActive && i + 1 === currentExercise
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors",
+                    live
+                      ? "bg-emerald-500 text-white"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <input
+                  value={name}
+                  onChange={(e) => renameExercise(i, e.target.value)}
+                  placeholder={`Exercise ${i + 1}`}
+                  aria-label={`Exercise ${i + 1} name`}
+                  className="h-9 w-48 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Circular timer + controls */}
+        <div className="order-1 flex flex-col items-center gap-5 lg:order-2">
       <div className="relative grid place-items-center">
         <svg
           width={(R + STROKE) * 2}
@@ -233,7 +306,10 @@ export function TimerClient() {
             strokeLinecap="round"
             strokeDasharray={C}
             strokeDashoffset={dashOffset}
-            className="stroke-emerald-500 transition-[stroke-dashoffset] duration-200 ease-linear"
+            // No CSS transition here: the value already updates every frame,
+            // and restarting a transition per frame can pin the rendered arc
+            // far behind the real progress on some engines.
+            className="stroke-emerald-500"
           />
         </svg>
         <div className="absolute flex flex-col items-center">
@@ -241,6 +317,14 @@ export function TimerClient() {
             {fmt(remaining)}
           </span>
           <span className="mt-1 text-sm text-muted-foreground">{label}</span>
+          {status === "running" || status === "paused" ? (
+            <span className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+              exercise {currentExercise}/{exercises}
+            </span>
+          ) : null}
+          <Badge variant="secondary" className="mt-2 tabular-nums">
+            {(ringProgress * 100).toFixed(1)}%
+          </Badge>
         </div>
       </div>
 
@@ -273,29 +357,40 @@ export function TimerClient() {
           <Volume2 className="size-4" /> test beep
         </Button>
       </div>
+        </div>
 
-      {/* Minute dots — 10 per row */}
-      <div className="grid w-fit grid-cols-10 gap-2">
+      {/* Minute dots — one row per round, one column per exercise */}
+      <div
+        className="order-3 grid w-fit gap-1.5 self-center"
+        style={{ gridTemplateColumns: `repeat(${exercises}, minmax(0, 1fr))` }}
+      >
         {Array.from({ length: minutes }, (_, i) => {
           const n = i + 1
-          const done = n <= completedMinutes
+          // The minute we're currently in counts as filled — dot 1 fills the
+          // moment the timer starts.
           const current = isActive && n === completedMinutes + 1
+          const filled =
+            status === "done" || n <= completedMinutes || current
+          // Shrink dots when there are many rounds so the column never
+          // grows taller than the ring (no page scrolling).
+          const compact = minutes / exercises > 8
           return (
             <span
               key={n}
               className={cn(
-                "grid size-8 place-items-center rounded-full border text-xs tabular-nums transition-colors",
-                done
+                "grid place-items-center rounded-full border tabular-nums transition-colors",
+                compact ? "size-6 text-[10px]" : "size-8 text-xs",
+                filled
                   ? "border-emerald-500 bg-emerald-500 text-white"
-                  : current
-                    ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
-                    : "border-border text-muted-foreground",
+                  : "border-border text-muted-foreground",
+                current && status === "running" && "animate-pulse",
               )}
             >
               {n}
             </span>
           )
         })}
+      </div>
       </div>
     </div>
   )
