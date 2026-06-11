@@ -12,7 +12,7 @@ import { mkdir, writeFile, stat } from "node:fs/promises"
 import { join } from "node:path"
 
 const BASE = process.env.BASE_URL || "http://localhost:3000"
-const LANGS = ["en", "pt", "es", "de", "he", "ru"] as const
+const LANGS = ["en", "pt", "de", "he", "ru"] as const
 const OUT_DIR = join(process.cwd(), "public", "ebooks")
 const SLUG = "move-better"
 
