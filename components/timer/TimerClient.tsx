@@ -53,41 +53,61 @@ export function TimerClient() {
 
   const ensureAudio = useCallback(() => {
     if (!audioRef.current) {
+      // iOS: declare our audio as short "transient" cues — they duck
+      // background music (Spotify, YouTube) for a moment instead of being
+      // silenced by the mute switch or losing the session to the other app.
+      const nav = navigator as Navigator & { audioSession?: { type: string } }
+      if (nav.audioSession) nav.audioSession.type = "transient"
       const Ctx =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext })
           .webkitAudioContext
       audioRef.current = new Ctx()
     }
-    if (audioRef.current.state === "suspended") {
+    if (audioRef.current.state !== "running") {
       void audioRef.current.resume()
     }
     return audioRef.current
   }, [])
 
-  /** Schedule a single tone with a click-free envelope. */
+  /** Schedule a single tone with a click-free envelope. If another app
+   *  (music, a call) suspended our context, resume it first — otherwise the
+   *  beep would be scheduled into a stopped clock and never heard. */
   const tone = useCallback(
     (ctx: AudioContext, freq: number, durationMs: number, atOffset = 0) => {
-      const t0 = ctx.currentTime + atOffset
-      const dur = durationMs / 1000
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.type = "sine"
-      osc.frequency.value = freq
-      gain.gain.setValueAtTime(0, t0)
-      gain.gain.linearRampToValueAtTime(0.7, t0 + 0.02)
-      gain.gain.setValueAtTime(0.7, t0 + dur - 0.06)
-      gain.gain.linearRampToValueAtTime(0, t0 + dur)
-      osc.connect(gain).connect(ctx.destination)
-      osc.start(t0)
-      osc.stop(t0 + dur)
+      const play = () => {
+        const t0 = ctx.currentTime + atOffset
+        const dur = durationMs / 1000
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = "sine"
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0, t0)
+        gain.gain.linearRampToValueAtTime(0.7, t0 + 0.02)
+        gain.gain.setValueAtTime(0.7, t0 + dur - 0.06)
+        gain.gain.linearRampToValueAtTime(0, t0 + dur)
+        osc.connect(gain).connect(ctx.destination)
+        osc.start(t0)
+        osc.stop(t0 + dur)
+      }
+      if (ctx.state === "running") {
+        play()
+      } else {
+        ctx.resume().then(play).catch(() => {})
+      }
     },
     [],
   )
 
+  /** Vibration backup (Android) — phones in a pocket still feel the cue. */
+  const buzz = useCallback((pattern: number | number[]) => {
+    if ("vibrate" in navigator) navigator.vibrate(pattern)
+  }, [])
+
   const beepMinute = useCallback(() => {
     tone(ensureAudio(), BEEP_FREQ, BEEP_MS)
-  }, [ensureAudio, tone])
+    buzz(400)
+  }, [ensureAudio, tone, buzz])
 
   const beepEnd = useCallback(() => {
     const ctx = ensureAudio()
@@ -95,14 +115,16 @@ export function TimerClient() {
     tone(ctx, END_FREQ, 450, 0)
     tone(ctx, END_FREQ, 450, 0.6)
     tone(ctx, END_FREQ, 1100, 1.2)
-  }, [ensureAudio, tone])
+    buzz([300, 150, 300, 150, 700])
+  }, [ensureAudio, tone, buzz])
 
   /** Two short low blips — "stop moving, rest until the next GO". */
   const beepRest = useCallback(() => {
     const ctx = ensureAudio()
     tone(ctx, REST_FREQ, 220, 0)
     tone(ctx, REST_FREQ, 220, 0.32)
-  }, [ensureAudio, tone])
+    buzz([180, 120, 180])
+  }, [ensureAudio, tone, buzz])
 
   /** Preview both cues: one GO beep, then the double REST blip. */
   const beepTest = useCallback(() => {
