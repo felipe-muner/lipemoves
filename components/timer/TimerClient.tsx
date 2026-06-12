@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { Pause, Play, RotateCcw, Volume2, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -53,6 +54,50 @@ export function TimerClient() {
   const totalSec = minutes * 60
   const remaining = Math.max(0, totalSec - elapsed)
   const completedMinutes = Math.min(minutes, Math.floor(elapsed / 60))
+
+  // --- preset links --------------------------------------------------------
+  // /timer?min=20&work=40&names=Swing%20Squat,Figure%208 pre-fills the setup
+  // so Felipe can send members a ready-to-start session. Read from
+  // window.location after mount (not useSearchParams) so the page stays
+  // static and hydration renders the plain defaults first. Values are
+  // clamped to the same limits as the UI; missing or invalid ones are
+  // ignored. When `names` is present the exercise count comes from the list,
+  // so `ex` is only needed for unnamed slots.
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const clamp = (v: number, lo: number, hi: number) =>
+      Math.min(hi, Math.max(lo, v))
+    const num = (key: string) => {
+      const raw = params.get(key)
+      if (raw === null) return null
+      const parsed = parseInt(raw, 10)
+      return Number.isNaN(parsed) ? null : parsed
+    }
+
+    const min = num("min")
+    if (min !== null) setMinutes(clamp(min, MIN_MINUTES, MAX_MINUTES))
+
+    const work = num("work")
+    if (work !== null) setWorkSec(clamp(work, MIN_WORK_SEC, MAX_WORK_SEC))
+
+    const names = (params.get("names") ?? "")
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .slice(0, MAX_EXERCISES)
+    const ex = num("ex")
+    const count =
+      names.length > 0
+        ? names.length
+        : ex !== null
+          ? clamp(ex, MIN_EXERCISES, MAX_EXERCISES)
+          : null
+    if (count !== null) {
+      setExercises(count)
+      setExerciseNames(Array.from({ length: count }, (_, i) => names[i] ?? ""))
+    }
+  }, [])
 
   // --- audio -------------------------------------------------------------
 
@@ -242,6 +287,14 @@ export function TimerClient() {
     setStatus("paused")
   }
 
+  /** The whole ring is tappable: start when idle, pause/resume while active.
+   *  Done is inert — reset stays a small deliberate button so an accidental
+   *  tap can never wipe a finished (or running) session. */
+  function toggleFromRing() {
+    if (status === "running") pause()
+    else if (status !== "done") start()
+  }
+
   function reset() {
     setStatus("idle")
     setElapsed(0)
@@ -372,8 +425,10 @@ export function TimerClient() {
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Setup panel — settings and controls live together: configure the
-          session, then hit start. Settings only editable while idle. */}
-      <div className="flex w-full max-w-2xl flex-col items-center gap-4 rounded-2xl border bg-card/50 p-4 sm:p-5 lg:w-auto lg:max-w-none lg:flex-row lg:gap-7 lg:px-8">
+          session, then hit start. Settings only editable while idle.
+          On phones it drops below the timer: preset links open straight
+          onto the ring, and the ring itself starts the session. */}
+      <div className="order-2 flex w-full max-w-2xl flex-col items-center gap-4 rounded-2xl border bg-card/50 p-4 sm:p-5 lg:order-1 lg:w-auto lg:max-w-none lg:flex-row lg:gap-7 lg:px-8">
         <div className="flex w-full flex-wrap items-start justify-center gap-x-8 gap-y-5 lg:order-3 lg:w-auto lg:flex-nowrap">
           <div className="flex flex-col items-center gap-1.5">
             <div className="flex items-center gap-2">
@@ -517,13 +572,33 @@ export function TimerClient() {
       </div>
 
       {/* Ring+controls on the left · names+dots column on the right */}
-      <div className="flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:w-auto lg:flex-row lg:items-center lg:gap-14">
+      <div className="order-1 flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:order-2 lg:w-auto lg:flex-row lg:items-center lg:gap-14">
         {/* Circular timer */}
         <div className="flex flex-col items-center">
-      <div className="relative grid place-items-center">
+      {/* The ring is the start button: one giant tap target for phones,
+          with a glow that says "tap me" when a preset link lands here. */}
+      <button
+        type="button"
+        onClick={toggleFromRing}
+        disabled={status === "done"}
+        aria-label={
+          status === "running"
+            ? "Pause timer"
+            : status === "paused"
+              ? "Resume timer"
+              : "Start timer"
+        }
+        className="group relative grid cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70 disabled:cursor-default"
+      >
+        {status === "idle" && (
+          <span
+            aria-hidden
+            className="absolute inset-6 animate-pulse rounded-full bg-emerald-500/25 blur-2xl"
+          />
+        )}
         <svg
           viewBox={`0 0 ${(R + STROKE) * 2} ${(R + STROKE) * 2}`}
-          className="size-64 -rotate-90 sm:size-72"
+          className="size-72 -rotate-90 sm:size-80"
         >
           <circle
             cx={R + STROKE}
@@ -556,38 +631,58 @@ export function TimerClient() {
               {(ringProgress * 100).toFixed(1)}%
             </Badge>
           </div>
-          <span className="text-5xl font-bold tabular-nums tracking-tight sm:text-6xl">
+          <span className="text-6xl font-bold tabular-nums tracking-tight sm:text-7xl">
             {fmt(remaining)}
           </span>
+          {/* Fixed-height zone under the time — content swaps per state but
+              the big number never moves. */}
           <div className="flex h-14 flex-col items-center pt-1.5">
             {status === "running" ? (
-              <span
-                className={cn(
-                  "text-sm font-extrabold tracking-[0.25em] transition-colors duration-300",
-                  elapsed % 60 < workSec
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-amber-600 dark:text-amber-400",
-                )}
-              >
-                {elapsed % 60 < workSec ? "GO" : "REST"}
-              </span>
-            ) : (
+              <>
+                <span
+                  className={cn(
+                    "text-base font-extrabold tracking-[0.25em] transition-colors duration-300",
+                    elapsed % 60 < workSec
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-amber-600 dark:text-amber-400",
+                  )}
+                >
+                  {elapsed % 60 < workSec ? "GO" : "REST"}
+                </span>
+                <span className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  exercise {currentExercise}/{exercises}
+                </span>
+              </>
+            ) : status === "done" ? (
               <span className="text-sm text-muted-foreground">{label}</span>
+            ) : (
+              // Idle/paused: a filled play badge inside the ring — the
+              // visible cue that the whole circle is the start button.
+              <span className="grid size-11 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_24px_rgba(16,185,129,0.7)] transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                <Play className="size-5 fill-current" />
+                <span className="sr-only">{label}</span>
+              </span>
             )}
-            {/* Always rendered so the ring content never jumps when the
-                timer starts — it just fades in/out. */}
-            <span
-              aria-hidden={!isActive}
-              className={cn(
-                "mt-1 text-sm font-semibold text-emerald-600 transition-opacity duration-300 dark:text-emerald-400",
-                isActive ? "opacity-100" : "opacity-0",
-              )}
-            >
-              exercise {currentExercise}/{exercises}
-            </span>
           </div>
         </div>
-      </div>
+      </button>
+
+          {/* Done CTA — only exists in the done state, slides in under the
+              ring like a reward; reset removes it with the state change. */}
+          {status === "done" && (
+            <div className="flex animate-in fade-in slide-in-from-bottom-3 flex-col items-center gap-3 pt-5 text-center duration-500">
+              <p className="text-sm font-medium">
+                Nice work 💪 {minutes} minutes done.
+              </p>
+              <Button
+                asChild
+                size="lg"
+                className="bg-emerald-500 text-white hover:bg-emerald-600"
+              >
+                <Link href="/pricing">Want a plan to follow? Train with me →</Link>
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Names + minute dots — they belong together, one column on the
@@ -614,7 +709,7 @@ export function TimerClient() {
                     onChange={(e) => renameExercise(i, e.target.value)}
                     placeholder={`Exercise ${i + 1}`}
                     aria-label={`Exercise ${i + 1} name`}
-                    className="h-9 w-48 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-10 w-56 rounded-md border border-input bg-transparent px-3 text-base outline-none focus:ring-2 focus:ring-emerald-500 sm:w-48 sm:text-sm"
                   />
                 </div>
               )
