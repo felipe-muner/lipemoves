@@ -20,6 +20,7 @@ const REST_FREQ = 523 // C5 — clearly lower than the GO beep; played twice
 
 const MIN_MINUTES = 1
 const MAX_MINUTES = 60
+const MIN_EXERCISES = 1
 const MAX_EXERCISES = 10
 // Work/rest split inside each minute (work + rest = 60s, e.g. 30/30, 40/20).
 const MIN_WORK_SEC = 5
@@ -39,11 +40,15 @@ export function TimerClient() {
   const [exerciseNames, setExerciseNames] = useState<string[]>(["", "", ""])
   const [status, setStatus] = useState<Status>("idle")
   const [elapsed, setElapsed] = useState(0) // seconds, fractional
+  // Edge fades on the dots scroller — visual hint that more dots exist
+  // beyond the visible strip, on whichever side is clipped.
+  const [dotsFade, setDotsFade] = useState({ left: false, right: false })
 
   const startRef = useRef(0) // performance.now() baseline
   const lastMinuteRef = useRef(-1) // highest minute index already beeped
   const lastRestRef = useRef(-1) // highest minute index already rest-cued
   const audioRef = useRef<AudioContext | null>(null)
+  const dotsRef = useRef<HTMLDivElement | null>(null)
 
   const totalSec = minutes * 60
   const remaining = Math.max(0, totalSec - elapsed)
@@ -248,7 +253,11 @@ export function TimerClient() {
     setMinutes((m) => Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, m + delta)))
   }
 
-  function changeExercises(count: number) {
+  function changeExercises(delta: number) {
+    const count = Math.min(
+      MAX_EXERCISES,
+      Math.max(MIN_EXERCISES, exercises + delta),
+    )
     setExercises(count)
     setExerciseNames((names) =>
       Array.from({ length: count }, (_, i) => names[i] ?? ""),
@@ -292,6 +301,49 @@ export function TimerClient() {
   const isActive = status === "running" || status === "paused"
   // Each minute is one exercise slot; a row of dots is one full round.
   const currentExercise = (completedMinutes % exercises) + 1
+  const currentMinute = Math.min(minutes, completedMinutes + 1)
+
+  const updateDotsFade = useCallback(() => {
+    const el = dotsRef.current
+    if (!el) return
+    const maxScroll = el.scrollWidth - el.clientWidth
+    setDotsFade({
+      left: el.scrollLeft > 4,
+      right: el.scrollLeft < maxScroll - 4,
+    })
+  }, [])
+
+  // Re-measure when the dot layout changes or the viewport resizes; the
+  // scroller's own onScroll handles everything in between.
+  useEffect(() => {
+    updateDotsFade()
+    window.addEventListener("resize", updateDotsFade)
+    return () => window.removeEventListener("resize", updateDotsFade)
+  }, [minutes, exercises, updateDotsFade])
+
+  // When the dots overflow and scroll, the system does the scrolling: keep
+  // the current minute centered so the user always sees where they are in
+  // the sequence without touching the scroll. Reset parks it back at dot 1.
+  useEffect(() => {
+    const container = dotsRef.current
+    if (!container) return
+    if (status === "idle") {
+      container.scrollTo({ left: 0, behavior: "smooth" })
+      return
+    }
+    const dot = container.querySelector<HTMLElement>(
+      `[data-minute="${currentMinute}"]`,
+    )
+    if (!dot) return
+    const cRect = container.getBoundingClientRect()
+    const dRect = dot.getBoundingClientRect()
+    const target =
+      container.scrollLeft +
+      (dRect.left - cRect.left) +
+      dRect.width / 2 -
+      cRect.width / 2
+    container.scrollTo({ left: Math.max(0, target), behavior: "smooth" })
+  }, [status, currentMinute, minutes, exercises])
   const label =
     status === "running"
       ? "running"
@@ -361,21 +413,36 @@ export function TimerClient() {
           </div>
 
           <div className="flex flex-col items-center gap-1.5">
-            <select
-              value={exercises}
-              onChange={(e) => changeExercises(Number(e.target.value))}
-              disabled={isActive}
-              aria-label="Exercises per round"
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-            >
-              {Array.from({ length: MAX_EXERCISES }, (_, i) => i + 1).map(
-                (n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ),
-              )}
-            </select>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => changeExercises(-1)}
+                disabled={isActive || exercises <= MIN_EXERCISES}
+                aria-label="Decrease exercises"
+              >
+                <Minus className="size-4" />
+              </Button>
+              <span
+                aria-label="Exercises per round"
+                aria-live="polite"
+                className={cn(
+                  "w-10 text-center text-2xl font-semibold tabular-nums",
+                  isActive && "opacity-50",
+                )}
+              >
+                {exercises}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => changeExercises(1)}
+                disabled={isActive || exercises >= MAX_EXERCISES}
+                aria-label="Increase exercises"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
             <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
               exercises
             </span>
@@ -450,7 +517,7 @@ export function TimerClient() {
       </div>
 
       {/* Ring+controls on the left · names+dots column on the right */}
-      <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:gap-14">
+      <div className="flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:w-auto lg:flex-row lg:items-center lg:gap-14">
         {/* Circular timer */}
         <div className="flex flex-col items-center">
       <div className="relative grid place-items-center">
@@ -556,47 +623,67 @@ export function TimerClient() {
 
           {/* Minute dots — one row per exercise, one column per round;
               fills top-to-bottom then left-to-right (1,2,3 → 4,5,6) */}
-          <div
-            className="grid w-fit max-w-full grid-flow-col gap-1.5 overflow-x-auto sm:gap-2"
-            style={{
-              gridTemplateRows: `repeat(${exercises}, minmax(0, 1fr))`,
-            }}
-          >
-            {Array.from({ length: minutes }, (_, i) => {
-              const n = i + 1
-              // The minute we're currently in counts as filled — dot 1 fills
-              // the moment the timer starts.
-              const current = isActive && n === completedMinutes + 1
-              const filled =
-                status === "done" || n <= completedMinutes || current
-              // Shrink dots only for long sessions (many columns) — depends
-              // on minutes alone so changing exercises never resizes them.
-              const compact = minutes > 30
-              return (
-                <span
-                  key={n}
-                  className={cn(
-                    "relative grid place-items-center overflow-hidden rounded-full border tabular-nums transition-colors duration-500",
-                    compact
-                      ? "size-6 text-[10px] sm:size-8 sm:text-xs"
-                      : "size-10 text-sm sm:size-11 sm:text-sm",
-                    filled
-                      ? "border-emerald-500 text-white"
-                      : "border-border text-muted-foreground",
-                    current && status === "running" && "animate-pulse",
-                  )}
-                >
-                  {/* Fill grows from the center instead of snapping on */}
+          <div className="relative w-fit max-w-full">
+            <div
+              ref={dotsRef}
+              onScroll={updateDotsFade}
+              className="grid w-fit max-w-full grid-flow-col gap-1.5 overflow-x-auto sm:gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              style={{
+                gridTemplateRows: `repeat(${exercises}, minmax(0, 1fr))`,
+              }}
+            >
+              {Array.from({ length: minutes }, (_, i) => {
+                const n = i + 1
+                // The minute we're currently in counts as filled — dot 1 fills
+                // the moment the timer starts.
+                const current = isActive && n === completedMinutes + 1
+                const filled =
+                  status === "done" || n <= completedMinutes || current
+                // Shrink dots only for long sessions (many columns) — depends
+                // on minutes alone so changing exercises never resizes them.
+                const compact = minutes > 30
+                return (
                   <span
+                    key={n}
+                    data-minute={n}
                     className={cn(
-                      "absolute inset-0 rounded-full bg-emerald-500 transition-transform duration-500 ease-out",
-                      filled ? "scale-100" : "scale-0",
+                      "relative grid place-items-center overflow-hidden rounded-full border tabular-nums transition-colors duration-500",
+                      compact
+                        ? "size-6 text-[10px] sm:size-8 sm:text-xs"
+                        : "size-10 text-sm sm:size-11 sm:text-sm",
+                      filled
+                        ? "border-emerald-500 text-white"
+                        : "border-border text-muted-foreground",
+                      current && status === "running" && "animate-pulse",
                     )}
-                  />
-                  <span className="relative">{n}</span>
-                </span>
-              )
-            })}
+                  >
+                    {/* Fill grows from the center instead of snapping on */}
+                    <span
+                      className={cn(
+                        "absolute inset-0 rounded-full bg-emerald-500 transition-transform duration-500 ease-out",
+                        filled ? "scale-100" : "scale-0",
+                      )}
+                    />
+                    <span className="relative">{n}</span>
+                  </span>
+                )
+              })}
+            </div>
+            {/* Edge fades — pure visual cue that the strip continues */}
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-background to-transparent transition-opacity duration-300",
+                dotsFade.left ? "opacity-100" : "opacity-0",
+              )}
+            />
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent transition-opacity duration-300",
+                dotsFade.right ? "opacity-100" : "opacity-0",
+              )}
+            />
           </div>
         </div>
       </div>
