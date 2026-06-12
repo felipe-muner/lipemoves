@@ -23,6 +23,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Google verifies email ownership, so it's safe to attach the Google
+      // identity to an existing user with the same (verified) email — without
+      // this, users who registered with email+password get OAuthAccountNotLinked
+      // when they later click "Sign in with Google".
+      allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
       name: "credentials",
@@ -65,6 +70,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ account, profile }) {
+      // We auto-link Google to existing users by email, so only accept Google
+      // sign-ins whose email Google has actually verified.
+      if (account?.provider === "google") {
+        return profile?.email_verified === true
+      }
+      return true
+    },
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
