@@ -16,14 +16,14 @@ import { cn } from "@/lib/utils"
 type Status = "idle" | "running" | "paused" | "done"
 
 /**
- * How long each minute "beep" lasts, in milliseconds. Felipe wanted a long,
- * clearly-audible tone he can hear across the room mid-set — so this is a full
- * second rather than the usual short blip.
+ * Cue motifs — messenger-style mallet chimes (MSN/ICQ vibe, synthesized; the
+ * original samples are copyrighted). Felipe wants the GO cue clearly audible
+ * across the room mid-set, so its last note rings out for ~a second instead
+ * of the usual short blip.
  */
-const BEEP_MS = 1000
-const BEEP_FREQ = 880 // A5 — cuts through gym noise nicely
-const END_FREQ = 1046 // C6 — higher, distinct "you're done" pitch
-const REST_FREQ = 523 // C5 — clearly lower than the GO beep; played twice
+const GO_NOTES = [523.25, 659.25, 783.99, 1046.5] // C5 E5 G5 C6 — rising "go!"
+const REST_NOTES = [659.25, 523.25] // E5 C5 — falling "wind down"
+const END_NOTES = [523.25, 783.99, 1046.5, 1318.5] // C5 G5 C6 E6 — "ta-da!"
 
 const MIN_MINUTES = 1
 const MAX_MINUTES = 60
@@ -126,25 +126,37 @@ export function TimerClient() {
     return audioRef.current
   }, [])
 
-  /** Schedule a single tone with a click-free envelope. If another app
-   *  (music, a call) suspended our context, resume it first — otherwise the
-   *  beep would be scheduled into a stopped clock and never heard. */
-  const tone = useCallback(
-    (ctx: AudioContext, freq: number, durationMs: number, atOffset = 0) => {
+  /** Schedule one percussive "mallet" note — the rounded marimba-ish timbre
+   *  of the old messenger chimes: fundamental + a quiet bright partial, sharp
+   *  click-free attack, exponential ring-out. If another app (music, a call)
+   *  suspended our context, resume it first — otherwise the note would be
+   *  scheduled into a stopped clock and never heard. */
+  const mallet = useCallback(
+    (ctx: AudioContext, freq: number, atOffset = 0, ringMs = 450, peak = 0.8) => {
       const play = () => {
         const t0 = ctx.currentTime + atOffset
-        const dur = durationMs / 1000
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = "sine"
-        osc.frequency.value = freq
-        gain.gain.setValueAtTime(0, t0)
-        gain.gain.linearRampToValueAtTime(0.7, t0 + 0.02)
-        gain.gain.setValueAtTime(0.7, t0 + dur - 0.06)
-        gain.gain.linearRampToValueAtTime(0, t0 + dur)
-        osc.connect(gain).connect(ctx.destination)
-        osc.start(t0)
-        osc.stop(t0 + dur)
+        const dur = ringMs / 1000
+        const out = ctx.createGain()
+        out.gain.setValueAtTime(0, t0)
+        out.gain.linearRampToValueAtTime(peak, t0 + 0.012)
+        out.gain.exponentialRampToValueAtTime(0.001, t0 + dur)
+        out.connect(ctx.destination)
+        // [harmonic multiple, relative level] — the 4x partial is the woody
+        // "tick" that makes it read as a mallet hit instead of a sine beep.
+        const partials: Array<[number, number]> = [
+          [1, 1],
+          [4, 0.18],
+        ]
+        for (const [mult, amt] of partials) {
+          const osc = ctx.createOscillator()
+          const g = ctx.createGain()
+          osc.type = "sine"
+          osc.frequency.value = freq * mult
+          g.gain.value = amt
+          osc.connect(g).connect(out)
+          osc.start(t0)
+          osc.stop(t0 + dur)
+        }
       }
       if (ctx.state === "running") {
         play()
@@ -160,35 +172,39 @@ export function TimerClient() {
     if ("vibrate" in navigator) navigator.vibrate(pattern)
   }, [])
 
+  /** Rising messenger arpeggio; the final note rings long ("GO!"). */
   const beepMinute = useCallback(() => {
-    tone(ensureAudio(), BEEP_FREQ, BEEP_MS)
+    const ctx = ensureAudio()
+    GO_NOTES.forEach((f, i) =>
+      mallet(ctx, f, i * 0.09, i === GO_NOTES.length - 1 ? 950 : 350),
+    )
     buzz(400)
-  }, [ensureAudio, tone, buzz])
+  }, [ensureAudio, mallet, buzz])
 
   const beepEnd = useCallback(() => {
     const ctx = ensureAudio()
-    // three rising-spaced tones, last one extra long
-    tone(ctx, END_FREQ, 450, 0)
-    tone(ctx, END_FREQ, 450, 0.6)
-    tone(ctx, END_FREQ, 1100, 1.2)
+    // "ta-da!" — the GO arpeggio stretched, last note rings out extra long
+    END_NOTES.forEach((f, i) =>
+      mallet(ctx, f, i * 0.14, i === END_NOTES.length - 1 ? 1500 : 420),
+    )
     buzz([300, 150, 300, 150, 700])
-  }, [ensureAudio, tone, buzz])
+  }, [ensureAudio, mallet, buzz])
 
-  /** Two short low blips — "stop moving, rest until the next GO". */
+  /** Two falling soft notes — "stop moving, rest until the next GO". */
   const beepRest = useCallback(() => {
     const ctx = ensureAudio()
-    tone(ctx, REST_FREQ, 220, 0)
-    tone(ctx, REST_FREQ, 220, 0.32)
+    REST_NOTES.forEach((f, i) => mallet(ctx, f, i * 0.16, 380, 0.6))
     buzz([180, 120, 180])
-  }, [ensureAudio, tone, buzz])
+  }, [ensureAudio, mallet, buzz])
 
-  /** Preview both cues: one GO beep, then the double REST blip. */
+  /** Preview both cues: the GO chime, then the falling REST notes. */
   const beepTest = useCallback(() => {
     const ctx = ensureAudio()
-    tone(ctx, BEEP_FREQ, 600, 0)
-    tone(ctx, REST_FREQ, 220, 1.0)
-    tone(ctx, REST_FREQ, 220, 1.32)
-  }, [ensureAudio, tone])
+    GO_NOTES.forEach((f, i) =>
+      mallet(ctx, f, i * 0.09, i === GO_NOTES.length - 1 ? 700 : 350),
+    )
+    REST_NOTES.forEach((f, i) => mallet(ctx, f, 1.3 + i * 0.16, 380, 0.6))
+  }, [ensureAudio, mallet])
 
   // --- ticking -----------------------------------------------------------
 
