@@ -378,23 +378,29 @@ function CoverText({
 
 /** Free-drag wrapper for a flyer fragment: positions the child by its CENTER
  *  (fractions of the preview box) and reports drags in the same units — the
- *  burn places fragments by the identical center fractions. */
+ *  burn places fragments by the identical center fractions. A corner handle
+ *  resizes the piece (scale factor around the center, also honored by the
+ *  burn). */
 function DragPiece({
   cx,
   cy,
+  scale,
   onMove,
+  onScale,
   children,
 }: {
   cx: number
   cy: number
+  scale: number
   onMove: (x: number, y: number) => void
+  onScale: (s: number) => void
   children: React.ReactNode
 }) {
   const ref = React.useRef<HTMLDivElement>(null)
   return (
     <div
       ref={ref}
-      className="absolute cursor-move touch-none select-none rounded transition hover:ring-1 hover:ring-white/60"
+      className="group absolute cursor-move touch-none select-none rounded transition hover:ring-1 hover:ring-white/60"
       style={{ left: `${cx * 100}%`, top: `${cy * 100}%`, transform: "translate(-50%, -50%)" }}
       onPointerDown={(e) => {
         e.preventDefault()
@@ -420,6 +426,32 @@ function DragPiece({
       }}
     >
       {children}
+      <span
+        role="presentation"
+        className="absolute -bottom-1.5 -right-1.5 hidden size-3 cursor-nwse-resize rounded-full border border-black/50 bg-white shadow group-hover:block"
+        onPointerDown={(e) => {
+          // Resize: scale follows the cursor's distance from the piece center.
+          e.preventDefault()
+          e.stopPropagation()
+          const parent = ref.current?.parentElement
+          if (!parent) return
+          const rect = parent.getBoundingClientRect()
+          const cxPx = rect.left + cx * rect.width
+          const cyPx = rect.top + cy * rect.height
+          const d0 = Math.hypot(e.clientX - cxPx, e.clientY - cyPx) || 1
+          const s0 = scale
+          const move = (ev: PointerEvent) => {
+            const d = Math.hypot(ev.clientX - cxPx, ev.clientY - cyPx)
+            onScale(Math.min(3, Math.max(0.2, s0 * (d / d0))))
+          }
+          const up = () => {
+            window.removeEventListener("pointermove", move)
+            window.removeEventListener("pointerup", up)
+          }
+          window.addEventListener("pointermove", move)
+          window.addEventListener("pointerup", up)
+        }}
+      />
     </div>
   )
 }
@@ -441,6 +473,7 @@ function FlyerPreview({
   pill,
   pos,
   onMove,
+  onScale,
 }: {
   format: "yt" | "ig"
   src: string
@@ -454,16 +487,19 @@ function FlyerPreview({
   pill: string
   pos: Record<FlyerFragment, FlyerPoint>
   onMove: (frag: FlyerFragment, x: number, y: number) => void
+  onScale: (frag: FlyerFragment, s: number) => void
 }) {
+  const sc = (frag: FlyerFragment) => pos[frag].s ?? 1
   const yt = format === "yt"
   const outfit = "var(--font-outfit), system-ui, sans-serif"
   const archivo = '"Archivo Black", system-ui, sans-serif'
   const outline = (em: number) =>
     `${-em}em ${-em}em 0 #000, ${em}em ${-em}em 0 #000, ${-em}em ${em}em 0 #000, ${em}em ${em}em 0 #000`
   // cover-flyer.sh fits the headline to a fixed pixel width; approximate the
-  // resulting size from the character count (Archivo Black ≈ 0.62em/char).
+  // resulting size from the character count (Archivo Black ≈ 0.62em/char),
+  // then apply the fragment's resize factor.
   const headSize = (widthCqw: number, text: string) =>
-    `${Math.min(widthCqw / (0.62 * Math.max(text.length, 1)), 28)}cqw`
+    `${Math.min(widthCqw / (0.62 * Math.max(text.length, 1)), 28) * sc("head")}cqw`
   const gradLine = (text: string, widthCqw: number) => (
     <span
       className="relative block leading-[1.08]"
@@ -491,7 +527,11 @@ function FlyerPreview({
   const pillEl = pill ? (
     <span
       className="inline-block whitespace-nowrap rounded-full bg-[#5BF11A] font-semibold text-black"
-      style={{ fontFamily: outfit, fontSize: yt ? "2.7cqw" : "3.9cqw", padding: "0.45em 1em" }}
+      style={{
+        fontFamily: outfit,
+        fontSize: `${(yt ? 2.7 : 3.9) * sc("pill")}cqw`,
+        padding: "0.45em 1em",
+      }}
     >
       {pill}
     </span>
@@ -499,7 +539,11 @@ function FlyerPreview({
   const brand = (
     <span
       className="font-semibold"
-      style={{ fontFamily: outfit, fontSize: yt ? "3.1cqw" : "4.4cqw", letterSpacing: "0.12em" }}
+      style={{
+        fontFamily: outfit,
+        fontSize: `${(yt ? 3.1 : 4.4) * sc("brand")}cqw`,
+        letterSpacing: "0.12em",
+      }}
     >
       <span className="text-white">LIPE</span>
       <span className="text-[#5BF11A]">MOVES</span>
@@ -510,7 +554,7 @@ function FlyerPreview({
       className="block whitespace-nowrap text-white"
       style={{
         fontFamily: outfit,
-        fontSize: yt ? "3.6cqw" : "5cqw",
+        fontSize: `${(yt ? 3.6 : 5) * sc("kicker")}cqw`,
         letterSpacing: "0.28em",
         textShadow: outline(0.06),
       }}
@@ -527,7 +571,11 @@ function FlyerPreview({
   const subEl = sub ? (
     <span
       className="block whitespace-nowrap text-white"
-      style={{ fontFamily: archivo, fontSize: yt ? "3cqw" : "3.9cqw", textShadow: outline(0.1) }}
+      style={{
+        fontFamily: archivo,
+        fontSize: `${(yt ? 3 : 3.9) * sc("sub")}cqw`,
+        textShadow: outline(0.1),
+      }}
     >
       {sub}
     </span>
@@ -535,7 +583,13 @@ function FlyerPreview({
 
   const piece = (frag: FlyerFragment, node: React.ReactNode) =>
     node ? (
-      <DragPiece cx={pos[frag].x} cy={pos[frag].y} onMove={(x, y) => onMove(frag, x, y)}>
+      <DragPiece
+        cx={pos[frag].x}
+        cy={pos[frag].y}
+        scale={sc(frag)}
+        onMove={(x, y) => onMove(frag, x, y)}
+        onScale={(s) => onScale(frag, s)}
+      >
         {node}
       </DragPiece>
     ) : null
@@ -806,7 +860,18 @@ export function StudioClient() {
   >(() => structuredClone(FLYER_DEFAULT_POS))
   const moveFly = React.useCallback(
     (fmt: "yt" | "ig") => (frag: FlyerFragment, x: number, y: number) =>
-      setFlyPos((prev) => ({ ...prev, [fmt]: { ...prev[fmt], [frag]: { x, y } } })),
+      setFlyPos((prev) => ({
+        ...prev,
+        [fmt]: { ...prev[fmt], [frag]: { ...prev[fmt][frag], x, y } },
+      })),
+    [],
+  )
+  const scaleFly = React.useCallback(
+    (fmt: "yt" | "ig") => (frag: FlyerFragment, s: number) =>
+      setFlyPos((prev) => ({
+        ...prev,
+        [fmt]: { ...prev[fmt], [frag]: { ...prev[fmt][frag], s } },
+      })),
     [],
   )
 
@@ -1728,6 +1793,7 @@ export function StudioClient() {
                               pill={flyPill}
                               pos={flyPos.yt}
                               onMove={moveFly("yt")}
+                              onScale={scaleFly("yt")}
                             />
                           )}
                         </div>
@@ -1770,6 +1836,7 @@ export function StudioClient() {
                               pill={flyPill}
                               pos={flyPos.ig}
                               onMove={moveFly("ig")}
+                              onScale={scaleFly("ig")}
                             />
                           )}
                           {/* profile-grid safe area (center 3:4) guides */}

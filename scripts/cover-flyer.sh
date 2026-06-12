@@ -15,8 +15,8 @@
 #       [kickerPos] [headPos] [subPos] [pillPos] [brandPos]
 #
 # Empty optional args skip that element. bw defaults to 1 (B&W photo).
-# The five *Pos args are free-drag CENTERS as "x,y" fractions of the canvas
-# (from the studio preview). When ANY of them is set, every element is placed
+# The five *Pos args are free-drag CENTERS as "x,y[,scale]" fractions of the
+# canvas (from the studio preview); scale (default 1) resizes the element. When ANY of them is set, every element is placed
 # by its center (unset ones fall back to the default fractions below, kept in
 # sync with FLYER_DEFAULT_POS in lib/studio/types.ts). With no *Pos args the
 # legacy fixed flyer layout is used (batch scripts).
@@ -109,13 +109,21 @@ stack_text() { # $1=outpng  rest=input pngs (left-aligned vertical stack)
   magick "$@" -background none -gravity west -append "PNG32:$O"
 }
 
-# Append an element placed by its CENTER ("x,y" fractions) to ARGS.
-place() { # $1=png $2="x,y"
-  local x y dx dy
-  IFS=, read -r x y <<< "$2"
+# Append an element placed by its CENTER ("x,y[,scale]" fractions) to ARGS.
+# scale (default 1) resizes the rendered element around its center.
+place() { # $1=png $2="x,y[,s]"
+  local x y s dx dy src pct
+  IFS=, read -r x y s <<< "$2"
+  s="${s:-1}"
+  src="$1"
+  if ! awk -v s="$s" 'BEGIN{exit (s==1)?0:1}'; then
+    pct=$(awk -v s="$s" 'BEGIN{printf "%.2f", s*100}')
+    src="${1%.png}-scaled.png"
+    magick "$1" -resize "${pct}%" "PNG32:$src"
+  fi
   dx=$(awk -v x="$x" -v w="$W" 'BEGIN{printf "%d", x*w - w/2}')
   dy=$(awk -v y="$y" -v h="$H" 'BEGIN{printf "%d", y*h - h/2}')
-  ARGS+=("$1" -gravity center -geometry "$(printf "%+d%+d" "$dx" "$dy")" -composite)
+  ARGS+=("$src" -gravity center -geometry "$(printf "%+d%+d" "$dx" "$dy")" -composite)
 }
 
 # B&W treatment shared by both formats.
