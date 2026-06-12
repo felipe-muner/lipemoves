@@ -5,6 +5,12 @@ import Link from "next/link"
 import { Pause, Play, RotateCcw, Volume2, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 type Status = "idle" | "running" | "paused" | "done"
@@ -287,13 +293,6 @@ export function TimerClient() {
     setStatus("paused")
   }
 
-  /** The whole ring is tappable: start when idle, pause/resume while active.
-   *  Done is inert — reset stays a small deliberate button so an accidental
-   *  tap can never wipe a finished (or running) session. */
-  function toggleFromRing() {
-    if (status === "running") pause()
-    else if (status !== "done") start()
-  }
 
   function reset() {
     setStatus("idle")
@@ -397,15 +396,6 @@ export function TimerClient() {
       cRect.width / 2
     container.scrollTo({ left: Math.max(0, target), behavior: "smooth" })
   }, [status, currentMinute, minutes, exercises])
-  const label =
-    status === "running"
-      ? "running"
-      : status === "paused"
-        ? "paused"
-        : status === "done"
-          ? "done"
-          : "ready"
-
   // --- ring geometry -----------------------------------------------------
 
   // Smooth per-second sweep proportional to the total: each elapsed minute
@@ -429,7 +419,7 @@ export function TimerClient() {
           On phones it drops below the timer: preset links open straight
           onto the ring, and the ring itself starts the session. */}
       <div className="order-2 flex w-full max-w-2xl flex-col items-center gap-4 rounded-2xl border bg-card/50 p-4 sm:p-5 lg:order-1 lg:w-auto lg:max-w-none lg:flex-row lg:gap-7 lg:px-8">
-        <div className="flex w-full flex-wrap items-start justify-center gap-x-8 gap-y-5 lg:order-3 lg:w-auto lg:flex-nowrap">
+        <div className="flex w-full flex-wrap items-start justify-center gap-x-8 gap-y-5 lg:w-auto lg:flex-nowrap">
           <div className="flex flex-col items-center gap-1.5">
             <div className="flex items-center gap-2">
               <Button
@@ -538,58 +528,13 @@ export function TimerClient() {
           </div>
         </div>
 
-        <div className="h-px w-full bg-border/60 lg:order-2 lg:h-12 lg:w-px lg:self-center" />
-
-        {/* Controls — left side of the panel on desktop */}
-        <div className="flex flex-wrap items-center justify-center gap-3 lg:order-1">
-          {status === "running" ? (
-            <Button variant="outline" size="lg" onClick={pause}>
-              <Pause className="size-4" /> pause
-            </Button>
-          ) : (
-            <Button
-              variant="default"
-              size="lg"
-              onClick={start}
-              disabled={status === "done"}
-            >
-              <Play className="size-4" />
-              {status === "paused" ? "resume" : "start"}
-            </Button>
-          )}
-          <Button variant="outline" size="lg" onClick={reset}>
-            <RotateCcw className="size-4" /> reset
-          </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={beepTest}
-            title="Test the GO beep and the REST double-blip"
-          >
-            <Volume2 className="size-4" /> test beep
-          </Button>
-        </div>
       </div>
 
       {/* Ring+controls on the left · names+dots column on the right */}
       <div className="order-1 flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:order-2 lg:w-auto lg:flex-row lg:items-center lg:gap-14">
         {/* Circular timer */}
         <div className="flex flex-col items-center">
-      {/* The ring is the start button: one giant tap target for phones,
-          with a glow that says "tap me" when a preset link lands here. */}
-      <button
-        type="button"
-        onClick={toggleFromRing}
-        disabled={status === "done"}
-        aria-label={
-          status === "running"
-            ? "Pause timer"
-            : status === "paused"
-              ? "Resume timer"
-              : "Start timer"
-        }
-        className="group relative grid cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70 disabled:cursor-default"
-      >
+      <div className="relative grid place-items-center rounded-full">
         {status === "idle" && (
           <span
             aria-hidden
@@ -623,21 +568,14 @@ export function TimerClient() {
             className="stroke-emerald-500"
           />
         </svg>
-        <div className="absolute flex flex-col items-center">
-          {/* Equal-height zones above and below keep the big number dead
-              center in the ring, whatever appears around it. */}
-          <div className="flex h-14 items-end pb-2">
-            <Badge variant="secondary" className="tabular-nums">
-              {(ringProgress * 100).toFixed(1)}%
-            </Badge>
-          </div>
-          <span className="text-6xl font-bold tabular-nums tracking-tight sm:text-7xl">
-            {fmt(remaining)}
-          </span>
-          {/* Fixed-height zone under the time — content swaps per state but
-              the big number never moves. */}
-          <div className="flex h-14 flex-col items-center pt-1.5">
+        {/* Equal-height zones above/below keep the number geometrically
+            centered; the slight upward nudge is optical — the button row
+            below carries more visual weight than the badge above. */}
+        <div className="absolute flex -translate-y-2 flex-col items-center">
+          <div className="flex h-14 flex-col items-center justify-end pb-2">
             {status === "running" ? (
+              // Mid-workout the % badge gives way to the live cue — the ring
+              // arc already shows progress.
               <>
                 <span
                   className={cn(
@@ -649,23 +587,90 @@ export function TimerClient() {
                 >
                   {elapsed % 60 < workSec ? "GO" : "REST"}
                 </span>
-                <span className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   exercise {currentExercise}/{exercises}
                 </span>
               </>
-            ) : status === "done" ? (
-              <span className="text-sm text-muted-foreground">{label}</span>
             ) : (
-              // Idle/paused: a filled play badge inside the ring — the
-              // visible cue that the whole circle is the start button.
-              <span className="grid size-11 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_24px_rgba(16,185,129,0.7)] transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                <Play className="size-5 fill-current" />
-                <span className="sr-only">{label}</span>
-              </span>
+              <Badge variant="secondary" className="tabular-nums">
+                {(ringProgress * 100).toFixed(1)}%
+              </Badge>
             )}
           </div>
+          <span className="text-6xl font-bold tabular-nums tracking-tight sm:text-7xl">
+            {fmt(remaining)}
+          </span>
+          {/* Controls — always inside the ring, under the time. The middle
+              button is the play/pause toggle; reset only appears once there
+              is something to reset (invisible, not removed, so play stays
+              dead-center under the number). */}
+          <div className="flex h-14 items-center justify-center pt-1.5">
+            <TooltipProvider delayDuration={300}>
+              <div className="flex items-center gap-3">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={reset}
+                      aria-label="Reset timer"
+                      className={cn(
+                        "grid size-10 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-emerald-500 hover:text-foreground",
+                        status === "idle" && "invisible",
+                      )}
+                    >
+                      <RotateCcw className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Reset</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={status === "running" ? pause : start}
+                      disabled={status === "done"}
+                      aria-label={
+                        status === "running"
+                          ? "Pause timer"
+                          : status === "paused"
+                            ? "Resume timer"
+                            : "Start timer"
+                      }
+                      className="grid size-12 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_24px_rgba(16,185,129,0.7)] transition-transform duration-300 hover:scale-110 active:scale-95 disabled:scale-100 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                    >
+                      {status === "running" ? (
+                        <Pause className="size-5 fill-current" />
+                      ) : (
+                        <Play className="size-5 fill-current" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {status === "running"
+                      ? "Pause"
+                      : status === "paused"
+                        ? "Resume"
+                        : "Start"}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={beepTest}
+                      aria-label="Test the GO beep and the REST double-blip"
+                      className="grid size-10 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-emerald-500 hover:text-foreground"
+                    >
+                      <Volume2 className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Test beep</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          </div>
         </div>
-      </button>
+      </div>
 
           {/* Done CTA — only exists in the done state, slides in under the
               ring like a reward; reset removes it with the state change. */}
