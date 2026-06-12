@@ -590,8 +590,8 @@ export function TimerClient() {
         <div className="absolute flex -translate-y-2 flex-col items-center">
           <div className="flex h-14 flex-col items-center justify-end pb-2">
             {status === "running" ? (
-              // Mid-workout the % badge gives way to the live cue — the ring
-              // arc already shows progress.
+              // Mid-workout: live cue on top, exercise counter + the % badge
+              // below it (Felipe wants the percentage visible while running).
               <>
                 <span
                   className={cn(
@@ -603,8 +603,14 @@ export function TimerClient() {
                 >
                   {elapsed % 60 < workSec ? "GO" : "REST"}
                 </span>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   exercise {currentExercise}/{exercises}
+                  <Badge
+                    variant="secondary"
+                    className="px-1.5 py-0 text-[10px] tabular-nums"
+                  >
+                    {(ringProgress * 100).toFixed(1)}%
+                  </Badge>
                 </span>
               </>
             ) : (
@@ -652,7 +658,10 @@ export function TimerClient() {
                             ? "Resume timer"
                             : "Start timer"
                       }
-                      className="grid size-12 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_24px_rgba(16,185,129,0.7)] transition-transform duration-300 hover:scale-110 active:scale-95 disabled:scale-100 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                      // 200ms ease pop (per Leo's tip): press squashes to 95%,
+                      // release grows back; plus a one-time zoom-in on mount to
+                      // pull the eye to START when the page loads.
+                      className="grid size-12 animate-in place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_24px_rgba(16,185,129,0.7)] transition-transform duration-200 ease-out zoom-in-50 hover:scale-110 active:scale-95 disabled:scale-100 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                     >
                       {status === "running" ? (
                         <Pause className="size-5 fill-current" />
