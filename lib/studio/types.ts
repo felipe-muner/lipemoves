@@ -121,10 +121,12 @@ export interface CoverRequest {
 /** The independently draggable pieces of the flyer layout. */
 export type FlyerFragment = "kicker" | "head" | "sub" | "pill" | "brand"
 
-/** A fragment's CENTER as fractions of the canvas (0..1). */
+/** A fragment's CENTER as fractions of the canvas (0..1), plus an optional
+ *  scale factor (1 = the design size; resized around the center). */
 export interface FlyerPoint {
   x: number
   y: number
+  s?: number
 }
 
 export type FlyerLayout = Partial<Record<FlyerFragment, FlyerPoint>>

@@ -380,7 +380,7 @@ export async function applyFlyer(job: Job, req: FlyerRequest): Promise<void> {
     const layout = req.pos?.[fmt]
     const at = (f: keyof NonNullable<typeof layout>) => {
       const pt = layout?.[f]
-      return pt ? `${pt.x},${pt.y}` : ""
+      return pt ? `${pt.x},${pt.y},${pt.s ?? 1}` : ""
     }
     await run(
       "bash",

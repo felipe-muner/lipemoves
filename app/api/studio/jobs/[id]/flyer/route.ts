@@ -17,10 +17,11 @@ import {
 
 const FRAGMENTS: FlyerFragment[] = ["kicker", "head", "sub", "pill", "brand"]
 
-/** Sanitize one fragment center: finite numbers, clamped into the canvas. */
+/** Sanitize one fragment center: finite numbers, clamped into the canvas;
+ *  optional scale clamped to a sane range. */
 function point(v: unknown): FlyerPoint | undefined {
   if (typeof v !== "object" || v === null) return undefined
-  const o = v as { x?: unknown; y?: unknown }
+  const o = v as { x?: unknown; y?: unknown; s?: unknown }
   if (
     typeof o.x !== "number" ||
     typeof o.y !== "number" ||
@@ -30,7 +31,11 @@ function point(v: unknown): FlyerPoint | undefined {
     return undefined
   }
   const clamp = (n: number) => Math.min(0.98, Math.max(0.02, n))
-  return { x: clamp(o.x), y: clamp(o.y) }
+  const pt: FlyerPoint = { x: clamp(o.x), y: clamp(o.y) }
+  if (typeof o.s === "number" && Number.isFinite(o.s)) {
+    pt.s = Math.min(3, Math.max(0.2, o.s))
+  }
+  return pt
 }
 
 function layout(v: unknown): FlyerLayout | undefined {
