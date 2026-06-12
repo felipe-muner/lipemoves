@@ -118,6 +118,61 @@ export interface CoverRequest {
   color?: string
 }
 
+/** The independently draggable pieces of the flyer layout. */
+export type FlyerFragment = "kicker" | "head" | "sub" | "pill" | "brand"
+
+/** A fragment's CENTER as fractions of the canvas (0..1). */
+export interface FlyerPoint {
+  x: number
+  y: number
+}
+
+export type FlyerLayout = Partial<Record<FlyerFragment, FlyerPoint>>
+
+/** Default fragment centers per format — mirrors the legacy flyer layout.
+ *  KEEP IN SYNC with the D_* defaults in scripts/cover-flyer.sh. */
+export const FLYER_DEFAULT_POS: Record<"yt" | "ig", Record<FlyerFragment, FlyerPoint>> = {
+  yt: {
+    brand: { x: 0.16, y: 0.09 },
+    kicker: { x: 0.18, y: 0.22 },
+    head: { x: 0.34, y: 0.45 },
+    sub: { x: 0.27, y: 0.67 },
+    pill: { x: 0.25, y: 0.82 },
+  },
+  ig: {
+    pill: { x: 0.3, y: 0.165 },
+    brand: { x: 0.78, y: 0.165 },
+    kicker: { x: 0.25, y: 0.7 },
+    head: { x: 0.47, y: 0.785 },
+    sub: { x: 0.3, y: 0.862 },
+  },
+}
+
+/** Generate the branded flyer-style cover pair from a chosen frame: YouTube
+ *  1280x720 + Instagram Reel 1080x1920 (text kept inside the profile-grid's
+ *  center 3:4 crop). Separate from the free-drag CoverRequest flow. */
+export interface FlyerRequest {
+  /** Index into Job.clips. */
+  clip: number
+  /** 1-based frame number from that clip's contact sheet. */
+  frame: number
+  /** Big lime-gradient headline (required). */
+  headline: string
+  /** Small letterspaced line above the headline. */
+  kicker?: string
+  /** Second gradient headline line below the first. */
+  headline2?: string
+  /** White sub line below the headline(s). */
+  sub?: string
+  /** Lime pill badge (bottom of the YT stack / top-left on IG). */
+  pill?: string
+  /** Black & white photo treatment (default true). */
+  bw?: boolean
+  /** Free-drag fragment centers per format (from the studio preview).
+   *  Fragments left unset fall back to FLYER_DEFAULT_POS. */
+  pos?: { yt?: FlyerLayout; ig?: FlyerLayout }
+}
+
 /** Processing state + outputs for a single clip. */
 export interface ClipState {
   index: number
@@ -134,6 +189,9 @@ export interface ClipState {
   frameCount: number
   /** Job-dir-relative path to the burned cover, once generated. */
   coverName: string | null
+  /** Job-dir-relative paths to the flyer cover pair, once generated. */
+  flyerYtName?: string | null
+  flyerIgName?: string | null
 }
 
 export interface Job {
