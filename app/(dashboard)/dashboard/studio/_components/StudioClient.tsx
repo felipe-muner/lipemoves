@@ -32,8 +32,11 @@ import {
   BADGE_DEFAULT_SIZE,
   BADGE_DEFAULT_X,
   BADGE_DEFAULT_Y,
+  FLYER_DEFAULT_POS,
   type ClipState,
   type CoverPosition,
+  type FlyerFragment,
+  type FlyerPoint,
   type SerializedJob,
   type StudioConfig,
 } from "@/lib/studio/types"
@@ -373,6 +376,226 @@ function CoverText({
   )
 }
 
+/** Free-drag wrapper for a flyer fragment: positions the child by its CENTER
+ *  (fractions of the preview box) and reports drags in the same units — the
+ *  burn places fragments by the identical center fractions. */
+function DragPiece({
+  cx,
+  cy,
+  onMove,
+  children,
+}: {
+  cx: number
+  cy: number
+  onMove: (x: number, y: number) => void
+  children: React.ReactNode
+}) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  return (
+    <div
+      ref={ref}
+      className="absolute cursor-move touch-none select-none rounded transition hover:ring-1 hover:ring-white/60"
+      style={{ left: `${cx * 100}%`, top: `${cy * 100}%`, transform: "translate(-50%, -50%)" }}
+      onPointerDown={(e) => {
+        e.preventDefault()
+        const parent = ref.current?.parentElement
+        if (!parent) return
+        const rect = parent.getBoundingClientRect()
+        // Keep the grab offset so the piece doesn't jump to the cursor.
+        const dx = cx - (e.clientX - rect.left) / rect.width
+        const dy = cy - (e.clientY - rect.top) / rect.height
+        const clamp = (n: number) => Math.min(0.98, Math.max(0.02, n))
+        const move = (ev: PointerEvent) => {
+          onMove(
+            clamp((ev.clientX - rect.left) / rect.width + dx),
+            clamp((ev.clientY - rect.top) / rect.height + dy),
+          )
+        }
+        const up = () => {
+          window.removeEventListener("pointermove", move)
+          window.removeEventListener("pointerup", up)
+        }
+        window.addEventListener("pointermove", move)
+        window.addEventListener("pointerup", up)
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/** Approximate CSS mock of cover-flyer.sh for the flyer-covers live preview.
+ *  The burn is canonical — ImageMagick font metrics won't match CSS to the
+ *  pixel — but layout, colors and proportions mirror the script (cqw units
+ *  against the same 1280/1080 design widths). Every fragment is draggable;
+ *  its center fraction is what the burn uses. */
+function FlyerPreview({
+  format,
+  src,
+  aspect,
+  bw,
+  kicker,
+  headline,
+  headline2,
+  sub,
+  pill,
+  pos,
+  onMove,
+}: {
+  format: "yt" | "ig"
+  src: string
+  /** Natural aspect of the source frame (w/h) — sizes the YT subject column. */
+  aspect: number
+  bw: boolean
+  kicker: string
+  headline: string
+  headline2: string
+  sub: string
+  pill: string
+  pos: Record<FlyerFragment, FlyerPoint>
+  onMove: (frag: FlyerFragment, x: number, y: number) => void
+}) {
+  const yt = format === "yt"
+  const outfit = "var(--font-outfit), system-ui, sans-serif"
+  const archivo = '"Archivo Black", system-ui, sans-serif'
+  const outline = (em: number) =>
+    `${-em}em ${-em}em 0 #000, ${em}em ${-em}em 0 #000, ${-em}em ${em}em 0 #000, ${em}em ${em}em 0 #000`
+  // cover-flyer.sh fits the headline to a fixed pixel width; approximate the
+  // resulting size from the character count (Archivo Black ≈ 0.62em/char).
+  const headSize = (widthCqw: number, text: string) =>
+    `${Math.min(widthCqw / (0.62 * Math.max(text.length, 1)), 28)}cqw`
+  const gradLine = (text: string, widthCqw: number) => (
+    <span
+      className="relative block leading-[1.08]"
+      style={{ fontFamily: archivo, fontSize: headSize(widthCqw, text) }}
+    >
+      <span
+        aria-hidden
+        className="absolute inset-0 text-black"
+        style={{ WebkitTextStroke: "0.14em #000" }}
+      >
+        {text}
+      </span>
+      <span
+        className="relative"
+        style={{
+          backgroundImage: "linear-gradient(135deg, #9BFF1A, #4FE000)",
+          WebkitBackgroundClip: "text",
+          color: "transparent",
+        }}
+      >
+        {text}
+      </span>
+    </span>
+  )
+  const pillEl = pill ? (
+    <span
+      className="inline-block whitespace-nowrap rounded-full bg-[#5BF11A] font-semibold text-black"
+      style={{ fontFamily: outfit, fontSize: yt ? "2.7cqw" : "3.9cqw", padding: "0.45em 1em" }}
+    >
+      {pill}
+    </span>
+  ) : null
+  const brand = (
+    <span
+      className="font-semibold"
+      style={{ fontFamily: outfit, fontSize: yt ? "3.1cqw" : "4.4cqw", letterSpacing: "0.12em" }}
+    >
+      <span className="text-white">LIPE</span>
+      <span className="text-[#5BF11A]">MOVES</span>
+    </span>
+  )
+  const kickerEl = kicker ? (
+    <span
+      className="block whitespace-nowrap text-white"
+      style={{
+        fontFamily: outfit,
+        fontSize: yt ? "3.6cqw" : "5cqw",
+        letterSpacing: "0.28em",
+        textShadow: outline(0.06),
+      }}
+    >
+      {kicker}
+    </span>
+  ) : null
+  const headEl = (
+    <span className="block whitespace-nowrap">
+      {gradLine(headline, yt ? 59 : 89)}
+      {headline2 ? gradLine(headline2, yt ? 47 : 70) : null}
+    </span>
+  )
+  const subEl = sub ? (
+    <span
+      className="block whitespace-nowrap text-white"
+      style={{ fontFamily: archivo, fontSize: yt ? "3cqw" : "3.9cqw", textShadow: outline(0.1) }}
+    >
+      {sub}
+    </span>
+  ) : null
+
+  const piece = (frag: FlyerFragment, node: React.ReactNode) =>
+    node ? (
+      <DragPiece cx={pos[frag].x} cy={pos[frag].y} onMove={(x, y) => onMove(frag, x, y)}>
+        {node}
+      </DragPiece>
+    ) : null
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" style={{ containerType: "inline-size" }}>
+      {yt ? (
+        <>
+          <Image
+            src={src}
+            alt=""
+            fill
+            unoptimized
+            className="object-cover"
+            style={{ filter: `blur(4px) brightness(0.6)${bw ? " grayscale(1)" : ""}` }}
+          />
+          <div className="absolute inset-y-0 right-0" style={{ aspectRatio: String(aspect) }}>
+            <Image
+              src={src}
+              alt=""
+              fill
+              unoptimized
+              className="object-cover"
+              style={{ filter: bw ? "grayscale(1) contrast(1.2)" : undefined }}
+            />
+          </div>
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(to right, rgba(8,10,8,0.94), rgba(8,10,8,0))" }}
+          />
+        </>
+      ) : (
+        <>
+          <Image
+            src={src}
+            alt=""
+            fill
+            unoptimized
+            className="object-cover"
+            style={{ filter: bw ? "grayscale(1) contrast(1.2)" : undefined }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 h-[47%]"
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.92))" }}
+          />
+          <div
+            className="absolute inset-x-0 top-0 h-[29%]"
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0))" }}
+          />
+        </>
+      )}
+      {piece("brand", brand)}
+      {piece("kicker", kickerEl)}
+      {piece("head", headEl)}
+      {piece("sub", subEl)}
+      {piece("pill", pillEl)}
+    </div>
+  )
+}
+
 /** Draggable + resizable enumerate-badge overlay ("✅ 1/5"). Mirrors the
  *  burned badge's look (lib/studio/badge.ts — pill metrics in em so they scale
  *  with the font) so where you drop it in the preview is where it burns. */
@@ -565,6 +788,28 @@ export function StudioClient() {
   const [coverBusy, setCoverBusy] = React.useState(false)
   const [coverErr, setCoverErr] = React.useState<string | null>(null)
 
+  // Flyer covers (separate feature): branded YT+IG pair from the selected
+  // frame, rendered by cover-flyer.sh — no free drag, fixed flyer layout.
+  const [flyKicker, setFlyKicker] = React.useState("")
+  const [flyHeadline, setFlyHeadline] = React.useState("")
+  const [flyHeadline2, setFlyHeadline2] = React.useState("")
+  const [flySub, setFlySub] = React.useState("")
+  const [flyPill, setFlyPill] = React.useState("")
+  const [flyBw, setFlyBw] = React.useState(true)
+  const [flyBusy, setFlyBusy] = React.useState(false)
+  const [flyErr, setFlyErr] = React.useState<string | null>(null)
+  /** Job-dir-relative output names + a cache-bust stamp, once generated. */
+  const [flyOut, setFlyOut] = React.useState<{ yt: string; ig: string; t: number } | null>(null)
+  /** Free-drag fragment centers per format; the burn uses these fractions. */
+  const [flyPos, setFlyPos] = React.useState<
+    Record<"yt" | "ig", Record<FlyerFragment, FlyerPoint>>
+  >(() => structuredClone(FLYER_DEFAULT_POS))
+  const moveFly = React.useCallback(
+    (fmt: "yt" | "ig") => (frag: FlyerFragment, x: number, y: number) =>
+      setFlyPos((prev) => ({ ...prev, [fmt]: { ...prev[fmt], [frag]: { x, y } } })),
+    [],
+  )
+
   const [job, setJob] = React.useState<SerializedJob | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -661,6 +906,11 @@ export function StudioClient() {
     coverY,
     coverColor,
   ])
+
+  // Flyer input changes invalidate the last generated pair.
+  React.useEffect(() => {
+    setFlyOut(null)
+  }, [selClip, selFrame, flyKicker, flyHeadline, flyHeadline2, flySub, flyPill, flyBw, flyPos])
 
   const running = job?.status === "running" || job?.status === "queued"
   const clipsWithFrames = job?.clips.filter((c) => c.frameCount > 0) ?? []
@@ -782,6 +1032,40 @@ export function StudioClient() {
       setCoverErr(e instanceof Error ? e.message : "Cover failed")
     } finally {
       setCoverBusy(false)
+    }
+  }
+
+  async function generateFlyer() {
+    if (!job || !clipObj || !flyHeadline.trim()) return
+    setFlyBusy(true)
+    setFlyErr(null)
+    try {
+      const res = await fetch(`/api/studio/jobs/${job.id}/flyer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clip: selClip,
+          frame: selFrame,
+          headline: flyHeadline,
+          kicker: flyKicker,
+          headline2: flyHeadline2,
+          sub: flySub,
+          pill: flyPill,
+          bw: flyBw,
+          pos: flyPos,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Flyer failed")
+      const updated = data as SerializedJob
+      setJob(updated)
+      const c = updated.clips.find((cl) => cl.index === selClip)
+      if (!c?.flyerYtName || !c?.flyerIgName) throw new Error("Flyer outputs missing")
+      setFlyOut({ yt: c.flyerYtName, ig: c.flyerIgName, t: Date.now() })
+    } catch (e) {
+      setFlyErr(e instanceof Error ? e.message : "Flyer failed")
+    } finally {
+      setFlyBusy(false)
     }
   }
 
@@ -1322,6 +1606,191 @@ export function StudioClient() {
                     )}
                   </Button>
                   {coverErr ? <p className="text-sm text-red-500">{coverErr}</p> : null}
+                </div>
+
+                {/* ---- Flyer covers (YouTube + Instagram pair) ---- */}
+                <Separator />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="block">Flyer covers — YouTube + Instagram</Label>
+                    <button
+                      type="button"
+                      onClick={() => setFlyPos(structuredClone(FLYER_DEFAULT_POS))}
+                      className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      Reset layout
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Branded flyer layout (B&amp;W photo, lime headline, pill badge)
+                    burned onto frame {selFrame} above. YouTube is 1280×720;
+                    Instagram is a 1080×1920 Reel cover with all text inside the
+                    profile-grid safe area.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Headline — big lime text (required)
+                      </Label>
+                      <Input
+                        placeholder="2 MOVES"
+                        value={flyHeadline}
+                        onChange={(e) => setFlyHeadline(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Kicker — small line above the headline
+                      </Label>
+                      <Input
+                        placeholder="ONLY"
+                        value={flyKicker}
+                        onChange={(e) => setFlyKicker(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Headline 2 — optional second lime line
+                      </Label>
+                      <Input
+                        placeholder="30s OFF"
+                        value={flyHeadline2}
+                        onChange={(e) => setFlyHeadline2(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Sub line — white text under the headline
+                      </Label>
+                      <Input
+                        placeholder="SWING SQUAT • FIGURE 8"
+                        value={flySub}
+                        onChange={(e) => setFlySub(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Pill badge — green rounded tag
+                      </Label>
+                      <Input
+                        placeholder="20 MIN • 30s ON / 30s REST"
+                        value={flyPill}
+                        onChange={(e) => setFlyPill(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-end pb-2">
+                      <Toggle checked={flyBw} onChange={setFlyBw} label="B&W photo" />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={generateFlyer}
+                    disabled={flyBusy || !flyHeadline.trim()}
+                    className="w-full"
+                  >
+                    {flyBusy ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" /> Rendering flyer
+                        covers…
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="size-4" /> Generate YouTube + Instagram
+                        covers
+                      </>
+                    )}
+                  </Button>
+                  {flyErr ? <p className="text-sm text-red-500">{flyErr}</p> : null}
+                  {flyHeadline.trim() || flyOut ? (
+                    <div className="flex flex-wrap items-start gap-4">
+                      <div className="space-y-1.5">
+                        <div
+                          className="relative w-[320px] overflow-hidden rounded-lg bg-black"
+                          style={{ aspectRatio: "16 / 9" }}
+                        >
+                          {flyOut ? (
+                            <Image
+                              src={`${fileUrl(flyOut.yt)}&t=${flyOut.t}`}
+                              alt="YouTube flyer cover"
+                              fill
+                              unoptimized
+                              className="object-contain"
+                            />
+                          ) : (
+                            <FlyerPreview
+                              format="yt"
+                              src={fileUrl(`${clipObj.framesPrefix}/frames/${pad3(selFrame)}.png`)}
+                              aspect={aspect}
+                              bw={flyBw}
+                              kicker={flyKicker}
+                              headline={flyHeadline}
+                              headline2={flyHeadline2}
+                              sub={flySub}
+                              pill={flyPill}
+                              pos={flyPos.yt}
+                              onMove={moveFly("yt")}
+                            />
+                          )}
+                        </div>
+                        {flyOut ? (
+                          <a
+                            href={`${fileUrl(flyOut.yt, true)}&t=${flyOut.t}`}
+                            className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
+                          >
+                            <Download className="size-3.5" /> YouTube (1280×720)
+                          </a>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            YouTube preview — drag the pieces
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <div
+                          className="relative w-[180px] overflow-hidden rounded-lg bg-black"
+                          style={{ aspectRatio: "9 / 16" }}
+                        >
+                          {flyOut ? (
+                            <Image
+                              src={`${fileUrl(flyOut.ig)}&t=${flyOut.t}`}
+                              alt="Instagram flyer cover"
+                              fill
+                              unoptimized
+                              className="object-contain"
+                            />
+                          ) : (
+                            <FlyerPreview
+                              format="ig"
+                              src={fileUrl(`${clipObj.framesPrefix}/frames/${pad3(selFrame)}.png`)}
+                              aspect={aspect}
+                              bw={flyBw}
+                              kicker={flyKicker}
+                              headline={flyHeadline}
+                              headline2={flyHeadline2}
+                              sub={flySub}
+                              pill={flyPill}
+                              pos={flyPos.ig}
+                              onMove={moveFly("ig")}
+                            />
+                          )}
+                          {/* profile-grid safe area (center 3:4) guides */}
+                          <div className="pointer-events-none absolute inset-x-0 top-[12.5%] border-t border-dashed border-white/40" />
+                          <div className="pointer-events-none absolute inset-x-0 bottom-[12.5%] border-b border-dashed border-white/40" />
+                        </div>
+                        {flyOut ? (
+                          <a
+                            href={`${fileUrl(flyOut.ig, true)}&t=${flyOut.t}`}
+                            className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
+                          >
+                            <Download className="size-3.5" /> Instagram (1080×1920)
+                          </a>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Instagram preview — drag the pieces (dashes = grid crop)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </>
             ) : null}

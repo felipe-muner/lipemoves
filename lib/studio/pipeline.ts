@@ -8,6 +8,7 @@ import {
   BADGE_DEFAULT_X,
   BADGE_DEFAULT_Y,
   type CoverRequest,
+  type FlyerRequest,
   type Job,
   type StudioConfig,
 } from "./types"
@@ -359,4 +360,50 @@ export async function applyCover(job: Job, req: CoverRequest): Promise<void> {
     job.dir,
   )
   clip.coverName = `clip${pad2(req.clip)}/cover.jpg`
+}
+
+/**
+ * Render the flyer-style cover pair (YouTube 1280x720 + Instagram 1080x1920,
+ * grid-safe) from a chosen frame via cover-flyer.sh — same renderer as the
+ * covers-YYYY-MM-DD batch scripts.
+ */
+export async function applyFlyer(job: Job, req: FlyerRequest): Promise<void> {
+  const clip = job.clips[req.clip]
+  if (!clip || !clip.framesPrefix) throw new Error("Clip has no frames")
+
+  const frame = path.join(job.dir, clip.framesPrefix, "frames", `${pad3(req.frame)}.png`)
+  if (!existsSync(frame)) throw new Error(`Frame ${req.frame} not found`)
+
+  const dir = `clip${pad2(req.clip)}`
+  const bw = req.bw === false ? "0" : "1"
+  for (const fmt of ["yt", "ig"] as const) {
+    const layout = req.pos?.[fmt]
+    const at = (f: keyof NonNullable<typeof layout>) => {
+      const pt = layout?.[f]
+      return pt ? `${pt.x},${pt.y}` : ""
+    }
+    await run(
+      "bash",
+      [
+        path.join(SCRIPTS, "cover-flyer.sh"),
+        frame,
+        path.join(job.dir, dir, `flyer-${fmt}.jpg`),
+        fmt,
+        req.headline,
+        req.kicker ?? "",
+        req.headline2 ?? "",
+        req.sub ?? "",
+        req.pill ?? "",
+        bw,
+        at("kicker"),
+        at("head"),
+        at("sub"),
+        at("pill"),
+        at("brand"),
+      ],
+      job.dir,
+    )
+  }
+  clip.flyerYtName = `${dir}/flyer-yt.jpg`
+  clip.flyerIgName = `${dir}/flyer-ig.jpg`
 }
