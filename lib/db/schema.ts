@@ -176,3 +176,33 @@ export const emailSubscribers = pgTable("email_subscribers", {
   subscribedAt: timestamp("subscribed_at", { mode: "string" }).defaultNow().notNull(),
   unsubscribedAt: timestamp("unsubscribed_at", { mode: "string" }),
 })
+
+// ─── Model Applications (people who want to appear in videos) ─────
+export const modelApplicationStatusEnum = pgEnum("model_application_status", [
+  "new",
+  "contacted",
+  "approved",
+  "rejected",
+])
+
+export const modelApplications = pgTable("model_applications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  /** Full phone in E.164-ish form, e.g. "+66812345678". */
+  phone: varchar("phone", { length: 40 }).notNull(),
+  /** ISO 3166-1 alpha-2 of the chosen dial code, e.g. "TH". */
+  phoneCountry: varchar("phone_country", { length: 2 }),
+  // Social handles — each optional, stored separately. At least one required.
+  whatsapp: varchar("whatsapp", { length: 255 }),
+  instagram: varchar("instagram", { length: 255 }),
+  telegram: varchar("telegram", { length: 255 }),
+  tiktok: varchar("tiktok", { length: 255 }),
+  youtube: varchar("youtube", { length: 255 }),
+  facebook: varchar("facebook", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  notes: text("notes"),
+  /** Their pitch — why we should feature them. */
+  whyChooseUs: text("why_choose_us"),
+  status: modelApplicationStatusEnum("status").notNull().default("new"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+})
