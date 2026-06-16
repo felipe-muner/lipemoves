@@ -19,8 +19,17 @@ IN_DIR="${1:?input dir required}"
 OUT_DIR="${2:-$IN_DIR/edited}"
 mkdir -p "$OUT_DIR"
 
-ZOOM=0.20      # total zoom range, spread across the whole clip
+ZOOM="${ZOOM:-0.10}"   # total zoom range across the whole clip (half-speed; was 0.20)
 FPS=30
+
+# Unpredictable Ken Burns moves: each is "dir:fx:fy" — dir zoom in/out, and
+# (fx,fy) is the anchor the move drifts toward (0,0)=top-left, (1,0)=top-right,
+# (.5,.5)=center, (0,.5)=left edge, (1,1)=bottom-right, etc. The list is
+# SHUFFLED per run so consecutive clips pan different directions at random.
+moves=("in:1:0" "out:0.5:0.5" "in:0:0.5" "in:0:1" "out:0:0" "in:0.5:0.5" \
+       "out:1:0.5" "in:1:1" "out:0.5:0" "in:0.5:1" "out:0:1" "in:1:0.5")
+MOVES=()
+while IFS= read -r _m; do MOVES+=("$_m"); done < <(printf '%s\n' "${moves[@]}" | sort -R)
 
 # Read one source video stream tag, falling back to a default when the source
 # is missing/unknown for that field.  probe_tag <field> <file> <default>
@@ -48,13 +57,15 @@ for f in "$IN_DIR"/*.{mov,mp4,m4v}; do
   # range exactly at the last frame, so the effect never stops early. Longer
   # clips zoom slower, shorter clips faster — but all run end to end.
   TOTAL_FRAMES=$(awk "BEGIN{f=$D*$FPS; printf \"%d\", (f<1?1:f)}")
-  if (( i % 2 == 0 )); then
+  # Pick this clip's shuffled move: direction + anchor (fx,fy).
+  m="${MOVES[$(( i % ${#MOVES[@]} ))]}"
+  dir="${m%%:*}"; rest="${m#*:}"; FX="${rest%%:*}"; FY="${rest##*:}"
+  if [[ "$dir" == "in" ]]; then
     zexpr="1.0+${ZOOM}*on/${TOTAL_FRAMES}"
-    label="in"
   else
     zexpr="1.0+${ZOOM}*(1-on/${TOTAL_FRAMES})"
-    label="out"
   fi
+  label="${dir}@${FX},${FY}"
 
   # Detect the SOURCE color so we PRESERVE it exactly: HLG/bt2020 stays HDR,
   # bt709 stays SDR. No tonemap, no gamut change. bt709 fallback if untagged.
@@ -83,7 +94,7 @@ for f in "$IN_DIR"/*.{mov,mp4,m4v}; do
   #  1) upscale 2x to give zoompan crop room  2) zoompan zoom -> 1080x1920
   VF="fps=${FPS},\
 scale=2160:3840,\
-zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=${FPS},\
+zoompan=z='${zexpr}':d=1:x='(iw-iw/zoom)*${FX}':y='(ih-ih/zoom)*${FY}':s=1080x1920:fps=${FPS},\
 format=${OUTFMT},\
 setparams=range=${FFRANGE}:colorspace=${CS}:color_primaries=${CP}:color_trc=${CT}"
 
