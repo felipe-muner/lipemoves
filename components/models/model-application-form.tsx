@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -18,8 +19,14 @@ import { PhoneInput } from "@/components/models/phone-input"
 import { DEFAULT_COUNTRY, type Country } from "@/lib/countries"
 import { submitModelApplication } from "@/lib/actions/model-application"
 
-const pill =
-  "h-12 rounded-full border-white/15 bg-white/5 px-5 text-sm text-white placeholder:text-white/40 focus-visible:border-[#39FF14] focus-visible:ring-[#39FF14]/30 dark:bg-white/5"
+const pillBase =
+  "h-12 rounded-full bg-white/5 px-5 text-sm text-white placeholder:text-white/40 dark:bg-white/5"
+const pillOk =
+  "border-white/15 focus-visible:border-[#39FF14] focus-visible:ring-[#39FF14]/30"
+const pillErr =
+  "border-red-500/70 focus-visible:border-red-500 focus-visible:ring-red-500/30"
+/** Rounded input style; pass `true` for the invalid (red) variant. */
+const pill = (error?: boolean) => `${pillBase} ${error ? pillErr : pillOk}`
 
 const block =
   "min-h-28 rounded-2xl border-white/15 bg-white/5 px-5 py-4 text-sm text-white placeholder:text-white/40 focus-visible:border-[#39FF14] focus-visible:ring-[#39FF14]/30 dark:bg-white/5"
@@ -55,6 +62,14 @@ const EMPTY: Record<SocialKey, string> = {
   facebook: "",
 }
 
+type FieldKey = "name" | "phone" | "contact"
+
+const ERROR_TEXT: Record<FieldKey, string> = {
+  name: "Please add your name",
+  phone: "Please add a valid phone number",
+  contact: "Add an email or at least one social handle",
+}
+
 export function ModelApplicationForm() {
   const [pending, startTransition] = React.useTransition()
   const [done, setDone] = React.useState(false)
@@ -67,18 +82,59 @@ export function ModelApplicationForm() {
   const [notes, setNotes] = React.useState("")
   const [whyChooseUs, setWhyChooseUs] = React.useState("")
 
+  // Inline field validation: red border + shake + smooth-scroll to the first.
+  const [errors, setErrors] = React.useState<Set<FieldKey>>(new Set())
+  // Separate from `errors` so the shake can replay on each submit (cleared,
+  // then re-applied next frame) without re-triggering on every keystroke.
+  const [shaking, setShaking] = React.useState<Set<FieldKey>>(new Set())
+  const nameRef = React.useRef<HTMLDivElement>(null)
+  const phoneRef = React.useRef<HTMLDivElement>(null)
+  const contactRef = React.useRef<HTMLDivElement>(null)
+  const refFor = (key: FieldKey) =>
+    key === "name" ? nameRef : key === "phone" ? phoneRef : contactRef
+
+  function clearError(key: FieldKey) {
+    setErrors((prev) => {
+      if (!prev.has(key)) return prev
+      const next = new Set(prev)
+      next.delete(key)
+      return next
+    })
+  }
+
   function setSocial(key: SocialKey, value: string) {
     setSocials((s) => ({ ...s, [key]: value }))
+    clearError("contact")
   }
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     const digits = number.replace(/[^\d]/g, "")
-    if (!name.trim()) return toast.error("Please add your name")
-    if (digits.length < 5) return toast.error("Please add a valid phone number")
+    const next = new Set<FieldKey>()
+    if (!name.trim()) next.add("name")
+    if (digits.length < 5) next.add("phone")
     if (!email.trim() && !SOCIALS.some((s) => socials[s.key].trim()))
-      return toast.error("Add an email or at least one social handle")
+      next.add("contact")
 
+    if (next.size > 0) {
+      setErrors(next)
+      // Scroll to the first invalid field (top-to-bottom order), shake all.
+      const order: FieldKey[] = ["name", "phone", "contact"]
+      const first = order.find((k) => next.has(k))
+      if (first) {
+        refFor(first).current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        })
+      }
+      // Replay the shake: clear it this render, then re-apply next frame so
+      // the CSS animation restarts even if the same fields failed last time.
+      setShaking(new Set())
+      requestAnimationFrame(() => setShaking(new Set(next)))
+      return
+    }
+
+    setErrors(new Set())
     startTransition(async () => {
       const res = await submitModelApplication({
         name: name.trim(),
@@ -114,36 +170,61 @@ export function ModelApplicationForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       {/* Name */}
-      <Field label="Your name">
+      <Field
+        ref={nameRef}
+        label="Your name"
+        error={errors.has("name") ? ERROR_TEXT.name : undefined}
+        shake={shaking.has("name")}
+      >
         <Input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value)
+            clearError("name")
+          }}
           placeholder="Full name"
           autoComplete="name"
-          className={pill}
+          className={pill(errors.has("name"))}
         />
       </Field>
 
       {/* Phone */}
-      <Field label="Phone number">
+      <Field
+        ref={phoneRef}
+        label="Phone number"
+        error={errors.has("phone") ? ERROR_TEXT.phone : undefined}
+        shake={shaking.has("phone")}
+      >
         <PhoneInput
           country={country}
           onCountryChange={setCountry}
           number={number}
-          onNumberChange={setNumber}
-          pillClassName={pill}
+          onNumberChange={(v) => {
+            setNumber(v)
+            clearError("phone")
+          }}
+          pillClassName={pill(errors.has("phone"))}
         />
       </Field>
 
       {/* Email */}
-      <Field label="Email" optional>
+      <Field
+        ref={contactRef}
+        label="Email"
+        optional
+        error={errors.has("contact") ? ERROR_TEXT.contact : undefined}
+        shake={shaking.has("contact")}
+      >
         <Input
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            clearError("contact")
+          }}
           placeholder="you@email.com"
           autoComplete="email"
-          className={pill}
+          className={pill(errors.has("contact"))}
         />
       </Field>
 
@@ -161,7 +242,7 @@ export function ModelApplicationForm() {
                 onChange={(e) => setSocial(key, e.target.value)}
                 placeholder={placeholder}
                 autoComplete="off"
-                className={`${pill} pl-32`}
+                className={`${pill()} pl-32`}
               />
             </div>
           ))}
@@ -204,17 +285,21 @@ export function ModelApplicationForm() {
   )
 }
 
-function Field({
-  label,
-  optional,
-  children,
-}: {
-  label: string
-  optional?: boolean | string
-  children: React.ReactNode
-}) {
+const Field = React.forwardRef<
+  HTMLDivElement,
+  {
+    label: string
+    optional?: boolean | string
+    error?: string
+    shake?: boolean
+    children: React.ReactNode
+  }
+>(function Field({ label, optional, error, shake, children }, ref) {
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      ref={ref}
+      className={cn("flex flex-col gap-2 scroll-mt-24", shake && "animate-shake")}
+    >
       <label className="px-1 text-sm font-medium text-white/80">
         {label}
         {optional && (
@@ -224,6 +309,9 @@ function Field({
         )}
       </label>
       {children}
+      {error ? (
+        <p className="px-1 text-xs font-medium text-red-400">{error}</p>
+      ) : null}
     </div>
   )
-}
+})

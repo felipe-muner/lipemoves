@@ -177,3 +177,26 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee { animation-duration: 140s; }
 }
+
+/* =============================================
+   Form validation shake (invalid field nudge)
+   ============================================= */
+/* One continuous shake — uniform amplitude and even spacing so every
+   left/right swing moves at the same speed (no decaying "separate waves"),
+   reading as a single "fix this field" gesture. */
+@keyframes lm-shake {
+  0%    { transform: translateX(0); }
+  12.5% { transform: translateX(-8px); }
+  25%   { transform: translateX(8px); }
+  37.5% { transform: translateX(-8px); }
+  50%   { transform: translateX(8px); }
+  62.5% { transform: translateX(-8px); }
+  75%   { transform: translateX(8px); }
+  87.5% { transform: translateX(-8px); }
+  100%  { transform: translateX(0); }
+}
+/* Intentional error cue — kept under reduced-motion (like the marquee)
+   since it's brief feedback, not decorative ambient motion. */
+.animate-shake {
+  animation: lm-shake 0.9s linear both;
+}
