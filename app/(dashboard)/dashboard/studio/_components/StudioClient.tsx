@@ -8,6 +8,7 @@ import {
   Film,
   ImageIcon,
   Loader2,
+  Play,
   Plus,
   Upload,
   X,
@@ -801,6 +802,17 @@ function ModeOption({
 
 export function StudioClient() {
   const [files, setFiles] = React.useState<File[]>([])
+  // Playable object URLs for the picked clips, so each cell can preview the
+  // real video (with its text/badge overlays) before rendering. Revoked when
+  // the selection changes or on unmount.
+  const [clipUrls, setClipUrls] = React.useState<string[]>([])
+  React.useEffect(() => {
+    const urls = files.map((f) => URL.createObjectURL(f))
+    setClipUrls(urls)
+    return () => urls.forEach((u) => URL.revokeObjectURL(u))
+  }, [files])
+  // Which Compose cell is currently showing its video player (null = none).
+  const [playClip, setPlayClip] = React.useState<number | null>(null)
 
   const [mode, setMode] = React.useState<"compose" | "frames">("compose")
   const [join, setJoin] = React.useState(true)
@@ -1249,7 +1261,16 @@ export function StudioClient() {
                       containerType: "inline-size",
                     }}
                   >
-                    {c.poster ? (
+                    {playClip === i && clipUrls[i] ? (
+                      <video
+                        src={clipUrls[i]}
+                        autoPlay
+                        loop
+                        playsInline
+                        controls
+                        className="absolute inset-0 size-full object-cover"
+                      />
+                    ) : c.poster ? (
                       <Image
                         src={c.poster}
                         alt={`Clip ${i + 1}`}
@@ -1265,6 +1286,24 @@ export function StudioClient() {
                     <span className="pointer-events-none absolute left-1 top-1 z-10 rounded bg-black/70 px-1.5 text-[10px] font-bold text-emerald-400">
                       {i + 1}
                     </span>
+                    {/* play / stop the real clip in-cell (overlays stay on top
+                        so you preview the text & badge over the moving video) */}
+                    {clipUrls[i] ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPlayClip((p) => (p === i ? null : i))
+                        }
+                        title={playClip === i ? "Show frame" : "Play clip"}
+                        className="absolute right-1 top-1 z-20 grid size-6 place-items-center rounded-full bg-black/70 text-white transition hover:bg-black/90"
+                      >
+                        {playClip === i ? (
+                          <ImageIcon className="size-3.5" />
+                        ) : (
+                          <Play className="size-3.5 fill-current" />
+                        )}
+                      </button>
+                    ) : null}
                     {c.texts.map((t) =>
                       t.text.trim() ? (
                         <CoverText
@@ -1298,6 +1337,42 @@ export function StudioClient() {
                       />
                     ) : null}
                   </div>
+                  {/* rendered output preview for this clip (after Render) */}
+                  {(() => {
+                    const rendered = job?.clips.find((cl) => cl.index === i)
+                    if (rendered?.videoName && job?.compose) {
+                      return (
+                        <div className="space-y-1">
+                          <video
+                            src={fileUrl(rendered.videoName)}
+                            controls
+                            className="w-full rounded-lg bg-black"
+                          />
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium">
+                              {statusIcon(rendered.status)}
+                              <span className="truncate">Rendered preview</span>
+                            </span>
+                            <a
+                              href={fileUrl(rendered.videoName, true)}
+                              title="Download clip"
+                              className="shrink-0 text-emerald-600 hover:underline dark:text-emerald-400"
+                            >
+                              <Download className="size-3.5" />
+                            </a>
+                          </div>
+                        </div>
+                      )
+                    }
+                    if (rendered?.status === "error") {
+                      return (
+                        <p className="text-[11px] text-red-500">
+                          {rendered.message}
+                        </p>
+                      )
+                    }
+                    return null
+                  })()}
                   {/* badge content — edit freely (drop the ✅, renumber…);
                       clear it to skip the badge on this clip */}
                   {enumerate ? (
@@ -1455,7 +1530,10 @@ export function StudioClient() {
 
             {/* per-clip progress + videos — small players side by side, scroll
                 horizontally if many. In frames mode the players are skipped
-                (only the cover section below matters). */}
+                (only the cover section below matters). Once a joined final video
+                exists, this row is hidden: the Result shows only that final
+                version (per-clip previews live in the Compose section above). */}
+            {job.compose && job.joinedName ? null : (
             <div className="flex gap-3 overflow-x-auto pb-1">
               {job.clips.map((c) => (
                 <div key={c.index} className="w-[180px] shrink-0 space-y-1.5">
@@ -1489,6 +1567,7 @@ export function StudioClient() {
                 </div>
               ))}
             </div>
+            )}
 
             {/* ---- Cover studio ---- */}
             {clipsWithFrames.length && clipObj ? (
