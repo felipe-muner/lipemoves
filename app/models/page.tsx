@@ -6,6 +6,15 @@ export const metadata: Metadata = {
   title: "Feature in our videos — Lipe Moves",
   description:
     "Want to appear in Lipe Moves videos? Apply here — movement, yoga and mobility shoots in Koh Phangan.",
+  alternates: { canonical: "https://lipemoves.com/models" },
+  openGraph: {
+    title: "Be in our videos — Lipe Moves casting",
+    description:
+      "Movers, yogis and athletes — apply to feature in Lipe Moves shoots in Koh Phangan.",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 }
 
 export default function ModelsPage() {
