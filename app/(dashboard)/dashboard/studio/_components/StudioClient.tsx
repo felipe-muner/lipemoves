@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Download,
   Film,
+  GripVertical,
   ImageIcon,
   Loader2,
   Play,
@@ -813,6 +814,9 @@ export function StudioClient() {
   }, [files])
   // Which Compose cell is currently showing its video player (null = none).
   const [playClip, setPlayClip] = React.useState<number | null>(null)
+  // Drag-to-reorder: index being dragged + the index it's hovering over.
+  const dragFrom = React.useRef<number | null>(null)
+  const [dragOver, setDragOver] = React.useState<number | null>(null)
 
   const [mode, setMode] = React.useState<"compose" | "frames">("compose")
   const [join, setJoin] = React.useState(true)
@@ -923,6 +927,22 @@ export function StudioClient() {
           /* leave poster null — the editor shows a placeholder */
         })
     })
+  }
+
+  // Move a clip to a new slot, reordering files + their configs in lock-step
+  // (clipUrls re-derive from files). Reset the in-cell player so it doesn't
+  // point at a stale index after the shuffle.
+  function moveClip(from: number, to: number) {
+    if (from === to) return
+    const reorder = <T,>(arr: T[]): T[] => {
+      const next = [...arr]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    }
+    setFiles((prev) => reorder(prev))
+    setComposeCfgs((prev) => reorder(prev))
+    setPlayClip(null)
   }
 
   function setCompose(i: number, patch: Partial<ComposeCfg>) {
@@ -1253,7 +1273,44 @@ export function StudioClient() {
                 const badgeText =
                   c.badgeText ?? `✅ ${i + 1}/${composeCfgs.length}`
                 return (
-                <div key={i} className="w-[180px] shrink-0 space-y-2">
+                <div
+                  key={i}
+                  onDragOver={(e) => {
+                    if (dragFrom.current === null) return
+                    e.preventDefault()
+                    if (dragOver !== i) setDragOver(i)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    if (dragFrom.current !== null) moveClip(dragFrom.current, i)
+                    dragFrom.current = null
+                    setDragOver(null)
+                  }}
+                  className={`w-[180px] shrink-0 space-y-2 rounded-lg transition ${
+                    dragOver === i && dragFrom.current !== i
+                      ? "ring-2 ring-emerald-500/70"
+                      : ""
+                  } ${dragFrom.current === i ? "opacity-50" : ""}`}
+                >
+                  {/* drag handle + filename — grab here to reorder the sequence */}
+                  <div
+                    draggable
+                    onDragStart={(e) => {
+                      dragFrom.current = i
+                      e.dataTransfer.effectAllowed = "move"
+                    }}
+                    onDragEnd={() => {
+                      dragFrom.current = null
+                      setDragOver(null)
+                    }}
+                    title={files[i]?.name}
+                    className="flex cursor-grab items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-1 text-[10px] text-muted-foreground active:cursor-grabbing"
+                  >
+                    <GripVertical className="size-3 shrink-0" />
+                    <span className="truncate font-medium">
+                      {files[i]?.name ?? `Clip ${i + 1}`}
+                    </span>
+                  </div>
                   <div
                     className="relative overflow-hidden rounded-lg bg-black"
                     style={{
@@ -1457,8 +1514,9 @@ export function StudioClient() {
               })}
             </div>
             <p className="text-xs text-muted-foreground">
-              Drag each text to place · corner dot resizes · each text has its own
-              font · zoom is per clip · color, opacity &amp; fade apply to all
+              Drag a clip&apos;s filename header to reorder the sequence · drag each
+              text to place · corner dot resizes · each text has its own font ·
+              zoom is per clip · color, opacity &amp; fade apply to all
               {enumerate ? (
                 <>
                   {" "}
