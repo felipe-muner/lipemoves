@@ -179,6 +179,9 @@ export function TimerClient() {
   // dial to its corner.
   const [countdown, setCountdown] = useState<number | null>(null)
   const [flying, setFlying] = useState(false)
+  // Brief window right after GO: the first clip grows from its grid cell to
+  // full-screen (overlay → main video).
+  const [growing, setGrowing] = useState(false)
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const hlsRef = useRef<Hls | null>(null)
@@ -552,9 +555,13 @@ export function TimerClient() {
         countdownRef.current = setTimeout(next, 900)
       } else {
         setCountdown(null)
+        setGrowing(true) // first clip grows grid-cell → full as time starts
         startRef.current = performance.now()
         setStatus("running")
-        countdownRef.current = setTimeout(() => setFlying(false), 500)
+        countdownRef.current = setTimeout(() => {
+          setFlying(false)
+          setGrowing(false)
+        }, 900)
       }
     }
     countdownRef.current = setTimeout(next, 900)
@@ -581,6 +588,7 @@ export function TimerClient() {
     if (countdownRef.current) clearTimeout(countdownRef.current)
     setCountdown(null)
     setFlying(false)
+    setGrowing(false)
     setStatus("idle")
     setElapsed(0)
     lastMinuteRef.current = -1
@@ -952,7 +960,51 @@ export function TimerClient() {
         preload="auto"
         className="absolute inset-0 size-full object-cover"
       />
-      {idleStart ? <div className="absolute inset-0 bg-black/45" /> : null}
+      {/* Idle + countdown: an Instagram-style grid of ALL clips playing, so you
+          preview the whole session before (and as) it starts. */}
+      {(idleStart || counting || growing) && day?.blocks.length ? (
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-3 gap-px">
+          {day.blocks.map((b, i) => (
+            <video
+              key={i}
+              src={b.video}
+              muted
+              loop
+              autoPlay
+              playsInline
+              className={cn(
+                "size-full object-cover",
+                // odd count → last clip spans the full bottom row
+                day.blocks.length % 2 === 1 &&
+                  i === day.blocks.length - 1 &&
+                  "col-span-2",
+              )}
+            />
+          ))}
+        </div>
+      ) : null}
+      {/* Dim overlay through idle + the countdown; clears the moment time
+          starts so the grow reads as overlay → main video. */}
+      {idleStart || counting ? (
+        <div className="absolute inset-0 bg-black/45" />
+      ) : null}
+      {/* From the play press, the first clip grows from its top-left cell and
+          accelerates to full-screen — it rises BRIGHT above the dim (losing the
+          overlay) while the other clips stay dimmed behind. */}
+      {(counting || growing) && day?.blocks[0] ? (
+        <motion.video
+          src={day.blocks[0].video}
+          muted
+          loop
+          autoPlay
+          playsInline
+          className="absolute inset-0 z-[1] size-full object-cover"
+          style={{ transformOrigin: "top left" }}
+          initial={{ scale: 0.5 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 2.7, ease: [0.42, 0, 1, 1] }} // ease-in = accelerate
+        />
+      ) : null}
       {!isRest ? (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
@@ -982,7 +1034,7 @@ export function TimerClient() {
         ) : null}
       </AnimatePresence>
       <motion.div
-        className={cn("absolute", flying && "lm-trip")}
+        className={cn("absolute z-30", flying && "lm-trip")}
         initial={false}
         animate={{
           ...DOCK[counting || isActive ? (lay?.dock ?? "tr") : "center"],
@@ -991,7 +1043,8 @@ export function TimerClient() {
         }}
         transition={
           counting
-            ? { duration: 2.7, ease: FX.ease }
+            ? // hold centered ~1s (user sees the clock) then fly to the corner
+              { duration: 1.7, ease: FX.ease, delay: 1 }
             : { type: "spring", stiffness: 170, damping: 18 }
         }
       >
