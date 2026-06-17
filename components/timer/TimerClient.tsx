@@ -93,6 +93,29 @@ const DAY_LAYOUTS: DayLayout[] = [
   { label: "Overlay · top-right", col: false, ring: "full", ringOrder: 1, video: "none", videoOrder: 2, videoW: "max-w-[400px]", names: false, namesOrder: 3, overlay: true, dock: "tr" },
 ]
 
+/** Center→corner flight effects (selectable). `rotate` spins the dial in place
+ *  (transformOrigin stays centered so it never swings off-screen); `ease` is the
+ *  framer cubic-bezier for the 3-2-1 flight. */
+const FLIGHT_EFFECTS: {
+  label: string
+  rotate: number
+  ease: [number, number, number, number]
+  /** Optional scale keyframes across the flight (else a straight scale to dock). */
+  scaleKeys?: number[]
+}[] = [
+  { label: "Glide", rotate: 0, ease: [0.45, 0, 0.15, 1] },
+  { label: "Spin", rotate: 360, ease: [0.45, 0, 0.15, 1] },
+  { label: "Spiral", rotate: 540, ease: [0.5, 0, 0.2, 1] },
+  { label: "Bounce", rotate: 0, ease: [0.34, 1.4, 0.64, 1] },
+  { label: "Tumble", rotate: 720, ease: [0.34, 1.3, 0.64, 1] },
+  // φ-based: golden-ratio easing — naturally pleasing deceleration.
+  { label: "Golden", rotate: 360, ease: [0.618, 0, 0.382, 1] },
+  // Fibonacci: golden ease + a breathing shrink in golden proportions.
+  { label: "Fibonacci", rotate: 360, ease: [0.618, 0, 0.382, 1], scaleKeys: [1, 0.62, 0.5] },
+  // 8 · Fib-bounce — golden breathing + a smooth overshoot landing (the pick).
+  { label: "Fib-bounce", rotate: 0, ease: [0.34, 1.25, 0.4, 1], scaleKeys: [1, 0.62, 0.44, 0.5] },
+]
+
 /** A clock segment (minutes or seconds) that rolls on change: the outgoing
  *  glyph slides up and fades while the new one rises into its place. Each
  *  character animates independently inside its own fixed, clipped box, so only
@@ -743,24 +766,30 @@ export function TimerClient() {
   // --- overlay focus mode (layouts 6-8) ---------------------------------
   // The timer rides on top of the video and flies from center → corner on
   // Start. `DOCK` are the two framer targets (center vs the resting corner).
-  // Straight-line travel (no rotation — spinning arced it off-screen).
+  // Targets place the dial's CENTER (transformOrigin stays centered, so spin
+  // effects rotate in place and never swing off-screen). Docked corners sit
+  // tight with a small margin; bigger resting scale than before.
   const DOCK: Record<
     string,
     { top: string; left: string; x: string; y: string; scale: number }
   > = {
     center: { top: "50%", left: "50%", x: "-50%", y: "-50%", scale: 1 },
-    tr: { top: "5%", left: "95%", x: "-100%", y: "0%", scale: 0.4 },
-    tl: { top: "5%", left: "5%", x: "0%", y: "0%", scale: 0.4 },
-    br: { top: "95%", left: "95%", x: "-100%", y: "-100%", scale: 0.4 },
+    // top % is smaller than the side % so the gap matches visually (card is
+    // ~16:9 tall, so the same % is a bigger pixel gap vertically).
+    tr: { top: "8%", left: "86%", x: "-50%", y: "-50%", scale: 0.5 },
+    tl: { top: "8%", left: "14%", x: "-50%", y: "-50%", scale: 0.5 },
+    br: { top: "92%", left: "86%", x: "-50%", y: "-50%", scale: 0.5 },
   }
   // A compact dial (progress ring + clock + phase + a single play/pause) for
   // the overlay; reuses the same ring geometry, sized to fit a corner. During
   // the 3-2-1 it shows the count instead of the clock, so the countdown itself
   // travels into the corner.
   const counting = countdown !== null
-  // Before the first Start (overlay): show ONLY a big play button (over a
-  // scrim) — clean "press to begin". The full dial appears once it starts.
   const idleStart = status === "idle" && !counting
+  // The chosen flight effect (Fib-bounce, last in the list).
+  const FX = FLIGHT_EFFECTS[FLIGHT_EFFECTS.length - 1]
+  // Full-size overlay dial. Idle = just a big play button; otherwise a ring +
+  // travelling countdown / clock + a play/pause that pulses with the beat.
   const compactTimer = idleStart ? (
     <button
       type="button"
@@ -771,10 +800,7 @@ export function TimerClient() {
       <Play className="size-9 fill-current" />
     </button>
   ) : (
-    <div className="relative grid size-44 place-items-center">
-      {/* Localized dark glow so the dial stays readable on ANY video (it
-          scales with the dial, so it works big-centered and small-in-corner,
-          on mobile + desktop) without dimming the whole clip. */}
+    <div className="relative grid size-52 place-items-center">
       <div
         className="pointer-events-none absolute inset-0 rounded-full"
         style={{
@@ -784,7 +810,7 @@ export function TimerClient() {
       />
       <svg
         viewBox={`0 0 ${(R + STROKE) * 2} ${(R + STROKE) * 2}`}
-        className="size-44 -rotate-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+        className="size-52 -rotate-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
       >
         <circle cx={R + STROKE} cy={R + STROKE} r={R} fill="none" strokeWidth={STROKE} className="stroke-white/25" />
         <circle
@@ -795,7 +821,6 @@ export function TimerClient() {
       </svg>
       <div className="absolute flex flex-col items-center gap-1 text-white">
         {counting ? (
-          // The travelling countdown — pops on each tick as the dial flies.
           <motion.span
             key={countdown}
             initial={{ scale: 0.3, opacity: 0 }}
@@ -807,7 +832,7 @@ export function TimerClient() {
           </motion.span>
         ) : (
           <>
-            {status === "running" && ringMeta !== "clock" ? (
+            {status === "running" ? (
               <span
                 className={cn(
                   "text-sm font-extrabold tracking-[0.2em]",
@@ -831,6 +856,11 @@ export function TimerClient() {
                 "mt-1 grid size-11 place-items-center rounded-full text-white transition-transform hover:scale-110 active:scale-95",
                 status === "done" ? "bg-muted" : "lm-psy-btn",
               )}
+              style={
+                status === "running"
+                  ? { animationDuration: inWork ? "3s, 2s" : "13s, 8s" }
+                  : undefined
+              }
             >
               {status === "running" ? (
                 <Pause className="size-5 fill-current" />
@@ -1000,7 +1030,7 @@ export function TimerClient() {
         )}
       >
         {lay?.overlay ? (
-          /* Overlay focus — video hero, timer flies center → corner on Start */
+          /* Overlay focus — real size, the Fib-bounce flight on Start. */
           <div className="relative aspect-[9/16] w-[min(400px,85vw)] overflow-hidden rounded-2xl border border-white/10 bg-black">
             <video
               ref={videoRef}
@@ -1010,10 +1040,7 @@ export function TimerClient() {
               preload="auto"
               className="absolute inset-0 size-full object-cover"
             />
-            {/* Idle scrim — darkens the clip so the play button pops. */}
-            {idleStart ? (
-              <div className="absolute inset-0 bg-black/45" />
-            ) : null}
+            {idleStart ? <div className="absolute inset-0 bg-black/45" /> : null}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
                 {previewingNext
@@ -1026,21 +1053,15 @@ export function TimerClient() {
             </div>
             <motion.div
               className={cn("absolute", flying && "lm-trip")}
-              style={{
-                transformOrigin:
-                  lay.dock === "tl"
-                    ? "top left"
-                    : lay.dock === "br"
-                      ? "bottom right"
-                      : "top right",
-              }}
               initial={false}
-              // Travel to the corner during the countdown (counting) and stay
-              // there once running; center while idle.
-              animate={DOCK[counting || isActive ? (lay.dock ?? "tr") : "center"]}
+              animate={{
+                ...DOCK[counting || isActive ? (lay.dock ?? "tr") : "center"],
+                rotate: counting || isActive ? FX.rotate : 0,
+                ...(counting && FX.scaleKeys ? { scale: FX.scaleKeys } : {}),
+              }}
               transition={
                 counting
-                  ? { duration: 2.7, ease: [0.45, 0, 0.15, 1] } // slow flight over 3·2·1
+                  ? { duration: 2.7, ease: FX.ease }
                   : { type: "spring", stiffness: 170, damping: 18 }
               }
             >
