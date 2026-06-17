@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Hls from "hls.js"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import Link from "next/link"
-import { Pause, Play, RotateCcw, Volume2, Minus, Plus } from "lucide-react"
+import { Pause, Play, RotateCcw, Volume2, Minus, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -747,6 +747,18 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
     [],
   )
 
+  // Lock body scroll while the timer is immersive (full-screen on play).
+  useEffect(() => {
+    const active =
+      countdown !== null || status === "running" || status === "paused"
+    if (!active) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [status, countdown])
+
   // Keep the latest layout readable from start() without a render-time ref read.
   useEffect(() => {
     layRef.current = lay
@@ -798,6 +810,8 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
   // travels into the corner.
   const counting = countdown !== null
   const idleStart = status === "idle" && !counting
+  // Immersive: full-screen the card while counting/playing/paused.
+  const immersive = counting || isActive
   // The chosen flight effect (Fib-bounce, last in the list).
   const FX = FLIGHT_EFFECTS[FLIGHT_EFFECTS.length - 1]
   // Full-size overlay dial. Idle = just a big play button; otherwise a ring +
@@ -946,8 +960,29 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
   // full-screen wash) so we can show both side by side to choose.
   // The overlay focus card (real size). REST slides a half black→transparent
   // panel in from the left so the next-move demo still reads on the right.
-  const overlay = (
-    <div className="relative aspect-[9/16] w-[min(400px,85vw)] overflow-hidden rounded-2xl border border-white/10 bg-black">
+  // Always a 9:16 phone frame. Immersive just fits it to the viewport (near
+  // full-screen on mobile, a centered tall frame on desktop) — never stretched.
+  const overlayInner = (
+    <div
+      className={cn(
+        "relative aspect-[9/16] overflow-hidden bg-black",
+        immersive
+          ? "max-h-[100dvh] w-screen sm:h-[100dvh] sm:w-auto"
+          : "w-[min(400px,85vw)] rounded-2xl border border-white/10",
+      )}
+    >
+      {/* Exit immersive (stops the session) — sits above the dial. */}
+      {immersive ? (
+        <button
+          type="button"
+          onClick={reset}
+          aria-label="Exit"
+          className="absolute left-3 top-3 z-40 grid size-9 place-items-center rounded-full bg-black/50 text-white/80 backdrop-blur transition-colors hover:text-white"
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+        >
+          <X className="size-4" />
+        </button>
+      ) : null}
       <video
         ref={videoRef}
         muted
@@ -1015,14 +1050,15 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
         {isRest ? (
           <motion.div
             key="rest"
-            initial={{ x: "-101%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-101%" }}
-            transition={{ type: "spring", stiffness: 240, damping: 30 }}
-            className="absolute inset-y-0 left-0 z-10 flex w-[88%] flex-col justify-center gap-3 px-8 py-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute inset-0 z-10 flex flex-col justify-center gap-3 px-8 py-10"
             style={{
+              // full-screen wash, bolder dark behind the (left) text
               background:
-                "linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.9) 42%, rgba(0,0,0,0.45) 64%, transparent 100%)",
+                "linear-gradient(to right, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 50%, rgba(0,0,0,0.7) 100%)",
             }}
           >
             {restContent}
@@ -1047,6 +1083,14 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
         {compactTimer}
       </motion.div>
     </div>
+  )
+  // Immersive: center the phone frame on a full-screen black backdrop.
+  const overlay = immersive ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+      {overlayInner}
+    </div>
+  ) : (
+    overlayInner
   )
 
   // First-load shimmer for a dated workout — avoids flashing the manual timer.
