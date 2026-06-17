@@ -20,7 +20,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function PublicTimerPage() {
+export default async function PublicTimerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>
+}) {
+  // Read the date server-side so a dated workout renders the loader from the
+  // first byte (no flash of the default manual timer before hydration).
+  const { date } = await searchParams
+  const dated = !!date && /^\d{4}-\d{2}-\d{2}$/.test(date)
   return (
     <main className="dark min-h-screen bg-[#0a0a0a] text-white antialiased">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-5 sm:px-6">
@@ -54,7 +62,7 @@ export default function PublicTimerPage() {
         </div>
 
         <div className="mt-6 flex-1">
-          <TimerClient />
+          <TimerClient dated={dated} />
         </div>
 
         <footer className="mt-8 pb-2 text-center text-sm text-white/40">

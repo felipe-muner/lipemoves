@@ -156,7 +156,7 @@ function TickDigit({ value, reduce }: { value: string; reduce: boolean }) {
   )
 }
 
-export function TimerClient() {
+export function TimerClient({ dated = false }: { dated?: boolean }) {
   const [minutes, setMinutes] = useState(30)
   const [workSec, setWorkSec] = useState(30) // rest is always 60 − work
   const [exercises, setExercises] = useState(3)
@@ -167,13 +167,9 @@ export function TimerClient() {
   // driven by its blocks (per-minute exercise + demo video + work split) and
   // the manual setup is hidden.
   const [day, setDay] = useState<DayFile | null>(null)
-  // True from first paint while a ?date= workout is being fetched, so we show
-  // a loader instead of flashing the default manual timer.
-  const [dayLoading, setDayLoading] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      /[?&]date=\d{4}-\d{2}-\d{2}/.test(window.location.search),
-  )
+  // Server passes `dated` (it read ?date=), so the loader renders from the
+  // first byte — no flash of the default manual timer before hydration.
+  const [dayLoading, setDayLoading] = useState(dated)
   const dayLayout = 0 // single overlay layout (selector removed)
   // Overlay start sequence: 3-2-1 countdown, then a psychedelic "flight" of the
   // dial to its corner.
@@ -1061,11 +1057,9 @@ export function TimerClient() {
           dangerouslySetInnerHTML={{
             __html:
               "@keyframes lm-load-move{0%{background-position:0% 50%}100%{background-position:300% 50%}}" +
-              ".lm-load,.lm-load-dot{background-image:linear-gradient(90deg,#39FF14,#00e0ff,#b14bff,#ff2d95,#39FF14);background-size:300% 100%;animation:lm-load-move 3s linear infinite}" +
-              ".lm-load{-webkit-background-clip:text;background-clip:text;color:transparent}",
+              ".lm-load{background-image:linear-gradient(90deg,#15803d,#22c55e,#34d399,#22c55e,#15803d);background-size:300% 100%;animation:lm-load-move 3.5s linear infinite;-webkit-background-clip:text;background-clip:text;color:transparent}",
           }}
         />
-        <div className="lm-load-dot size-10 animate-pulse rounded-full" />
         <span className="lm-load text-lg font-extrabold tracking-tight">
           Loading today&apos;s session…
         </span>
