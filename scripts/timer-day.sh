@@ -49,10 +49,19 @@ for clip in "${CLIPS[@]}"; do
   name="v${i}.mp4"
   out="$TMP/$name"
   echo "  [$i] transcoding $(basename "$clip")…" >&2
-  # H.264 high, faststart, even dimensions; strip to web-safe yuv420p.
-  "$FFMPEG" -y -loglevel error -i "$clip" \
-    -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p \
-    -c:v libx264 -preset veryfast -crf 23 -movflags +faststart \
+  # Web-safe H.264 (faststart, yuv420p, even dims). If the source is HDR
+  # (HLG/PQ, BT.2020) do a FAITHFUL colorimetric HLG/PQ→SDR conversion only:
+  # linearize, convert primaries+transfer BT.2020→BT.709, clip out-of-range
+  # highlights. NO creative tonemap / desaturation — colors must not shift.
+  TRC="$("${FFMPEG%ffmpeg}ffprobe" -v error -select_streams v:0 \
+    -show_entries stream=color_transfer -of csv=p=0 "$clip" 2>/dev/null || true)"
+  if [[ "$TRC" == "arib-std-b67" || "$TRC" == smpte2084 || "$TRC" == "smpte428" ]]; then
+    VF="zscale=t=linear:npl=203,zscale=p=bt709:t=bt709:m=bt709:r=tv,format=yuv420p,scale=trunc(iw/2)*2:trunc(ih/2)*2"
+  else
+    VF="scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p"
+  fi
+  "$FFMPEG" -y -loglevel error -i "$clip" -vf "$VF" \
+    -c:v libx264 -preset veryfast -crf 20 -movflags +faststart \
     -c:a aac -b:a 128k "$out"
 
   url="$BUNNY_CDN_BASE/timer/$DATE/$name"

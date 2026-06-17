@@ -1,12 +1,12 @@
 {
   "date": "2026-06-17",
-  "title": "QDR · 5 moves",
-  "rounds": 1,
+  "title": "Mobility · 5 moves",
+  "rounds": 2,
   "blocks": [
-    { "name": "Deep squat hold", "video": "https://lipemoves.b-cdn.net/timer/2026-06-17/v1.mp4", "work": 50 },
-    { "name": "Cossack squat", "video": "https://lipemoves.b-cdn.net/timer/2026-06-17/v2.mp4", "work": 50 },
-    { "name": "Pancake reach", "video": "https://lipemoves.b-cdn.net/timer/2026-06-17/v3.mp4", "work": 50 },
-    { "name": "Single-leg balance", "video": "https://lipemoves.b-cdn.net/timer/2026-06-17/v4.mp4", "work": 50 },
-    { "name": "Arch & curl", "video": "https://lipemoves.b-cdn.net/timer/2026-06-17/v5.mp4", "work": 60 }
+    { "name": "Overhead side reach", "video": "/timer-days/2026-06-17/v1.mp4", "work": 50 },
+    { "name": "Deep squat sway", "video": "/timer-days/2026-06-17/v2.mp4", "work": 50 },
+    { "name": "Pancake fold", "video": "/timer-days/2026-06-17/v3.mp4", "work": 50 },
+    { "name": "Single-leg airplane", "video": "/timer-days/2026-06-17/v4.mp4", "work": 50 },
+    { "name": "Thoracic opener", "video": "/timer-days/2026-06-17/v5.mp4", "work": 60 }
   ]
 }
