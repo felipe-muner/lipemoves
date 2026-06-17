@@ -187,6 +187,8 @@ export async function runPipeline(
             b.x ?? BADGE_DEFAULT_X,
             b.y ?? BADGE_DEFAULT_Y,
             b.size ?? BADGE_DEFAULT_SIZE,
+            config.badgeStyle ?? "pill",
+            config.badgeOpacity ?? 1,
           )
         }
       })

@@ -43,6 +43,12 @@ import {
   type StudioConfig,
 } from "@/lib/studio/types"
 import {
+  badgeClass,
+  badgeStyleCss,
+  outfitFontFace,
+  type BadgeStyle,
+} from "@/lib/studio/badge-style"
+import {
   DEFAULT_FONT,
   FONTS,
   fontCss,
@@ -660,6 +666,8 @@ function EnumBadge({
   cx,
   cy,
   size,
+  style,
+  opacity,
   onMove,
   onResize,
 }: {
@@ -668,6 +676,10 @@ function EnumBadge({
   cy: number
   /** Font size in cqw (% of preview width). */
   size: number
+  /** Pill vs grunge look (shared with the burn via badge-style.ts). */
+  style: BadgeStyle
+  /** Overall badge opacity, 0..1. */
+  opacity: number
   onMove: (x: number, y: number) => void
   onResize: (size: number) => void
 }) {
@@ -709,7 +721,10 @@ function EnumBadge({
           e.currentTarget.releasePointerCapture(e.pointerId)
           setDrag(false)
         }}
-        className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-extrabold"
+        data-text={text}
+        className={`pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 select-none ${badgeClass(
+          style,
+        )}`}
         style={{
           left: `${cx * 100}%`,
           top: `${cy * 100}%`,
@@ -717,14 +732,8 @@ function EnumBadge({
           touchAction: "none",
           outline: hot || drag ? "1px dashed rgba(255,255,255,.85)" : "none",
           outlineOffset: "3px",
-          padding: "0.306em 0.556em",
-          borderRadius: "0.389em",
-          background: "rgba(232,232,232,0.62)",
-          color: "#161616",
           fontSize: `${size}cqw`,
-          lineHeight: 1,
-          letterSpacing: "0.01em",
-          fontVariantNumeric: "tabular-nums",
+          opacity,
         }}
       >
         {text}
@@ -747,13 +756,13 @@ function EnumBadge({
             const c = blockCenter()
             const dist = Math.hypot(e.clientX - c.x, e.clientY - c.y)
             const { startDist, startSize } = rz.current
-            onResize(Math.min(20, Math.max(3, (startSize * dist) / startDist)))
+            onResize(Math.min(60, Math.max(3, (startSize * dist) / startDist)))
           }}
           onPointerUp={(e) => {
             e.currentTarget.releasePointerCapture(e.pointerId)
             rz.current = null
           }}
-          className="absolute -bottom-2.5 -right-2.5 block size-4 cursor-nwse-resize rounded-full border-2 border-white bg-emerald-500 shadow"
+          className="absolute -bottom-2.5 -right-2.5 z-10 block size-4 cursor-nwse-resize rounded-full border-2 border-white bg-emerald-500 shadow"
           style={{ touchAction: "none" }}
         />
       </div>
@@ -828,6 +837,11 @@ export function StudioClient() {
   const [textOpacity, setTextOpacity] = React.useState(1)
   const [textFade, setTextFade] = React.useState(true)
   const [enumerate, setEnumerate] = React.useState(false)
+  // Look for the enumerate badge: "pill" (grey ✅ pill) or "grunge" (white
+  // grunge text). Shared with the burn via lib/studio/badge-style.ts.
+  const [enumStyle, setEnumStyle] = React.useState<BadgeStyle>("pill")
+  // Overall badge opacity (both styles), 0..1.
+  const [enumOpacity, setEnumOpacity] = React.useState(1)
   // Latest measured widest-line width per text box (preview → burn), keyed by
   // text-box id. Kept in a ref (like the cover) so measuring never triggers a
   // re-render loop.
@@ -1029,6 +1043,8 @@ export function StudioClient() {
     const config: StudioConfig = {
       join,
       enumerate: mode === "compose" && enumerate,
+      badgeStyle: enumStyle,
+      badgeOpacity: enumOpacity,
       framepicker: mode === "frames" ? { step: Number(fpStep) || 0.5 } : null,
       text:
         mode === "compose"
@@ -1168,6 +1184,21 @@ export function StudioClient() {
 
   return (
     <div className="space-y-6">
+      {/* Enumerate-badge styles (pill / grunge), shared with the burn so the
+          preview matches lib/studio/badge-style.ts exactly. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html:
+            outfitFontFace("/fonts/Outfit-600.ttf") + "\n" + badgeStyleCss(),
+        }}
+      />
+      {/* indeterminate sweep for the in-cell render-progress bar */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html:
+            "@keyframes lm-indeterminate{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}",
+        }}
+      />
       {/* ---- Top: compact builder. Mode radio first, then upload + the
             per-clip editor, kept short so the result sits high. ---- */}
       <Card className="gap-5 p-3">
@@ -1210,6 +1241,46 @@ export function StudioClient() {
                 onChange={setEnumerate}
                 label={`Enumerate \u2705 1/${files.length || 1}`}
               />
+              {enumerate ? (
+                <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+                  {(
+                    [
+                      ["pill", "Pill"],
+                      ["grunge", "Grunge"],
+                    ] as const
+                  ).map(([val, label]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setEnumStyle(val)}
+                      className={`rounded px-2 py-1 text-xs font-medium transition ${
+                        enumStyle === val
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {enumerate ? (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">Badge</Label>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[Math.round(enumOpacity * 100)]}
+                    onValueChange={(v) => setEnumOpacity((v[0] ?? 100) / 100)}
+                    className="w-[110px]"
+                    aria-label="Badge opacity"
+                  />
+                  <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
+                    {Math.round(enumOpacity * 100)}%
+                  </span>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -1272,6 +1343,14 @@ export function StudioClient() {
                 // null = untouched default; cleared text skips this clip's badge.
                 const badgeText =
                   c.badgeText ?? `✅ ${i + 1}/${composeCfgs.length}`
+                // This clip's render state (the job processes clips by their
+                // original submit index). Drives the in-cell loading overlay.
+                const rendered = job?.clips.find((cl) => cl.index === i)
+                const rendering =
+                  job?.compose &&
+                  !rendered?.videoName &&
+                  rendered?.status !== "error" &&
+                  (job.status === "queued" || job.status === "running")
                 return (
                 <div
                   key={i}
@@ -1387,16 +1466,32 @@ export function StudioClient() {
                         cx={c.badgeX}
                         cy={c.badgeY}
                         size={c.badgeSize}
+                        style={enumStyle}
+                        opacity={enumOpacity}
                         onMove={(x, y) =>
                           setCompose(i, { badgeX: x, badgeY: y })
                         }
                         onResize={(s) => setCompose(i, { badgeSize: s })}
                       />
                     ) : null}
+                    {/* in-cell render progress — shown on the clip itself while
+                        the job processes this clip (no result-section spinner) */}
+                    {rendering ? (
+                      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 bg-black/55 backdrop-blur-[1px]">
+                        <Loader2 className="size-6 animate-spin text-white" />
+                        <span className="text-[11px] font-medium text-white/90">
+                          {rendered?.status === "running"
+                            ? "Rendering…"
+                            : "Queued…"}
+                        </span>
+                        <div className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-white/20">
+                          <div className="h-full w-2/5 rounded-full bg-emerald-400 animate-[lm-indeterminate_1.2s_ease-in-out_infinite]" />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                   {/* rendered output preview for this clip (after Render) */}
                   {(() => {
-                    const rendered = job?.clips.find((cl) => cl.index === i)
                     if (rendered?.videoName && job?.compose) {
                       return (
                         <div className="space-y-1">
@@ -1582,16 +1677,16 @@ export function StudioClient() {
             ) : null}
             {job.joinError ? (
               <p className="text-xs text-amber-600 dark:text-amber-500">
-                Couldn’t join clips ({job.joinError}) — individual clips are below.
+                Couldn’t join clips ({job.joinError}) — grab the individual
+                clips from the Compose section above.
               </p>
             ) : null}
 
-            {/* per-clip progress + videos — small players side by side, scroll
-                horizontally if many. In frames mode the players are skipped
-                (only the cover section below matters). Once a joined final video
-                exists, this row is hidden: the Result shows only that final
-                version (per-clip previews live in the Compose section above). */}
-            {job.compose && job.joinedName ? null : (
+            {/* Compose jobs: the Result shows ONLY the final joined video —
+                per-clip rendered previews + downloads already live on the
+                Compose cards above, so we don't duplicate them here. Frames
+                jobs (no Compose cards) keep their per-clip status rows. */}
+            {job.compose ? null : (
             <div className="flex gap-3 overflow-x-auto pb-1">
               {job.clips.map((c) => (
                 <div key={c.index} className="w-[180px] shrink-0 space-y-1.5">
