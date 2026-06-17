@@ -127,11 +127,13 @@ export function TimerClient() {
 
   const ensureAudio = useCallback(() => {
     if (!audioRef.current) {
-      // iOS: declare our audio as short "transient" cues — they duck
-      // background music (Spotify, YouTube) for a moment instead of being
-      // silenced by the mute switch or losing the session to the other app.
+      // iOS: "playback" is the only session type that ignores the Ring/Silent
+      // switch (and the Action Button mute toggle on 15 Pro+/17 Pro), so the
+      // timer still beeps with the phone on silent — exactly when you need it
+      // mid-workout. Cost vs. "transient": it pauses background music/podcasts
+      // instead of just ducking them. Worth it for an audible workout cue.
       const nav = navigator as Navigator & { audioSession?: { type: string } }
-      if (nav.audioSession) nav.audioSession.type = "transient"
+      if (nav.audioSession) nav.audioSession.type = "playback"
       const Ctx =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext })
