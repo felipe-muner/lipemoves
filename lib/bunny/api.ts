@@ -63,6 +63,32 @@ export async function getBunnyVideo(guid: string): Promise<BunnyVideo> {
   return bunnyFetch<BunnyVideo>(`/videos/${guid}`)
 }
 
+/** Create an empty video object in the library; returns its guid. */
+export async function createBunnyVideo(title: string): Promise<string> {
+  const data = await bunnyFetch<{ guid: string }>(`/videos`, {
+    method: "POST",
+    body: JSON.stringify({ title }),
+  })
+  return data.guid
+}
+
+/** Upload the encoded bytes for a previously-created video (raw PUT). */
+export async function uploadBunnyVideo(
+  guid: string,
+  data: Uint8Array,
+): Promise<void> {
+  const { libraryId, apiKey } = libraryConfig()
+  const res = await fetch(`${API_BASE}/library/${libraryId}/videos/${guid}`, {
+    method: "PUT",
+    headers: { AccessKey: apiKey, "Content-Type": "application/octet-stream" },
+    body: data as unknown as BodyInit,
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    throw new Error(`Bunny upload ${guid} failed: ${res.status}`)
+  }
+}
+
 export async function deleteBunnyVideo(guid: string): Promise<void> {
   await bunnyFetch(`/videos/${guid}`, { method: "DELETE" })
 }

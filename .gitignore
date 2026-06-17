@@ -54,3 +54,6 @@ scripts/paint-contributions.sh
 /public/reels/*
 !/public/reels/.gitkeep
 public/ebooks/photos/_originals/
+
+# Timer day clips live on Bunny — keep the manifests, not the heavy video folders
+/public/timer-days/*/

@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Hls from "hls.js"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import Link from "next/link"
 import { Pause, Play, RotateCcw, Volume2, Minus, Plus } from "lucide-react"
@@ -20,8 +21,11 @@ type Status = "idle" | "running" | "paused" | "done"
  *  how many of the 60s are work (rest = 60 − work). */
 interface DayBlock {
   name: string
-  /** Absolute MP4 URL (Bunny CDN) for the muted, looping demo. */
+  /** Signed Bunny HLS playlist URL for the muted, looping demo (from the
+   *  /api/timer/day route; the stored manifest holds the video GUID). */
   video: string
+  /** Signed poster (thumbnail) URL, shown before play. */
+  poster?: string
   /** Work seconds in this minute (1..59); rest fills the rest of the minute. */
   work: number
 }
@@ -52,6 +56,42 @@ const MAX_EXERCISES = 10
 // Work/rest split inside each minute (work + rest = 60s, e.g. 30/30, 40/20).
 const MIN_WORK_SEC = 5
 const MAX_WORK_SEC = 55
+
+/** Day-mode layout presets. The same three blocks — ring, demo video, move
+ *  list — are rearranged, and each piece of info has exactly ONE home so
+ *  nothing repeats across the screen:
+ *   - ring "full"   → clock + GO/REST + move N/total + %
+ *     ring "numbers"→ clock + move N/total + %   (no phase word)
+ *     ring "clock"  → clock only (phase/name live on the video)
+ *   - video "none"  → just the clip (name lives in the list)
+ *     video "name"  → clip + current/next move name
+ *     video "full"  → clip + name + GO/REST chip   (ring drops the phase)
+ *   - names → the full move list (with progress), or hidden
+ *   - next  → a compact "next up" line when the list is hidden */
+type RingMeta = "full" | "numbers" | "clock"
+type VideoOverlay = "none" | "name" | "full"
+interface DayLayout {
+  label: string
+  /** Stack vertically even on desktop (otherwise a row). */
+  col: boolean
+  ring: RingMeta
+  ringOrder: number
+  video: VideoOverlay
+  videoOrder: number
+  videoW: string
+  names: boolean
+  namesOrder: number
+  /** Overlay mode: video is the hero, the timer sits ON it and shrinks from
+   *  center → a corner on Start (with a wind whoosh). `dock` is its resting
+   *  corner. The ring/video/names fields above are ignored when overlay. */
+  overlay?: boolean
+  dock?: "tr" | "tl" | "br"
+}
+const DAY_LAYOUTS: DayLayout[] = [
+  // Overlay focus — big video, the timer flies center→corner on Start (the
+  // chosen default; other arrangements were trialled and dropped).
+  { label: "Overlay · top-right", col: false, ring: "full", ringOrder: 1, video: "none", videoOrder: 2, videoW: "max-w-[400px]", names: false, namesOrder: 3, overlay: true, dock: "tr" },
+]
 
 /** A clock segment (minutes or seconds) that rolls on change: the outgoing
  *  glyph slides up and fades while the new one rises into its place. Each
@@ -104,7 +144,16 @@ export function TimerClient() {
   // driven by its blocks (per-minute exercise + demo video + work split) and
   // the manual setup is hidden.
   const [day, setDay] = useState<DayFile | null>(null)
+  const dayLayout = 0 // single overlay layout (selector removed)
+  // Overlay start sequence: 3-2-1 countdown, then a psychedelic "flight" of the
+  // dial to its corner.
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [flying, setFlying] = useState(false)
+  const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const hlsRef = useRef<Hls | null>(null)
+  // Latest layout, readable from the (non-reactive) start() handler.
+  const layRef = useRef<DayLayout | null>(null)
   // Edge fades on the dots scroller — visual hint that more dots exist
   // beyond the visible strip, on whichever side is clipped.
   const [dotsFade, setDotsFade] = useState({ left: false, right: false })
@@ -144,7 +193,7 @@ export function TimerClient() {
     // date is malformed or the file is missing.
     const date = params.get("date")
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      fetch(`/timer-days/${date}.json`, { cache: "no-store" })
+      fetch(`/api/timer/day?date=${date}`, { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
         .then((data: DayFile | null) => {
           if (!data || !Array.isArray(data.blocks) || data.blocks.length === 0)
@@ -154,6 +203,7 @@ export function TimerClient() {
             .map((b) => ({
               name: typeof b.name === "string" ? b.name : "",
               video: typeof b.video === "string" ? b.video : "",
+              poster: typeof b.poster === "string" ? b.poster : undefined,
               work: clamp(Number(b.work) || 30, MIN_WORK_SEC, MAX_WORK_SEC),
             }))
           const rounds = clamp(Number(data.rounds) || 1, 1, 20)
@@ -301,6 +351,48 @@ export function TimerClient() {
     buzz([300, 150, 300, 150, 700])
   }, [ensureAudio, mallet, buzz])
 
+  /** A short wind whoosh — filtered noise that swells then fades. Played the
+   *  moment the overlay timer animates from center to its corner on Start. */
+  const whoosh = useCallback(() => {
+    const ctx = ensureAudio()
+    const dur = 2.5 // spans the full 3-2-1 flight to the corner
+    const t0 = ctx.currentTime
+    const noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
+    const data = noise.getChannelData(0)
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+    // Two band-passes sweeping in opposite directions = a fuller rushing wind.
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t0)
+    g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.5)
+    g.gain.setValueAtTime(0.4, t0 + dur - 0.6)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur)
+    g.connect(ctx.destination)
+    const sweep = (from: number, to: number, q: number) => {
+      const src = ctx.createBufferSource()
+      src.buffer = noise
+      const bp = ctx.createBiquadFilter()
+      bp.type = "bandpass"
+      bp.Q.value = q
+      bp.frequency.setValueAtTime(from, t0)
+      bp.frequency.exponentialRampToValueAtTime(to, t0 + dur * 0.5)
+      bp.frequency.exponentialRampToValueAtTime(from, t0 + dur)
+      src.connect(bp).connect(g)
+      src.start(t0)
+      src.stop(t0 + dur)
+    }
+    sweep(300, 2200, 0.6)
+    sweep(900, 240, 1.1)
+  }, [ensureAudio])
+
+  /** Single tick for the 3-2-1 countdown. */
+  const countTick = useCallback(
+    (last = false) => {
+      const ctx = ensureAudio()
+      mallet(ctx, last ? 990 : 620, 0, last ? 320 : 180, last ? 0.7 : 0.5)
+    },
+    [ensureAudio, mallet],
+  )
+
   /** Two falling soft notes — "stop moving, rest until the next GO". */
   const beepRest = useCallback(() => {
     const ctx = ensureAudio()
@@ -410,8 +502,41 @@ export function TimerClient() {
 
   // --- controls ----------------------------------------------------------
 
+  // Overlay fresh-start ritual: count "3 · 2 · 1" (ticks), then on GO fire the
+  // wind whoosh + the psychedelic flight and actually start running. Driven by
+  // timeouts (not an effect) so it survives re-renders cleanly.
+  function beginCountdown() {
+    // The dial begins flying to its corner NOW and arrives as the count hits
+    // GO — so the user watches the countdown travel into its resting spot.
+    setCountdown(3)
+    setFlying(true)
+    whoosh() // the wind runs through the whole flight
+    countTick()
+    let n = 3
+    const next = () => {
+      n -= 1
+      if (n > 0) {
+        setCountdown(n)
+        countTick(n === 1)
+        countdownRef.current = setTimeout(next, 900)
+      } else {
+        setCountdown(null)
+        startRef.current = performance.now()
+        setStatus("running")
+        countdownRef.current = setTimeout(() => setFlying(false), 500)
+      }
+    }
+    countdownRef.current = setTimeout(next, 900)
+  }
+
   function start() {
     ensureAudio() // unlock audio within the user gesture
+    // Overlay layouts get the 3-2-1 + flight on a fresh start (not resume).
+    if (layRef.current?.overlay && status === "idle") {
+      if (countdown !== null) return
+      beginCountdown()
+      return
+    }
     startRef.current = performance.now() - elapsed * 1000
     setStatus("running")
   }
@@ -422,6 +547,9 @@ export function TimerClient() {
 
 
   function reset() {
+    if (countdownRef.current) clearTimeout(countdownRef.current)
+    setCountdown(null)
+    setFlying(false)
     setStatus("idle")
     setElapsed(0)
     lastMinuteRef.current = -1
@@ -484,11 +612,26 @@ export function TimerClient() {
   // Work split for the minute we're in (per-block in day mode).
   const minuteNow = Math.min(minutes - 1, Math.floor(elapsed / 60))
   const workNow = workForMinute(minuteNow)
-  // The demo clip for the current minute (day mode only). Before start, show
-  // the first block so the page isn't a black box.
-  const currentBlock = dayMode
-    ? dayBlocks[Math.min(dayBlocks.length - 1, isActive ? minuteNow : 0)]
-    : null
+  // True while in the work part of the current minute (or before start).
+  const inWork = !isActive || elapsed % 60 < workNow
+  // Which block the demo clip shows: the current move while working, the NEXT
+  // move during the rest (so you can prep). Before start, show move 1.
+  const displayIndex =
+    !dayMode || !isActive
+      ? 0
+      : Math.min(dayBlocks.length - 1, inWork ? minuteNow : minuteNow + 1)
+  const displayBlock = dayMode ? (dayBlocks[displayIndex] ?? null) : null
+  const displayMoveNum = (displayIndex % exercises) + 1
+  // True only when the rest is actually previewing a NEXT move (not the final
+  // minute, where there's nothing after).
+  const previewingNext = !inWork && displayIndex > minuteNow
+  // Single-round dated workout: the named list doubles as the progress
+  // tracker, so the separate minute-dot row is redundant and hidden.
+  const singleRoundDay = dayMode && minutes === exercises
+  // Active day-mode layout preset (drives arrangement + which block shows
+  // each piece of info). In the plain timer the ring always shows everything.
+  const lay = dayMode ? DAY_LAYOUTS[dayLayout] : null
+  const ringMeta: RingMeta = lay ? lay.ring : "full"
 
   const updateDotsFade = useCallback(() => {
     const el = dotsRef.current
@@ -536,15 +679,43 @@ export function TimerClient() {
   // the short clip loops until the minute rolls over to the next exercise.
   useEffect(() => {
     const v = videoRef.current
-    if (!v || !currentBlock?.video) return
-    if (v.dataset.src !== currentBlock.video) {
-      v.dataset.src = currentBlock.video
-      v.src = currentBlock.video
-      v.load()
+    const url = displayBlock?.video
+    if (!v || !url) return
+    if (displayBlock?.poster) v.poster = displayBlock.poster
+    if (v.dataset.src !== url) {
+      v.dataset.src = url
+      const isHls = url.includes(".m3u8")
+      if (!isHls) {
+        v.src = url // plain MP4 (local / CDN)
+      } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = url // Safari / iOS play HLS natively
+      } else if (Hls.isSupported()) {
+        if (!hlsRef.current) {
+          hlsRef.current = new Hls({ enableWorker: true })
+          hlsRef.current.attachMedia(v)
+        }
+        hlsRef.current.loadSource(url)
+      } else {
+        v.src = url
+      }
     }
     if (status === "running") void v.play().catch(() => {})
     else v.pause()
-  }, [currentBlock?.video, status])
+  }, [displayBlock?.video, displayBlock?.poster, status])
+
+  // Tear down the hls.js instance + any pending countdown timer on unmount.
+  useEffect(
+    () => () => {
+      hlsRef.current?.destroy()
+      if (countdownRef.current) clearTimeout(countdownRef.current)
+    },
+    [],
+  )
+
+  // Keep the latest layout readable from start() without a render-time ref read.
+  useEffect(() => {
+    layRef.current = lay
+  }, [lay])
 
   // --- ring geometry -----------------------------------------------------
 
@@ -569,11 +740,125 @@ export function TimerClient() {
   const clockMin = String(Math.floor(remainCeil / 60))
   const clockSec = (remainCeil % 60).toString().padStart(2, "0")
 
+  // --- overlay focus mode (layouts 6-8) ---------------------------------
+  // The timer rides on top of the video and flies from center → corner on
+  // Start. `DOCK` are the two framer targets (center vs the resting corner).
+  // Straight-line travel (no rotation — spinning arced it off-screen).
+  const DOCK: Record<
+    string,
+    { top: string; left: string; x: string; y: string; scale: number }
+  > = {
+    center: { top: "50%", left: "50%", x: "-50%", y: "-50%", scale: 1 },
+    tr: { top: "5%", left: "95%", x: "-100%", y: "0%", scale: 0.4 },
+    tl: { top: "5%", left: "5%", x: "0%", y: "0%", scale: 0.4 },
+    br: { top: "95%", left: "95%", x: "-100%", y: "-100%", scale: 0.4 },
+  }
+  // A compact dial (progress ring + clock + phase + a single play/pause) for
+  // the overlay; reuses the same ring geometry, sized to fit a corner. During
+  // the 3-2-1 it shows the count instead of the clock, so the countdown itself
+  // travels into the corner.
+  const counting = countdown !== null
+  // Before the first Start (overlay): show ONLY a big play button (over a
+  // scrim) — clean "press to begin". The full dial appears once it starts.
+  const idleStart = status === "idle" && !counting
+  const compactTimer = idleStart ? (
+    <button
+      type="button"
+      onClick={start}
+      aria-label="Start"
+      className="lm-psy-btn grid size-20 place-items-center rounded-full text-white transition-transform hover:scale-110 active:scale-95"
+    >
+      <Play className="size-9 fill-current" />
+    </button>
+  ) : (
+    <div className="relative grid size-44 place-items-center">
+      {/* Localized dark glow so the dial stays readable on ANY video (it
+          scales with the dial, so it works big-centered and small-in-corner,
+          on mobile + desktop) without dimming the whole clip. */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0.35) 55%, transparent 72%)",
+        }}
+      />
+      <svg
+        viewBox={`0 0 ${(R + STROKE) * 2} ${(R + STROKE) * 2}`}
+        className="size-44 -rotate-90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+      >
+        <circle cx={R + STROKE} cy={R + STROKE} r={R} fill="none" strokeWidth={STROKE} className="stroke-white/25" />
+        <circle
+          cx={R + STROKE} cy={R + STROKE} r={R} fill="none" strokeWidth={STROKE}
+          strokeLinecap="round" strokeDasharray={C} strokeDashoffset={dashOffset}
+          className="stroke-emerald-400"
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center gap-1 text-white">
+        {counting ? (
+          // The travelling countdown — pops on each tick as the dial flies.
+          <motion.span
+            key={countdown}
+            initial={{ scale: 0.3, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 320, damping: 14 }}
+            className="text-7xl font-extrabold leading-none drop-shadow-[0_0_24px_rgba(16,185,129,0.85)]"
+          >
+            {countdown}
+          </motion.span>
+        ) : (
+          <>
+            {status === "running" && ringMeta !== "clock" ? (
+              <span
+                className={cn(
+                  "text-sm font-extrabold tracking-[0.2em]",
+                  inWork ? "text-emerald-400" : "text-amber-400",
+                )}
+              >
+                {inWork ? "GO" : "REST"}
+              </span>
+            ) : null}
+            <span className="flex items-center text-4xl font-bold leading-none tabular-nums drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
+              <TickDigit value={clockMin} reduce={reduceMotion} />
+              <span className="px-0.5 pb-[0.1em]">:</span>
+              <TickDigit value={clockSec} reduce={reduceMotion} />
+            </span>
+            <button
+              type="button"
+              onClick={status === "running" ? pause : start}
+              disabled={status === "done"}
+              aria-label={status === "running" ? "Pause" : "Start"}
+              className={cn(
+                "mt-1 grid size-11 place-items-center rounded-full text-white transition-transform hover:scale-110 active:scale-95",
+                status === "done" ? "bg-muted" : "lm-psy-btn",
+              )}
+            >
+              {status === "running" ? (
+                <Pause className="size-5 fill-current" />
+              ) : (
+                <Play className="size-5 fill-current" />
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col items-center gap-6">
+      {/* psychedelic hue/blur sweep while the dial flies to its corner */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html:
+            "@keyframes lm-trip{0%{filter:hue-rotate(0deg) saturate(1) blur(0)}20%{filter:hue-rotate(90deg) saturate(2.6) blur(2px)}50%{filter:hue-rotate(220deg) saturate(3.4) blur(1px)}80%{filter:hue-rotate(320deg) saturate(2) blur(.5px)}100%{filter:hue-rotate(360deg) saturate(1) blur(0)}}.lm-trip{animation:lm-trip 1.3s ease-in-out infinite}" +
+            "@keyframes lm-psy-move{0%{background-position:0% 50%}100%{background-position:300% 50%}}" +
+            "@keyframes lm-psy-glow{0%{box-shadow:0 0 22px rgba(57,255,20,.75)}33%{box-shadow:0 0 26px rgba(0,224,255,.8)}66%{box-shadow:0 0 26px rgba(177,75,255,.8)}100%{box-shadow:0 0 22px rgba(255,45,149,.75)}}" +
+            ".lm-psy-btn{background-image:linear-gradient(120deg,#39FF14,#00e0ff,#b14bff,#ff2d95,#39FF14);background-size:300% 300%;animation:lm-psy-move 16s linear infinite,lm-psy-glow 13s ease-in-out infinite}",
+        }}
+      />
       {/* Dated workout: title + move count instead of the manual setup. */}
       {dayMode ? (
-        <div className="order-2 flex w-full max-w-2xl flex-col items-center gap-1 text-center lg:order-1">
+        <div className="order-2 flex w-full max-w-2xl flex-col items-center gap-2 text-center lg:order-1">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">
             {day?.date} · {exercises} moves
           </p>
@@ -706,47 +991,69 @@ export function TimerClient() {
 
       </div>
 
-      {/* Ring+controls on the left · names+dots column on the right */}
-      <div className="order-1 flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:order-2 lg:w-auto lg:flex-row lg:items-center lg:gap-10">
-        {/* Demo clip for the current minute (dated workouts) — same screen as
-            the timer so you watch the move while the clock runs. */}
-        {dayMode ? (
-          <div className="w-full max-w-[240px]">
-            <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
-              <video
-                ref={videoRef}
-                muted
-                loop
-                playsInline
-                preload="auto"
-                className="size-full object-cover"
-              />
-              {status === "running" ? (
-                <span
-                  className={cn(
-                    "absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.18em]",
-                    elapsed % 60 < workNow
-                      ? "bg-emerald-500 text-white"
-                      : "bg-amber-500 text-black",
-                  )}
-                >
-                  {elapsed % 60 < workNow ? "GO" : "REST"}
-                </span>
-              ) : null}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
-                  move {currentExercise}/{exercises}
-                </p>
-                <p className="truncate text-sm font-bold text-white">
-                  {currentBlock?.name || `Exercise ${currentExercise}`}
-                </p>
-              </div>
+      {/* Ring · demo clip · move list — arrangement set by the layout preset
+          in day mode (each block carries non-overlapping info). */}
+      <div
+        className={cn(
+          "order-1 flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:order-2 lg:w-auto lg:gap-8",
+          (!lay || !lay.col) && "lg:flex-row lg:items-center",
+        )}
+      >
+        {lay?.overlay ? (
+          /* Overlay focus — video hero, timer flies center → corner on Start */
+          <div className="relative aspect-[9/16] w-[min(400px,85vw)] overflow-hidden rounded-2xl border border-white/10 bg-black">
+            <video
+              ref={videoRef}
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="absolute inset-0 size-full object-cover"
+            />
+            {/* Idle scrim — darkens the clip so the play button pops. */}
+            {idleStart ? (
+              <div className="absolute inset-0 bg-black/45" />
+            ) : null}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
+                {previewingNext
+                  ? `next · move ${displayMoveNum}/${exercises}`
+                  : `move ${displayMoveNum}/${exercises}`}
+              </p>
+              <p className="truncate text-base font-bold text-white">
+                {displayBlock?.name || `Exercise ${displayMoveNum}`}
+              </p>
             </div>
+            <motion.div
+              className={cn("absolute", flying && "lm-trip")}
+              style={{
+                transformOrigin:
+                  lay.dock === "tl"
+                    ? "top left"
+                    : lay.dock === "br"
+                      ? "bottom right"
+                      : "top right",
+              }}
+              initial={false}
+              // Travel to the corner during the countdown (counting) and stay
+              // there once running; center while idle.
+              animate={DOCK[counting || isActive ? (lay.dock ?? "tr") : "center"]}
+              transition={
+                counting
+                  ? { duration: 2.7, ease: [0.45, 0, 0.15, 1] } // slow flight over 3·2·1
+                  : { type: "spring", stiffness: 170, damping: 18 }
+              }
+            >
+              {compactTimer}
+            </motion.div>
           </div>
-        ) : null}
-
+        ) : (
+          <>
         {/* Circular timer */}
-        <div className="flex flex-col items-center">
+        <div
+          className="flex flex-col items-center"
+          style={lay ? { order: lay.ringOrder } : undefined}
+        >
       <div className="relative grid place-items-center rounded-full">
         {status === "idle" && (
           <span
@@ -786,39 +1093,42 @@ export function TimerClient() {
             below carries more visual weight than the badge above. */}
         <div className="absolute flex -translate-y-2 flex-col items-center">
           <div className="flex h-14 flex-col items-center justify-end pb-2">
-            {status === "running" ? (
-              // Mid-workout: live cue on top, exercise counter + the % badge
-              // below it (Felipe wants the percentage visible while running).
-              <>
-                <span
-                  className={cn(
-                    "text-base font-extrabold tracking-[0.25em] transition-colors duration-300",
-                    elapsed % 60 < workNow
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-amber-600 dark:text-amber-400",
-                  )}
-                >
-                  {elapsed % 60 < workNow ? "GO" : "REST"}
-                </span>
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  exercise {currentExercise}/{exercises}
-                  <Badge
-                    variant="secondary"
-                    className="px-1.5 py-0 text-[10px] tabular-nums"
-                  >
-                    {(ringProgress * 100).toFixed(1)}%
-                  </Badge>
-                </span>
-              </>
-            ) : (
-              <Badge variant="secondary" className="tabular-nums">
-                {(ringProgress * 100).toFixed(1)}%
-              </Badge>
-            )}
+            {/* ringMeta="clock" hides this row entirely (phase/counter live on
+                the video in that layout); "numbers" drops the GO/REST word. */}
+            {ringMeta !== "clock" &&
+              (status === "running" ? (
+                <>
+                  {ringMeta === "full" ? (
+                    <span
+                      className={cn(
+                        "text-base font-extrabold tracking-[0.25em] transition-colors duration-300",
+                        inWork
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-amber-600 dark:text-amber-400",
+                      )}
+                    >
+                      {inWork ? "GO" : "REST"}
+                    </span>
+                  ) : null}
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    exercise {currentExercise}/{exercises}
+                    <Badge
+                      variant="secondary"
+                      className="px-1.5 py-0 text-[10px] tabular-nums"
+                    >
+                      {(ringProgress * 100).toFixed(1)}%
+                    </Badge>
+                  </span>
+                </>
+              ) : (
+                <Badge variant="secondary" className="tabular-nums">
+                  {(ringProgress * 100).toFixed(1)}%
+                </Badge>
+              ))}
           </div>
-          <span className="text-6xl font-bold tabular-nums tracking-tight sm:text-7xl">
+          <span className="flex items-center justify-center text-6xl font-bold leading-none tabular-nums sm:text-7xl">
             <TickDigit value={clockMin} reduce={reduceMotion} />
-            <span>:</span>
+            <span className="px-0.5 pb-[0.12em]">:</span>
             <TickDigit value={clockSec} reduce={reduceMotion} />
           </span>
           {/* Controls — always inside the ring, under the time. The middle
@@ -858,9 +1168,11 @@ export function TimerClient() {
                             : "Start timer"
                       }
                       // 200ms ease pop (per Leo's tip): press squashes to 95%,
-                      // release grows back; plus a one-time zoom-in on mount to
-                      // pull the eye to START when the page loads.
-                      className="grid size-12 animate-in place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_24px_rgba(16,185,129,0.7)] transition-transform duration-200 ease-out zoom-in-50 hover:scale-110 active:scale-95 disabled:scale-100 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                      // release grows back. Psychedelic animated-gradient fill.
+                      className={cn(
+                        "grid size-12 place-items-center rounded-full text-white transition-transform duration-200 ease-out hover:scale-110 active:scale-95 disabled:scale-100 disabled:text-muted-foreground disabled:shadow-none",
+                        status === "done" ? "bg-muted" : "lm-psy-btn",
+                      )}
                     >
                       {status === "running" ? (
                         <Pause className="size-5 fill-current" />
@@ -914,19 +1226,74 @@ export function TimerClient() {
           )}
         </div>
 
+        {/* Demo clip (dated workouts) — sits right next to the move list. While
+            working it shows the current move; during the rest it previews the
+            NEXT move so you can set up for it. */}
+        {dayMode && lay ? (
+          <div
+            className={cn("w-full", lay.videoW)}
+            style={{ order: lay.videoOrder }}
+          >
+            <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
+              <video
+                ref={videoRef}
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="size-full object-cover"
+              />
+              {/* GO/REST chip only when the video carries the phase ("full") */}
+              {lay.video === "full" && status === "running" ? (
+                <span
+                  className={cn(
+                    "absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.18em]",
+                    inWork
+                      ? "bg-emerald-500 text-white"
+                      : "bg-amber-500 text-black",
+                  )}
+                >
+                  {inWork ? "GO" : "REST"}
+                </span>
+              ) : null}
+              {/* Name caption when the video owns the name ("name"/"full") */}
+              {lay.video !== "none" ? (
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
+                    {previewingNext
+                      ? `next · move ${displayMoveNum}/${exercises}`
+                      : `move ${displayMoveNum}/${exercises}`}
+                  </p>
+                  <p className="truncate text-sm font-bold text-white">
+                    {displayBlock?.name || `Exercise ${displayMoveNum}`}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {/* Names + minute dots — they belong together, one column on the
-            right; both blocks pin to the left edge of the column */}
-        <div className="flex min-w-0 max-w-full flex-col items-start gap-4">
+            right; both blocks pin to the left edge of the column. Hidden in
+            day-mode layouts that move the move name onto the video. */}
+        {!dayMode || (lay && lay.names) ? (
+        <div
+          className="flex min-w-0 max-w-full flex-col items-start gap-4"
+          style={lay ? { order: lay.namesOrder } : undefined}
+        >
           {/* Exercise names — write them down, screenshot for members */}
           <div className="flex flex-col gap-2">
             {exerciseNames.map((name, i) => {
               const live = isActive && i + 1 === currentExercise
+              // In a single-round dated workout the list IS the progress
+              // tracker (the dot row below is hidden), so fill done moves too.
+              const done = singleRoundDay && isActive && i + 1 < currentExercise
               return (
                 <div key={i} className="flex items-center gap-2">
                   <span
                     className={cn(
                       "grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors duration-300",
-                      live
+                      live || done
                         ? "bg-emerald-500 text-white"
                         : "bg-muted text-muted-foreground",
                     )}
@@ -950,8 +1317,10 @@ export function TimerClient() {
           </div>
 
           {/* Minute dots — one row per exercise, one column per round;
-              fills top-to-bottom then left-to-right (1,2,3 → 4,5,6) */}
-          <div className="relative w-fit max-w-full">
+              fills top-to-bottom then left-to-right (1,2,3 → 4,5,6). Hidden in
+              day mode entirely: the ring (% + move N/total) and the named list
+              already track progress, so dots would just repeat it. */}
+          <div className={cn("relative w-fit max-w-full", dayMode && "hidden")}>
             <div
               ref={dotsRef}
               onScroll={updateDotsFade}
@@ -1014,6 +1383,9 @@ export function TimerClient() {
             />
           </div>
         </div>
+        ) : null}
+          </>
+        )}
       </div>
     </div>
   )

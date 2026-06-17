@@ -28,6 +28,7 @@
     "flow:publish": "tsx --env-file=.env.local scripts/publish-flow.ts",
     "videos:sync": "tsx --env-file=.env.local scripts/sync-videos.ts",
     "reel:post": "tsx --env-file=.env.local scripts/post-reel.ts",
+    "timer:day": "tsx --env-file=.env.local scripts/timer-day-stream.ts",
     "cover": "tsx scripts/make-cover.ts",
     "caption": "tsx scripts/caption.ts"
   },

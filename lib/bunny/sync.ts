@@ -76,8 +76,13 @@ export interface SyncResult {
 export async function syncAllFromBunny(): Promise<SyncResult> {
   const bunnyVideos = await listBunnyVideos()
 
+  let synced = 0
   for (const video of bunnyVideos) {
+    // `timer`-tagged clips are the free /timer demo loops, not member
+    // library content — keep them out of the videos table entirely.
+    if (tagsFromMetaTags(video.metaTags).includes("timer")) continue
     await upsertVideoFromBunny(video)
+    synced += 1
   }
 
   // Videos deleted on Bunny can't play — unpublish their rows.
@@ -92,5 +97,5 @@ export async function syncAllFromBunny(): Promise<SyncResult> {
     )
     .returning({ id: videos.id })
 
-  return { synced: bunnyVideos.length, removed: removed.length }
+  return { synced, removed: removed.length }
 }
