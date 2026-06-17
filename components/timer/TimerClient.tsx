@@ -34,26 +34,42 @@ const MAX_EXERCISES = 10
 const MIN_WORK_SEC = 5
 const MAX_WORK_SEC = 55
 
-/** A single clock segment (minutes or seconds) that animates on change: the
- *  outgoing value slides up and fades, the new one rises into its place.
- *  `mode="popLayout"` pops the exiting copy out of flow so the colon and the
- *  rest of the clock never shift. Falls back to a plain crossfade when the
- *  user prefers reduced motion. */
+/** A clock segment (minutes or seconds) that rolls on change: the outgoing
+ *  glyph slides up and fades while the new one rises into its place. Each
+ *  character animates independently inside its own fixed, clipped box, so only
+ *  the digits that actually change move. An invisible spacer reserves the
+ *  glyph's box and the moving copy is absolutely positioned on top — so the
+ *  animation is pure transform + opacity (GPU-composited, no layout
+ *  measurement). This avoids framer's `popLayout` projection, which re-measures
+ *  layout every tick and stutters on mobile Safari. Falls back to a plain
+ *  crossfade when the user prefers reduced motion. */
 function TickDigit({ value, reduce }: { value: string; reduce: boolean }) {
   return (
-    <span className="relative inline-block">
-      <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
-          key={value}
-          className="inline-block"
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: "0.5em" }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, y: "-0.5em" }}
-          transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+    <span className="inline-block tabular-nums">
+      {value.split("").map((char, i) => (
+        <span
+          // index key: positions are stable for a fixed-width segment; only the
+          // glyph inside swaps, which is what we want to animate.
+          key={i}
+          className="relative inline-block overflow-hidden align-baseline"
         >
-          {value}
-        </motion.span>
-      </AnimatePresence>
+          <span className="invisible" aria-hidden>
+            {char}
+          </span>
+          <AnimatePresence initial={false}>
+            <motion.span
+              key={char}
+              className="absolute inset-0 inline-block will-change-transform"
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: "0.6em" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, y: "-0.6em" }}
+              transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {char}
+            </motion.span>
+          </AnimatePresence>
+        </span>
+      ))}
     </span>
   )
 }
