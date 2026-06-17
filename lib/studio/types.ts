@@ -7,6 +7,9 @@
 // every clip into one video. "Frames" is the separate contact-sheet/cover flow.
 
 import type { FontKey } from "./fonts"
+import type { BadgeStyle } from "./badge-style"
+
+export type { BadgeStyle }
 
 export type JobStatus = "queued" | "running" | "done" | "error"
 
@@ -86,6 +89,11 @@ export interface StudioConfig {
    *  for drill-series reels (Compose mode). Placed per clip via
    *  ClipInput.badge before rendering. */
   enumerate: boolean
+  /** Visual style for the enumerate badge — the classic grey pill or the
+   *  white grunge text. Applies to every clip's badge. */
+  badgeStyle: BadgeStyle
+  /** Overall badge opacity, 0..1 (applies to whichever style). */
+  badgeOpacity: number
   /** When set, extract a contact sheet + frames per clip to enable covers
    *  (the separate Frames mode). Mutually exclusive with Compose. */
   framepicker: FramePickerConfig | null
