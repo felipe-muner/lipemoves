@@ -812,6 +812,10 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
   const idleStart = status === "idle" && !counting
   // Immersive: full-screen the card while counting/playing/paused.
   const immersive = counting || isActive
+  // Poster (still frame) for a block: signed Bunny thumb, else the local .jpg.
+  const posterOf = (b?: { video: string; poster?: string }) =>
+    b?.poster ??
+    (b && /\.mp4$/.test(b.video) ? b.video.replace(/\.mp4$/, ".jpg") : undefined)
   // The chosen flight effect (Fib-bounce, last in the list).
   const FX = FLIGHT_EFFECTS[FLIGHT_EFFECTS.length - 1]
   // Full-size overlay dial. Idle = just a big play button; otherwise a ring +
@@ -985,20 +989,23 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
       ) : null}
       <video
         ref={videoRef}
+        poster={posterOf(displayBlock ?? undefined)}
         muted
         loop
         playsInline
         preload="auto"
         className="absolute inset-0 size-full object-cover"
       />
-      {/* Idle + countdown: an Instagram-style grid of ALL clips playing, so you
-          preview the whole session before (and as) it starts. */}
+      {/* Idle + countdown: an Instagram-style mosaic of ALL clips playing, so
+          you preview the whole session before (and as) it starts. */}
       {(idleStart || counting || growing) && day?.blocks.length ? (
         <div className="absolute inset-0 grid grid-cols-2 grid-rows-3 gap-px">
           {day.blocks.map((b, i) => (
             <video
               key={i}
               src={b.video}
+              // still frame shows instantly on first load while the clip starts
+              poster={posterOf(b)}
               muted
               loop
               autoPlay
@@ -1025,6 +1032,7 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
       {(counting || growing) && day?.blocks[0] ? (
         <motion.video
           src={day.blocks[0].video}
+          poster={posterOf(day.blocks[0])}
           muted
           loop
           autoPlay
@@ -1084,13 +1092,20 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
       </motion.div>
     </div>
   )
-  // Immersive: center the phone frame on a full-screen black backdrop.
-  const overlay = immersive ? (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+  // Immersive: center the phone frame on a full-screen black backdrop. The
+  // wrapper is ALWAYS rendered (only its class toggles) so the inner card +
+  // videos never remount on the idle→play transition — keeps the flight
+  // animation smooth and the clips from blinking/restarting.
+  const overlay = (
+    <div
+      className={
+        immersive
+          ? "fixed inset-0 z-50 flex items-center justify-center bg-black"
+          : "contents"
+      }
+    >
       {overlayInner}
     </div>
-  ) : (
-    overlayInner
   )
 
   // First-load shimmer for a dated workout — avoids flashing the manual timer.
