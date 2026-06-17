@@ -167,6 +167,13 @@ export function TimerClient() {
   // driven by its blocks (per-minute exercise + demo video + work split) and
   // the manual setup is hidden.
   const [day, setDay] = useState<DayFile | null>(null)
+  // True from first paint while a ?date= workout is being fetched, so we show
+  // a loader instead of flashing the default manual timer.
+  const [dayLoading, setDayLoading] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      /[?&]date=\d{4}-\d{2}-\d{2}/.test(window.location.search),
+  )
   const dayLayout = 0 // single overlay layout (selector removed)
   // Overlay start sequence: 3-2-1 countdown, then a psychedelic "flight" of the
   // dial to its corner.
@@ -239,6 +246,7 @@ export function TimerClient() {
         .catch(() => {
           /* network/JSON error — keep the manual timer */
         })
+        .finally(() => setDayLoading(false))
       return // a dated workout ignores the manual min/work/names params
     }
 
@@ -874,6 +882,144 @@ export function TimerClient() {
     </div>
   )
 
+  const isRest = status === "running" && !inWork
+  const restLeft = Math.max(0, Math.ceil(60 - (elapsed % 60)))
+  // Rest info, revealed one line at a time (staggered spring) to pull the eye.
+  const restItem = {
+    hidden: { opacity: 0, y: 16 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring" as const, stiffness: 320, damping: 22 },
+    },
+  }
+  const restContent = (
+    <motion.div
+      initial="hidden"
+      animate="show"
+      transition={{ staggerChildren: 0.15, delayChildren: 0.2 }}
+      className="flex max-w-[72%] flex-col gap-2"
+    >
+      <motion.span
+        variants={restItem}
+        className="text-xs font-extrabold uppercase tracking-[0.35em] text-amber-400"
+      >
+        Rest
+      </motion.span>
+      {previewingNext ? (
+        <>
+          <motion.p
+            variants={restItem}
+            className="text-[11px] uppercase tracking-wide text-white/45"
+          >
+            Next · move {displayMoveNum}/{exercises}
+          </motion.p>
+          <motion.p
+            variants={restItem}
+            className="text-3xl font-extrabold leading-tight text-white"
+          >
+            {displayBlock?.name || `Exercise ${displayMoveNum}`}
+          </motion.p>
+          <motion.p
+            variants={restItem}
+            className="pt-1 text-sm font-semibold text-emerald-400"
+          >
+            Starts in {restLeft}s
+          </motion.p>
+        </>
+      ) : (
+        <motion.p
+          variants={restItem}
+          className="text-3xl font-extrabold leading-tight text-white"
+        >
+          Last one — finish strong 💪
+        </motion.p>
+      )}
+    </motion.div>
+  )
+
+  // One overlay card. `rest` controls the rest-overlay style (half panel vs a
+  // full-screen wash) so we can show both side by side to choose.
+  // The overlay focus card (real size). REST slides a half black→transparent
+  // panel in from the left so the next-move demo still reads on the right.
+  const overlay = (
+    <div className="relative aspect-[9/16] w-[min(400px,85vw)] overflow-hidden rounded-2xl border border-white/10 bg-black">
+      <video
+        ref={videoRef}
+        muted
+        loop
+        playsInline
+        preload="auto"
+        className="absolute inset-0 size-full object-cover"
+      />
+      {idleStart ? <div className="absolute inset-0 bg-black/45" /> : null}
+      {!isRest ? (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
+            move {displayMoveNum}/{exercises}
+          </p>
+          <p className="truncate text-base font-bold text-white">
+            {displayBlock?.name || `Exercise ${displayMoveNum}`}
+          </p>
+        </div>
+      ) : null}
+      <AnimatePresence>
+        {isRest ? (
+          <motion.div
+            key="rest"
+            initial={{ x: "-101%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-101%" }}
+            transition={{ type: "spring", stiffness: 240, damping: 30 }}
+            className="absolute inset-y-0 left-0 z-10 flex w-[88%] flex-col justify-center gap-3 px-8 py-10"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.9) 42%, rgba(0,0,0,0.45) 64%, transparent 100%)",
+            }}
+          >
+            {restContent}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+      <motion.div
+        className={cn("absolute", flying && "lm-trip")}
+        initial={false}
+        animate={{
+          ...DOCK[counting || isActive ? (lay?.dock ?? "tr") : "center"],
+          rotate: counting || isActive ? FX.rotate : 0,
+          ...(counting && FX.scaleKeys ? { scale: FX.scaleKeys } : {}),
+        }}
+        transition={
+          counting
+            ? { duration: 2.7, ease: FX.ease }
+            : { type: "spring", stiffness: 170, damping: 18 }
+        }
+      >
+        {compactTimer}
+      </motion.div>
+    </div>
+  )
+
+  // First-load shimmer for a dated workout — avoids flashing the manual timer.
+  if (dayLoading) {
+    return (
+      <div className="flex min-h-[55vh] flex-col items-center justify-center gap-5">
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              "@keyframes lm-load-move{0%{background-position:0% 50%}100%{background-position:300% 50%}}" +
+              ".lm-load,.lm-load-dot{background-image:linear-gradient(90deg,#39FF14,#00e0ff,#b14bff,#ff2d95,#39FF14);background-size:300% 100%;animation:lm-load-move 3s linear infinite}" +
+              ".lm-load{-webkit-background-clip:text;background-clip:text;color:transparent}",
+          }}
+        />
+        <div className="lm-load-dot size-10 animate-pulse rounded-full" />
+        <span className="lm-load text-lg font-extrabold tracking-tight">
+          Loading today&apos;s session…
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center gap-6">
       {/* psychedelic hue/blur sweep while the dial flies to its corner */}
@@ -1030,44 +1176,7 @@ export function TimerClient() {
         )}
       >
         {lay?.overlay ? (
-          /* Overlay focus — real size, the Fib-bounce flight on Start. */
-          <div className="relative aspect-[9/16] w-[min(400px,85vw)] overflow-hidden rounded-2xl border border-white/10 bg-black">
-            <video
-              ref={videoRef}
-              muted
-              loop
-              playsInline
-              preload="auto"
-              className="absolute inset-0 size-full object-cover"
-            />
-            {idleStart ? <div className="absolute inset-0 bg-black/45" /> : null}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
-                {previewingNext
-                  ? `next · move ${displayMoveNum}/${exercises}`
-                  : `move ${displayMoveNum}/${exercises}`}
-              </p>
-              <p className="truncate text-base font-bold text-white">
-                {displayBlock?.name || `Exercise ${displayMoveNum}`}
-              </p>
-            </div>
-            <motion.div
-              className={cn("absolute", flying && "lm-trip")}
-              initial={false}
-              animate={{
-                ...DOCK[counting || isActive ? (lay.dock ?? "tr") : "center"],
-                rotate: counting || isActive ? FX.rotate : 0,
-                ...(counting && FX.scaleKeys ? { scale: FX.scaleKeys } : {}),
-              }}
-              transition={
-                counting
-                  ? { duration: 2.7, ease: FX.ease }
-                  : { type: "spring", stiffness: 170, damping: 18 }
-              }
-            >
-              {compactTimer}
-            </motion.div>
-          </div>
+          overlay
         ) : (
           <>
         {/* Circular timer */}
