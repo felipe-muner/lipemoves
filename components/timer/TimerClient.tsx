@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import Link from "next/link"
 import { Pause, Play, RotateCcw, Volume2, Minus, Plus } from "lucide-react"
@@ -15,6 +15,25 @@ import {
 import { cn } from "@/lib/utils"
 
 type Status = "idle" | "running" | "paused" | "done"
+
+/** One minute of a dated workout: a named exercise, its looping demo clip, and
+ *  how many of the 60s are work (rest = 60 − work). */
+interface DayBlock {
+  name: string
+  /** Absolute MP4 URL (Bunny CDN) for the muted, looping demo. */
+  video: string
+  /** Work seconds in this minute (1..59); rest fills the rest of the minute. */
+  work: number
+}
+
+/** A curated workout for one date, loaded from /timer-days/<date>.json. The
+ *  blocks play one-per-minute; `rounds` repeats the whole list. */
+interface DayFile {
+  date: string
+  title?: string
+  rounds?: number
+  blocks: DayBlock[]
+}
 
 /**
  * Cue motifs — messenger-style mallet chimes (MSN/ICQ vibe, synthesized; the
@@ -81,6 +100,11 @@ export function TimerClient() {
   const [exerciseNames, setExerciseNames] = useState<string[]>(["", "", ""])
   const [status, setStatus] = useState<Status>("idle")
   const [elapsed, setElapsed] = useState(0) // seconds, fractional
+  // Dated-workout mode: when ?date=YYYY-MM-DD loads a day-file, the timer is
+  // driven by its blocks (per-minute exercise + demo video + work split) and
+  // the manual setup is hidden.
+  const [day, setDay] = useState<DayFile | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   // Edge fades on the dots scroller — visual hint that more dots exist
   // beyond the visible strip, on whichever side is clipped.
   const [dotsFade, setDotsFade] = useState({ left: false, right: false })
@@ -115,6 +139,36 @@ export function TimerClient() {
       return Number.isNaN(parsed) ? null : parsed
     }
 
+    // Dated workout: /timer?date=2026-06-17 loads a curated day-file and
+    // takes over the setup. Falls back silently to the manual timer if the
+    // date is malformed or the file is missing.
+    const date = params.get("date")
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      fetch(`/timer-days/${date}.json`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: DayFile | null) => {
+          if (!data || !Array.isArray(data.blocks) || data.blocks.length === 0)
+            return
+          const blocks = data.blocks
+            .slice(0, MAX_EXERCISES)
+            .map((b) => ({
+              name: typeof b.name === "string" ? b.name : "",
+              video: typeof b.video === "string" ? b.video : "",
+              work: clamp(Number(b.work) || 30, MIN_WORK_SEC, MAX_WORK_SEC),
+            }))
+          const rounds = clamp(Number(data.rounds) || 1, 1, 20)
+          const total = clamp(blocks.length * rounds, MIN_MINUTES, MAX_MINUTES)
+          setDay({ ...data, blocks, rounds })
+          setMinutes(total)
+          setExercises(blocks.length)
+          setExerciseNames(blocks.map((b) => b.name))
+        })
+        .catch(() => {
+          /* network/JSON error — keep the manual timer */
+        })
+      return // a dated workout ignores the manual min/work/names params
+    }
+
     const min = num("min")
     if (min !== null) setMinutes(clamp(min, MIN_MINUTES, MAX_MINUTES))
 
@@ -138,6 +192,27 @@ export function TimerClient() {
       setExerciseNames(Array.from({ length: count }, (_, i) => names[i] ?? ""))
     }
   }, [])
+
+  // Day mode + its per-minute blocks flattened across rounds (length =
+  // minutes). Minute i (0-based) shows dayBlocks[i].
+  const dayMode = day !== null
+  const dayBlocks = useMemo<DayBlock[]>(() => {
+    if (!day) return []
+    const rounds = day.rounds ?? 1
+    const out: DayBlock[] = []
+    for (let r = 0; r < rounds; r++) out.push(...day.blocks)
+    return out
+  }, [day])
+
+  /** Work seconds for a given minute (0-based) — per-block in day mode, the
+   *  shared workSec otherwise. */
+  const workForMinute = useCallback(
+    (m: number) =>
+      dayBlocks.length
+        ? (dayBlocks[Math.min(dayBlocks.length - 1, m)]?.work ?? workSec)
+        : workSec,
+    [dayBlocks, workSec],
+  )
 
   // --- audio -------------------------------------------------------------
 
@@ -266,7 +341,7 @@ export function TimerClient() {
       // so you can stop without watching the screen.
       if (
         minuteIdx < minutes &&
-        e - minuteIdx * 60 >= workSec &&
+        e - minuteIdx * 60 >= workForMinute(minuteIdx) &&
         lastRestRef.current < minuteIdx &&
         e < totalSec
       ) {
@@ -286,7 +361,7 @@ export function TimerClient() {
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [status, minutes, totalSec, workSec, beepMinute, beepRest, beepEnd])
+  }, [status, minutes, totalSec, workForMinute, beepMinute, beepRest, beepEnd])
 
   // --- screen wake lock ----------------------------------------------------
   // Keep the phone/laptop screen on while the timer runs; release on
@@ -406,6 +481,14 @@ export function TimerClient() {
   // Each minute is one exercise slot; a row of dots is one full round.
   const currentExercise = (completedMinutes % exercises) + 1
   const currentMinute = Math.min(minutes, completedMinutes + 1)
+  // Work split for the minute we're in (per-block in day mode).
+  const minuteNow = Math.min(minutes - 1, Math.floor(elapsed / 60))
+  const workNow = workForMinute(minuteNow)
+  // The demo clip for the current minute (day mode only). Before start, show
+  // the first block so the page isn't a black box.
+  const currentBlock = dayMode
+    ? dayBlocks[Math.min(dayBlocks.length - 1, isActive ? minuteNow : 0)]
+    : null
 
   const updateDotsFade = useCallback(() => {
     const el = dotsRef.current
@@ -448,6 +531,21 @@ export function TimerClient() {
       cRect.width / 2
     container.scrollTo({ left: Math.max(0, target), behavior: "smooth" })
   }, [status, currentMinute, minutes, exercises])
+  // Day mode: keep the demo clip pointed at the current minute's exercise and
+  // mirror the timer's play state. Muted + playsInline so autoplay is allowed;
+  // the short clip loops until the minute rolls over to the next exercise.
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !currentBlock?.video) return
+    if (v.dataset.src !== currentBlock.video) {
+      v.dataset.src = currentBlock.video
+      v.src = currentBlock.video
+      v.load()
+    }
+    if (status === "running") void v.play().catch(() => {})
+    else v.pause()
+  }, [currentBlock?.video, status])
+
   // --- ring geometry -----------------------------------------------------
 
   // Smooth per-second sweep proportional to the total: each elapsed minute
@@ -473,11 +571,30 @@ export function TimerClient() {
 
   return (
     <div className="flex flex-col items-center gap-6">
+      {/* Dated workout: title + move count instead of the manual setup. */}
+      {dayMode ? (
+        <div className="order-2 flex w-full max-w-2xl flex-col items-center gap-1 text-center lg:order-1">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+            {day?.date} · {exercises} moves
+          </p>
+          {day?.title ? (
+            <h2 className="text-2xl font-extrabold tracking-tight">
+              {day.title}
+            </h2>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Setup panel — settings and controls live together: configure the
           session, then hit start. Settings only editable while idle.
           On phones it drops below the timer: preset links open straight
           onto the ring, and the ring itself starts the session. */}
-      <div className="order-2 flex w-full max-w-2xl flex-col items-center gap-4 rounded-2xl border bg-card/50 p-4 sm:p-5 lg:order-1 lg:w-auto lg:max-w-none lg:flex-row lg:gap-7 lg:px-8">
+      <div
+        className={cn(
+          "order-2 flex w-full max-w-2xl flex-col items-center gap-4 rounded-2xl border bg-card/50 p-4 sm:p-5 lg:order-1 lg:w-auto lg:max-w-none lg:flex-row lg:gap-7 lg:px-8",
+          dayMode && "hidden",
+        )}
+      >
         <div className="flex w-full flex-wrap items-start justify-center gap-x-8 gap-y-5 lg:w-auto lg:flex-nowrap">
           <div className="flex flex-col items-center gap-1.5">
             <div className="flex items-center gap-2">
@@ -590,7 +707,44 @@ export function TimerClient() {
       </div>
 
       {/* Ring+controls on the left · names+dots column on the right */}
-      <div className="order-1 flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:order-2 lg:w-auto lg:flex-row lg:items-center lg:gap-14">
+      <div className="order-1 flex w-full max-w-full min-w-0 flex-col items-center gap-6 lg:order-2 lg:w-auto lg:flex-row lg:items-center lg:gap-10">
+        {/* Demo clip for the current minute (dated workouts) — same screen as
+            the timer so you watch the move while the clock runs. */}
+        {dayMode ? (
+          <div className="w-full max-w-[240px]">
+            <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
+              <video
+                ref={videoRef}
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="size-full object-cover"
+              />
+              {status === "running" ? (
+                <span
+                  className={cn(
+                    "absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.18em]",
+                    elapsed % 60 < workNow
+                      ? "bg-emerald-500 text-white"
+                      : "bg-amber-500 text-black",
+                  )}
+                >
+                  {elapsed % 60 < workNow ? "GO" : "REST"}
+                </span>
+              ) : null}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/55">
+                  move {currentExercise}/{exercises}
+                </p>
+                <p className="truncate text-sm font-bold text-white">
+                  {currentBlock?.name || `Exercise ${currentExercise}`}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {/* Circular timer */}
         <div className="flex flex-col items-center">
       <div className="relative grid place-items-center rounded-full">
@@ -639,12 +793,12 @@ export function TimerClient() {
                 <span
                   className={cn(
                     "text-base font-extrabold tracking-[0.25em] transition-colors duration-300",
-                    elapsed % 60 < workSec
+                    elapsed % 60 < workNow
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-amber-600 dark:text-amber-400",
                   )}
                 >
-                  {elapsed % 60 < workSec ? "GO" : "REST"}
+                  {elapsed % 60 < workNow ? "GO" : "REST"}
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   exercise {currentExercise}/{exercises}
@@ -782,9 +936,13 @@ export function TimerClient() {
                   <input
                     value={name}
                     onChange={(e) => renameExercise(i, e.target.value)}
+                    readOnly={dayMode}
                     placeholder={`Exercise ${i + 1}`}
                     aria-label={`Exercise ${i + 1} name`}
-                    className="h-10 w-56 rounded-md border border-input bg-transparent px-3 text-base outline-none focus:ring-2 focus:ring-emerald-500 sm:w-48 sm:text-sm"
+                    className={cn(
+                      "h-10 w-56 rounded-md border border-input bg-transparent px-3 text-base outline-none focus:ring-2 focus:ring-emerald-500 sm:w-48 sm:text-sm",
+                      dayMode && "cursor-default border-transparent focus:ring-0",
+                    )}
                   />
                 </div>
               )
