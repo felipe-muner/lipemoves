@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import Link from "next/link"
 import { Pause, Play, RotateCcw, Volume2, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -33,11 +34,28 @@ const MAX_EXERCISES = 10
 const MIN_WORK_SEC = 5
 const MAX_WORK_SEC = 55
 
-function fmt(totalSeconds: number): string {
-  const s = Math.max(0, Math.ceil(totalSeconds))
-  const m = Math.floor(s / 60)
-  const sec = s % 60
-  return `${m}:${sec.toString().padStart(2, "0")}`
+/** A single clock segment (minutes or seconds) that animates on change: the
+ *  outgoing value slides up and fades, the new one rises into its place.
+ *  `mode="popLayout"` pops the exiting copy out of flow so the colon and the
+ *  rest of the clock never shift. Falls back to a plain crossfade when the
+ *  user prefers reduced motion. */
+function TickDigit({ value, reduce }: { value: string; reduce: boolean }) {
+  return (
+    <span className="relative inline-block">
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={value}
+          className="inline-block"
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: "0.5em" }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: "-0.5em" }}
+          transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {value}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  )
 }
 
 export function TimerClient() {
@@ -428,6 +446,13 @@ export function TimerClient() {
   const C = 2 * Math.PI * R
   const dashOffset = C * (1 - ringProgress)
 
+  // Split the remaining time so each digit group can animate independently:
+  // minutes hold steady while the seconds tick over.
+  const reduceMotion = !!useReducedMotion()
+  const remainCeil = Math.max(0, Math.ceil(remaining))
+  const clockMin = String(Math.floor(remainCeil / 60))
+  const clockSec = (remainCeil % 60).toString().padStart(2, "0")
+
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Setup panel — settings and controls live together: configure the
@@ -620,7 +645,9 @@ export function TimerClient() {
             )}
           </div>
           <span className="text-6xl font-bold tabular-nums tracking-tight sm:text-7xl">
-            {fmt(remaining)}
+            <TickDigit value={clockMin} reduce={reduceMotion} />
+            <span>:</span>
+            <TickDigit value={clockSec} reduce={reduceMotion} />
           </span>
           {/* Controls — always inside the ring, under the time. The middle
               button is the play/pause toggle; reset only appears once there
