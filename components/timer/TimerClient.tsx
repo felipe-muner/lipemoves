@@ -982,6 +982,35 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
           Last one — finish strong 💪
         </motion.p>
       )}
+      {/* 1-on-1 coaching promo — uses the rest seconds to pitch it. Opens in a
+          new tab so the running session isn't interrupted. */}
+      <motion.div variants={restItem} className="mt-4 flex flex-col items-start gap-2.5">
+        <a
+          href="/pricing"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center rounded-full border border-[#39FF14]/60 px-6 py-3 text-base font-bold text-[#39FF14] transition-colors hover:border-[#39FF14] hover:bg-[#39FF14]/10"
+        >
+          Train 1-on-1 with me →
+        </a>
+        <div className="flex items-center gap-3 text-sm">
+          <a
+            href="https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%201%3A1%20coaching"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-[#39FF14]/90 transition-colors hover:text-[#39FF14]"
+          >
+            WhatsApp
+          </a>
+          <span className="text-white/25">·</span>
+          <a
+            href="mailto:felipe.muner@gmail.com?subject=1-on-1%20Personal%20Training"
+            className="text-white/50 transition-colors hover:text-white/80"
+          >
+            Email
+          </a>
+        </div>
+      </motion.div>
     </motion.div>
   )
 
@@ -991,6 +1020,10 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
   // panel in from the left so the next-move demo still reads on the right.
   // Always a 9:16 phone frame. Immersive just fits it to the viewport (near
   // full-screen on mobile, a centered tall frame on desktop) — never stretched.
+  // Mosaic rows = ceil(clips / 2): fills the frame for ANY count (3 clips → 2
+  // rows, not the old hardcoded 3 that left an empty bottom third), and makes
+  // the top-left cell 50%×(1/rows) so the grow starts exactly on clip 1.
+  const mosaicRows = Math.max(1, Math.ceil((day?.blocks.length ?? 1) / 2))
   const overlayInner = (
     <div
       className={cn(
@@ -1024,7 +1057,10 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
       {/* Idle + countdown: an Instagram-style mosaic of ALL clips playing, so
           you preview the whole session before (and as) it starts. */}
       {(idleStart || counting || growing) && day?.blocks.length ? (
-        <div className="absolute inset-0 grid grid-cols-2 grid-rows-3 gap-px">
+        <div
+          className="absolute inset-0 grid grid-cols-2 gap-px"
+          style={{ gridTemplateRows: `repeat(${mosaicRows}, minmax(0, 1fr))` }}
+        >
           {day.blocks.map((b, i) => (
             <video
               key={i}
@@ -1064,8 +1100,8 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
           playsInline
           className="absolute inset-0 z-[1] size-full object-cover"
           style={{ transformOrigin: "top left" }}
-          initial={{ scale: 0.5 }}
-          animate={{ scale: 1 }}
+          initial={{ scaleX: 0.5, scaleY: 1 / mosaicRows }}
+          animate={{ scaleX: 1, scaleY: 1 }}
           transition={{ duration: 2.7, ease: [0.42, 0, 1, 1] }} // ease-in = accelerate
         />
       ) : null}
