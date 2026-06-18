@@ -1,7 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { Loader2, Minus, Pause, Play, Plus, Scissors, Trash2, X } from "lucide-react"
+import {
+  Loader2,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  Scissors,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -110,10 +121,24 @@ export function ClipCutter({
   const [trackW, setTrackW] = React.useState(0)
   const [mode, setMode] = React.useState<Mode>("probing")
   const [playing, setPlaying] = React.useState(false)
+  // Preview-only mute (edit without sound). Does NOT affect export — renders
+  // always keep the original audio. Remembered across clips/sessions.
+  const [muted, setMuted] = React.useState(false)
   const modeRef = React.useRef<Mode>("probing")
   React.useEffect(() => {
     modeRef.current = mode
   }, [mode])
+  React.useEffect(() => {
+    setMuted(localStorage.getItem("studioCutMuted") === "1")
+  }, [])
+  React.useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted
+  }, [muted])
+  const toggleMute = () =>
+    setMuted((m) => {
+      localStorage.setItem("studioCutMuted", m ? "0" : "1")
+      return !m
+    })
 
   // Latest-wins frame scrubbing (frame mode only): while one frame loads, only
   // the most recent requested time is kept; shown when the in-flight settles.
@@ -469,14 +494,25 @@ export function ClipCutter({
 
       <div className="flex items-center justify-center gap-3">
         {mode === "video" ? (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggle}
-            aria-label={playing ? "Pause" : "Play"}
-          >
-            {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggle}
+              aria-label={playing ? "Pause" : "Play"}
+            >
+              {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleMute}
+              aria-label={muted ? "Unmute preview" : "Mute preview"}
+              title={muted ? "Unmute preview" : "Mute preview (export keeps audio)"}
+            >
+              {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+            </Button>
+          </>
         ) : null}
         <span className="text-xs tabular-nums text-muted-foreground">
           {fmt(time)} / {fmt(duration)}
