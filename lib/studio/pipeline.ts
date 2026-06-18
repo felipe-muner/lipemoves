@@ -91,7 +91,9 @@ async function overlayBadge(
     "-filter_complex", filter,
     "-map", "[vo]",
   ]
-  if (audio) args.push("-map", "0:a", "-c:a", "copy")
+  // Only the first audio stream — phone clips can carry a second, undecodable
+  // spatial-audio (APAC) track that breaks copy/encode.
+  if (audio) args.push("-map", "0:a:0", "-c:a", "copy")
   args.push("-c:v", "libx265", "-preset", "medium", "-crf", "18", "-tag:v", "hvc1")
   if (hdr) {
     args.push(

@@ -28,6 +28,7 @@ type DragState =
   | { kind: "draw"; anchor: number; cur: number }
   | { kind: "edge"; id: string; edge: "start" | "end" }
   | { kind: "move"; id: string; anchor: number; origStart: number; len: number; moved: boolean }
+  | { kind: "scrub" } // drag the playhead to preview any moment
   | null
 
 const MIN = 0.3 // shortest allowed clip (s) — also the tap-vs-drag threshold
@@ -268,6 +269,8 @@ export function ClipCutter({
           }),
         )
         seek(t)
+      } else if (d.kind === "scrub") {
+        seek(t) // move the playhead anywhere to preview that moment
       } else {
         // move the whole window: shift both edges by the drag delta, clamped so
         // it stays inside the recording and keeps its length.
@@ -439,7 +442,6 @@ export function ClipCutter({
         <video
           ref={videoRef}
           src={streamUrl(path)}
-          muted
           playsInline
           preload="metadata"
           className="absolute inset-0 size-full object-contain"
@@ -481,7 +483,9 @@ export function ClipCutter({
         </span>
       </div>
 
-      {/* timeline — drag across to draw a clip; tap a clip band to select it */}
+      {/* timeline — drag across to draw a clip; tap a clip band to select it.
+          Wrapper is NOT clipped so the playhead knob can sit above the strip. */}
+      <div className="relative">
       <div
         ref={trackRef}
         className="relative h-24 w-full touch-none select-none overflow-hidden rounded-lg border bg-muted"
@@ -572,17 +576,31 @@ export function ClipCutter({
             style={{ left: pct(draft.start), width: pct(draft.end - draft.start) }}
           />
         ) : null}
+        </div>
 
+        {/* playhead — sibling of the (clipped) track so its knob floats on top
+            of the clip borders. Grab the knob to scrub anywhere, including
+            across a clip, without drawing/moving a clip. */}
         <div
-          className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 bg-white shadow"
+          className="absolute inset-y-0 z-30 w-4 -translate-x-1/2 cursor-ew-resize touch-none"
           style={{ left: pct(time) }}
-        />
+          onPointerDown={() => beginDrag({ kind: "scrub" })}
+        >
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-white shadow-[0_0_3px_rgba(0,0,0,0.9)]" />
+          <div className="pointer-events-none absolute left-1/2 top-0 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-500 shadow" />
+        </div>
       </div>
 
-      {/* time ruler — confirms the strip spans the whole recording, and where
-          the playhead sits on that same scale */}
+      {/* time ruler — confirms the strip spans the whole recording, shows where
+          the playhead sits, and doubles as a scrub bar (drag to move it) */}
       {duration ? (
-        <div className="relative h-8 w-full select-none">
+        <div
+          className="relative h-8 w-full touch-none cursor-ew-resize select-none"
+          onPointerDown={(e) => {
+            seek(clamp(timeFromX(e.clientX), 0, duration))
+            beginDrag({ kind: "scrub" })
+          }}
+        >
           <span
             className="absolute top-0 z-10 whitespace-nowrap text-[11px] font-semibold tabular-nums text-emerald-600 dark:text-emerald-400"
             style={{ left: pct(time), transform: tickAlign(time) }}
@@ -608,7 +626,8 @@ export function ClipCutter({
 
       <p className="text-center text-xs text-muted-foreground">
         Drag across the timeline to mark a clip. Tap a clip to select it; drag a
-        selected clip to slide it, or its edges to trim.
+        selected clip to slide it, or its edges to trim. Drag the playhead (or
+        the ruler) to preview any moment.
       </p>
 
       {/* clip list — tap a row to select it, then edit its start/end inline */}
