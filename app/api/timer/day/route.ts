@@ -15,31 +15,54 @@ interface RawDay {
   blocks: RawBlock[]
 }
 
+// A day can have several variants (same date, different focus). Files are named
+// <date>-<category>.json; a legacy un-categorised <date>.json still works.
+const CATEGORIES = ["kettlebell", "mobility"] as const
+
+async function loadDayFile(origin: string, file: string): Promise<RawDay | null> {
+  try {
+    const res = await fetch(`${origin}/timer-days/${file}.json`, {
+      cache: "no-store",
+    })
+    if (!res.ok) return null
+    return (await res.json()) as RawDay
+  } catch {
+    return null
+  }
+}
+
 /**
  * Returns a dated /timer workout with its demo clips signed into short-lived
- * Bunny HLS URLs. Free for now (no auth) — when the archive is monetised, gate
- * older dates here (auth + hasActiveSubscription) before signing.
+ * Bunny HLS URLs. `?category=` picks a variant (kettlebell / mobility); the
+ * response also lists which categories exist for the date so the UI can show a
+ * picker. Free for now — when monetised, gate older dates here before signing.
  */
 export async function GET(req: NextRequest) {
   const date = req.nextUrl.searchParams.get("date") ?? ""
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "bad date" }, { status: 400 })
   }
+  const origin = req.nextUrl.origin
+  const reqCat = req.nextUrl.searchParams.get("category")
 
-  // Read the day-file from the statically-served /public path (works in dev and
-  // on Vercel, where the lambda can't fs-read public files).
-  let raw: RawDay
-  try {
-    const res = await fetch(`${req.nextUrl.origin}/timer-days/${date}.json`, {
-      cache: "no-store",
-    })
-    if (!res.ok) throw new Error("missing")
-    raw = (await res.json()) as RawDay
-  } catch {
+  // Discover which category variants exist for this date.
+  const found: Partial<Record<string, RawDay>> = {}
+  await Promise.all(
+    CATEGORIES.map(async (c) => {
+      const d = await loadDayFile(origin, `${date}-${c}`)
+      if (d) found[c] = d
+    }),
+  )
+  const available = CATEGORIES.filter((c) => found[c])
+
+  // Use the requested category if it exists, else the first available one.
+  const category = reqCat && found[reqCat] ? reqCat : available[0] ?? null
+
+  // Chosen variant, or fall back to a legacy un-categorised <date>.json.
+  let raw = category ? found[category] ?? null : null
+  if (!raw) raw = await loadDayFile(origin, date)
+  if (!raw || !Array.isArray(raw.blocks) || raw.blocks.length === 0) {
     return NextResponse.json({ error: "not found" }, { status: 404 })
-  }
-  if (!Array.isArray(raw.blocks) || raw.blocks.length === 0) {
-    return NextResponse.json({ error: "empty" }, { status: 404 })
   }
 
   // `video` is a Bunny GUID (→ sign to an HLS URL) OR already a path/URL
@@ -54,7 +77,7 @@ export async function GET(req: NextRequest) {
   }))
 
   return NextResponse.json(
-    { date: raw.date, title: raw.title, rounds: raw.rounds, blocks },
+    { date: raw.date, title: raw.title, rounds: raw.rounds, blocks, category, available },
     { headers: { "Cache-Control": "no-store" } },
   )
 }
