@@ -11,6 +11,7 @@ import {
   Loader2,
   Play,
   Plus,
+  Scissors,
   Upload,
   X,
   XCircle,
@@ -48,6 +49,7 @@ import {
   outfitFontFace,
   type BadgeStyle,
 } from "@/lib/studio/badge-style"
+import { ClipCutter, type CutSegment } from "./ClipCutter"
 import {
   DEFAULT_FONT,
   FONTS,
@@ -59,19 +61,25 @@ import {
 /** Grab a poster frame from an uploaded video, client-side, so the drill-label
  *  editor has a real backdrop to drag the text onto without a server round-trip. */
 function extractPoster(
-  file: File,
+  source: File | string,
+  at?: number,
 ): Promise<{ url: string; aspect: number }> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video")
     video.preload = "auto"
     video.muted = true
     video.playsInline = true
-    const src = URL.createObjectURL(file)
+    // A File needs an object URL (revoked after); a string is used directly.
+    const objUrl = typeof source === "string" ? null : URL.createObjectURL(source)
+    const src = objUrl ?? (source as string)
     video.src = src
-    const cleanup = () => URL.revokeObjectURL(src)
+    const cleanup = () => {
+      if (objUrl) URL.revokeObjectURL(objUrl)
+    }
     video.onloadeddata = () => {
-      // Seek a touch in so we don't grab a black first frame.
-      video.currentTime = Math.min(0.15, (video.duration || 1) / 2)
+      // A specific time (segment start) or a touch in to dodge a black frame.
+      video.currentTime =
+        at !== undefined ? at + 0.05 : Math.min(0.15, (video.duration || 1) / 2)
     }
     video.onseeked = () => {
       try {
@@ -144,6 +152,11 @@ interface ComposeCfg {
   poster: string | null
   /** Poster aspect ratio (w/h) for the preview box. */
   aspect: number
+  /** When this clip is a SEGMENT cut from a shared source recording: its in/out
+   *  seconds. Omitted for whole uploaded clips. The preview loops within
+   *  [start,end]; the server cuts it at render. */
+  start?: number
+  end?: number
 }
 
 let textBoxSeq = 0
@@ -812,6 +825,29 @@ function ModeOption({
 
 export function StudioClient() {
   const [files, setFiles] = React.useState<File[]>([])
+  // Local-first "cut from a recording" flow (no upload — server reads the Mac):
+  const [folderPath, setFolderPath] = React.useState("~/Downloads")
+  const [localFiles, setLocalFiles] = React.useState<
+    { name: string; path: string; size: number }[]
+  >([])
+  const [localBusy, setLocalBusy] = React.useState(false)
+  const [localErr, setLocalErr] = React.useState<string | null>(null)
+  // Cutter open on this local recording (frames pulled on demand — no proxy).
+  const [cutSource, setCutSource] = React.useState<{
+    path: string
+    name: string
+    duration: number
+    aspect: number
+  } | null>(null)
+  // The local source backing the current compose clips (read at render).
+  const [localComposeSrc, setLocalComposeSrc] = React.useState<{
+    path: string
+  } | null>(null)
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("studioFolder")
+    if (saved) setFolderPath(saved)
+  }, [])
   // Playable object URLs for the picked clips, so each cell can preview the
   // real video (with its text/badge overlays) before rendering. Revoked when
   // the selection changes or on unmount.
@@ -912,6 +948,8 @@ export function StudioClient() {
   function pickFiles(list: FileList | null) {
     const arr = list ? Array.from(list) : []
     setFiles(arr)
+    setLocalComposeSrc(null) // switching to uploaded clips
+    setCutSource(null)
     labelWidths.current = {}
     // Seed per-clip configs: zoom alternates in/out (the classic Ken Burns
     // look, editable per clip), no text boxes yet (add via "Add text").
@@ -941,6 +979,81 @@ export function StudioClient() {
           /* leave poster null — the editor shows a placeholder */
         })
     })
+  }
+
+  // List video files in the chosen local folder (server reads the Mac's disk).
+  async function listFolder() {
+    setLocalBusy(true)
+    setLocalErr(null)
+    try {
+      localStorage.setItem("studioFolder", folderPath)
+      const r = await fetch(
+        `/api/studio/local-files?dir=${encodeURIComponent(folderPath)}`,
+      )
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || "Could not read folder")
+      setLocalFiles(d.files)
+      if (!d.files.length) setLocalErr("No videos in that folder.")
+    } catch (e) {
+      setLocalFiles([])
+      setLocalErr(e instanceof Error ? e.message : "Could not read folder")
+    } finally {
+      setLocalBusy(false)
+    }
+  }
+
+  // Open the cutter on a local recording. No transcode — just probe its length
+  // (instant); the cutter pulls frames on demand. The original (HEVC/multi-GB)
+  // is never uploaded and is cut full-quality at render.
+  async function prepareLocal(f: { path: string; name: string }) {
+    setLocalBusy(true)
+    setLocalErr(null)
+    try {
+      const r = await fetch(
+        `/api/studio/frame?meta=1&path=${encodeURIComponent(f.path)}`,
+      )
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || "Couldn't read that video")
+      if (!d.duration) throw new Error("Couldn't read that video's length")
+      setCutSource({
+        path: f.path,
+        name: f.name,
+        duration: d.duration,
+        aspect: d.width && d.height ? d.width / d.height : 9 / 16,
+      })
+    } catch (e) {
+      setLocalErr(e instanceof Error ? e.message : "Couldn't read that video")
+    } finally {
+      setLocalBusy(false)
+    }
+  }
+
+  // Marked segments → compose clips. They share the local source (read at
+  // render); each clip's poster is a single frame pulled on demand from the
+  // source (no transcode), so this is instant even for a 40-min recording.
+  function applyCutSegments(segments: CutSegment[]) {
+    if (!cutSource) return
+    const { path: srcPath, aspect } = cutSource
+    labelWidths.current = {}
+    setFiles([])
+    setLocalComposeSrc({ path: srcPath })
+    setComposeCfgs(
+      segments.map((seg) => ({
+        zoom: "off" as ZoomMode,
+        texts: [],
+        badgeX: BADGE_DEFAULT_X,
+        badgeY: BADGE_DEFAULT_Y,
+        badgeSize: BADGE_DEFAULT_SIZE * 100,
+        badgeText: null,
+        // A frame at the clip's start, fetched lazily by <Image>.
+        poster: `/api/studio/frame?path=${encodeURIComponent(srcPath)}&t=${seg.start.toFixed(2)}&h=640`,
+        aspect,
+        start: seg.start,
+        end: seg.end,
+      })),
+    )
+    setCutSource(null)
+    setLocalFiles([])
   }
 
   // Move a clip to a new slot, reordering files + their configs in lock-step
@@ -1035,11 +1148,22 @@ export function StudioClient() {
   }, [clipsWithFrames, selClip])
 
   async function submit() {
-    if (files.length === 0) return
+    if (files.length === 0 && !localComposeSrc) return
     setError(null)
     setBusy(true)
     setJob(null)
     setBurnedUrl(null)
+    // Dedupe shared source files: segments cut from one recording all reference
+    // the same File, so it's uploaded once and each clip carries a sourceIndex.
+    const uniqueFiles: File[] = []
+    const sourceIndexOf = files.map((f) => {
+      let idx = uniqueFiles.indexOf(f)
+      if (idx === -1) {
+        idx = uniqueFiles.length
+        uniqueFiles.push(f)
+      }
+      return idx
+    })
     const config: StudioConfig = {
       join,
       enumerate: mode === "compose" && enumerate,
@@ -1054,12 +1178,18 @@ export function StudioClient() {
               fade: textFade,
             }
           : null,
-      clips: files.map((_, i) => {
-        const c = composeCfgs[i]
+      clips: composeCfgs.map((c, i) => {
         const badgeText = (
-          c?.badgeText ?? `✅ ${i + 1}/${files.length}`
+          c?.badgeText ?? `✅ ${i + 1}/${composeCfgs.length}`
         ).trim()
+        // Source: a LOCAL path (no upload) or an uploaded file (deduped).
+        const sourceRef = localComposeSrc
+          ? { sourcePath: localComposeSrc.path }
+          : { sourceIndex: sourceIndexOf[i] }
         return {
+          ...sourceRef,
+          start: c?.start,
+          end: c?.end,
           zoom: mode === "compose" && c && c.zoom !== "off" ? c.zoom : null,
           labels:
             mode === "compose" && c
@@ -1086,7 +1216,7 @@ export function StudioClient() {
       }),
     }
     const fd = new FormData()
-    files.forEach((f) => fd.append("files", f))
+    uniqueFiles.forEach((f) => fd.append("files", f))
     fd.append("config", JSON.stringify(config))
     try {
       const res = await fetch("/api/studio/jobs", { method: "POST", body: fd })
@@ -1230,7 +1360,7 @@ export function StudioClient() {
               <span className="text-xs text-muted-foreground">s</span>
             </div>
           ) : null}
-          {mode === "compose" && files.length ? (
+          {mode === "compose" && composeCfgs.length ? (
             <div className="ml-auto flex items-center gap-2">
               {files.length > 1 ? (
                 <Toggle checked={join} onChange={setJoin} label="Stitch" />
@@ -1306,9 +1436,76 @@ export function StudioClient() {
           </label>
         </div>
 
+        {/* OR: cut several clips out of ONE long recording on your Mac (no
+            upload — the server reads the file straight from the folder). */}
+        <div className="space-y-2 rounded-xl border bg-card/40 p-3 sm:p-4">
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <Scissors className="size-4 text-emerald-500" /> …or cut clips from a
+            recording on your Mac
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              value={folderPath}
+              onChange={(e) => setFolderPath(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && listFolder()}
+              placeholder="~/Downloads"
+              className="h-8 max-w-[260px] font-mono text-xs"
+              aria-label="Folder on your Mac"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={listFolder}
+              disabled={localBusy}
+            >
+              {localBusy ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                "List videos"
+              )}
+            </Button>
+          </div>
+          {localErr ? (
+            <p className="text-xs text-amber-600 dark:text-amber-400">{localErr}</p>
+          ) : null}
+          {localFiles.length ? (
+            <div className="max-h-48 space-y-1 overflow-y-auto">
+              {localFiles.map((f) => (
+                <button
+                  key={f.path}
+                  type="button"
+                  onClick={() => prepareLocal(f)}
+                  disabled={localBusy}
+                  className="flex w-full items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition hover:bg-muted disabled:opacity-50"
+                >
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {f.name}
+                  </span>
+                  <span className="shrink-0 text-muted-foreground">
+                    {(f.size / 1e9).toFixed(2)} GB
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Clip cutter — scrub the prepared proxy into several clips. */}
+        {cutSource ? (
+          <div className="rounded-xl border bg-card/40 p-3 sm:p-4">
+            <ClipCutter
+              path={cutSource.path}
+              duration={cutSource.duration}
+              title={cutSource.name}
+              onUse={applyCutSegments}
+              onCancel={() => setCutSource(null)}
+            />
+          </div>
+        ) : null}
+
         {/* Compose: shared text style + per-clip zoom + label, dragged on the
             clip's own poster frame (extracted client-side). */}
-        {mode === "compose" && files.length ? (
+        {mode === "compose" && composeCfgs.length ? (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
               <div className="flex items-center gap-2">
@@ -1343,6 +1540,10 @@ export function StudioClient() {
                 // null = untouched default; cleared text skips this clip's badge.
                 const badgeText =
                   c.badgeText ?? `✅ ${i + 1}/${composeCfgs.length}`
+                // Uploaded clips play from their own object URL. Local-source
+                // clips have no playable proxy (cut full-quality at render), so
+                // they show their poster frame for placing text/badges.
+                const clipPreview = clipUrls[i]
                 // This clip's render state (the job processes clips by their
                 // original submit index). Drives the in-cell loading overlay.
                 const rendered = job?.clips.find((cl) => cl.index === i)
@@ -1397,14 +1598,26 @@ export function StudioClient() {
                       containerType: "inline-size",
                     }}
                   >
-                    {playClip === i && clipUrls[i] ? (
+                    {playClip === i && clipPreview ? (
                       <video
-                        src={clipUrls[i]}
+                        src={clipPreview}
                         autoPlay
-                        loop
+                        loop={c.start === undefined}
                         playsInline
                         controls
                         className="absolute inset-0 size-full object-cover"
+                        // Segment clips: start at the cut-in and loop within
+                        // [start, end] so the preview matches what renders.
+                        onLoadedMetadata={(e) => {
+                          if (c.start !== undefined)
+                            e.currentTarget.currentTime = c.start
+                        }}
+                        onTimeUpdate={(e) => {
+                          if (c.start === undefined || c.end === undefined) return
+                          const v = e.currentTarget
+                          if (v.currentTime >= c.end || v.currentTime < c.start - 0.1)
+                            v.currentTime = c.start
+                        }}
                       />
                     ) : c.poster ? (
                       <Image
@@ -1424,7 +1637,7 @@ export function StudioClient() {
                     </span>
                     {/* play / stop the real clip in-cell (overlays stay on top
                         so you preview the text & badge over the moving video) */}
-                    {clipUrls[i] ? (
+                    {clipPreview ? (
                       <button
                         type="button"
                         onClick={() =>
@@ -1626,7 +1839,7 @@ export function StudioClient() {
         <Button
           onClick={submit}
           size="sm"
-          disabled={files.length === 0 || busy || running}
+          disabled={(files.length === 0 && !localComposeSrc) || busy || running}
           className="h-8 w-fit px-3 text-xs"
         >
           {busy || running ? (
