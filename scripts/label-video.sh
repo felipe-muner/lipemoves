@@ -133,7 +133,7 @@ if [[ "$TRC" == "arib-std-b67" || "$TRC" == "smpte2084" ]]; then
   FC="${fc};[v]format=yuv420p10le,setparams=colorspace=bt2020nc:color_primaries=bt2020:color_trc=arib-std-b67[vo]"
   "$FFMPEG" -y -hide_banner -loglevel error \
     -i "$VIDEO" -loop 1 -i "$TXT" \
-    -filter_complex "$FC" -map "[vo]" -map 0:a? -t "$DUR" \
+    -filter_complex "$FC" -map "[vo]" -map 0:a:0? -t "$DUR" \
     -c:v libx265 -preset medium -crf 18 -tag:v hvc1 \
     -x265-params "colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc:range=limited" \
     -color_primaries bt2020 -colorspace bt2020nc -color_trc arib-std-b67 -color_range tv \
@@ -142,7 +142,7 @@ else
   FC="${fc};[v]format=yuv420p[vo]"
   "$FFMPEG" -y -hide_banner -loglevel error \
     -i "$VIDEO" -loop 1 -i "$TXT" \
-    -filter_complex "$FC" -map "[vo]" -map 0:a? -t "$DUR" \
+    -filter_complex "$FC" -map "[vo]" -map 0:a:0? -t "$DUR" \
     -c:v libx265 -preset medium -crf 18 -tag:v hvc1 \
     -c:a aac -b:a 128k -movflags +faststart "$OUT"
 fi
