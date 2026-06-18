@@ -29,12 +29,15 @@ interface Block {
 }
 
 async function main() {
-  const [date, srcDir, workArg] = process.argv.slice(2)
+  const [date, srcDir, workArg, categoryArg] = process.argv.slice(2)
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error("usage: timer:day <YYYY-MM-DD> <clips-dir> [work]")
+    throw new Error("usage: timer:day <YYYY-MM-DD> <clips-dir> [work] [category]")
   }
   if (!srcDir || !existsSync(srcDir)) throw new Error(`no dir: ${srcDir}`)
   const work = Number(workArg) || 50
+  // Optional variant (kettlebell / mobility) → <date>-<category>.json.
+  const category = categoryArg && /^[a-z]+$/.test(categoryArg) ? categoryArg : ""
+  const fileBase = category ? `${date}-${category}` : date
 
   const clips = readdirSync(srcDir)
     .filter((f) => /\.(mov|mp4|m4v)$/i.test(f))
@@ -42,7 +45,7 @@ async function main() {
   if (clips.length === 0) throw new Error(`no clips in ${srcDir}`)
 
   // Preserve existing names / title / rounds if the day-file already exists.
-  const dayPath = path.join(process.cwd(), "public/timer-days", `${date}.json`)
+  const dayPath = path.join(process.cwd(), "public/timer-days", `${fileBase}.json`)
   const prev = existsSync(dayPath)
     ? (JSON.parse(readFileSync(dayPath, "utf8")) as {
         title?: string
@@ -56,7 +59,9 @@ async function main() {
     const src = path.join(srcDir, clips[i])
     const name = prev.blocks?.[i]?.name || `Exercise ${i + 1}`
     console.log(`[${i + 1}/${clips.length}] ${clips[i]} → "${name}"`)
-    const guid = await createBunnyVideo(`Timer ${date} · ${name}`)
+    const guid = await createBunnyVideo(
+      `Timer ${date}${category ? ` ${category}` : ""} · ${name}`,
+    )
     await uploadBunnyVideo(guid, new Uint8Array(readFileSync(src)))
     await setBunnyVideoTags(guid, ["timer"])
     console.log(`   uploaded ${guid}`)
@@ -71,7 +76,9 @@ async function main() {
   }
   writeFileSync(dayPath, JSON.stringify(dayFile, null, 2) + "\n")
   console.log(`\n✓ wrote ${dayPath}`)
-  console.log(`→ /timer?date=${date} (clips encode on Bunny in ~1-2 min)`)
+  console.log(
+    `→ /timer?date=${date}${category ? `&category=${category}` : ""} (clips encode on Bunny in ~1-2 min)`,
+  )
   process.exit(0)
 }
 

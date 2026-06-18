@@ -1,0 +1,22 @@
+{
+  "date": "2026-06-18",
+  "title": "Core + Shoulder Kettlebell",
+  "rounds": 10,
+  "blocks": [
+    {
+      "name": "Kettlebell halo",
+      "video": "d2775d3f-6c26-4d80-b73d-856e0fd623b9",
+      "work": 30
+    },
+    {
+      "name": "Standing core twist",
+      "video": "b4611482-0b3a-4b82-96d3-f75a9dc00309",
+      "work": 30
+    },
+    {
+      "name": "Overhead press",
+      "video": "15e7c97e-77aa-44bd-a215-7238dbf7c1df",
+      "work": 30
+    }
+  ]
+}

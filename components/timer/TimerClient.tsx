@@ -170,6 +170,11 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
   // Server passes `dated` (it read ?date=), so the loader renders from the
   // first byte — no flash of the default manual timer before hydration.
   const [dayLoading, setDayLoading] = useState(dated)
+  // Which workout variant is showing + which exist for this date (kettlebell /
+  // mobility). A picker appears when 2+ variants exist for the day.
+  const [category, setCategory] = useState<string | null>(null)
+  const [available, setAvailable] = useState<string[]>([])
+  const [dayDate, setDayDate] = useState<string | null>(null)
   const dayLayout = 0 // single overlay layout (selector removed)
   // Overlay start sequence: 3-2-1 countdown, then a psychedelic "flight" of the
   // dial to its corner.
@@ -197,6 +202,48 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
   const remaining = Math.max(0, totalSec - elapsed)
   const completedMinutes = Math.min(minutes, Math.floor(elapsed / 60))
 
+  // Load a dated workout (optionally a specific variant) and drive the timer
+  // from its blocks. Also records which variants exist for the date.
+  const loadDay = useCallback((d: string, cat?: string) => {
+    const clamp = (v: number, lo: number, hi: number) =>
+      Math.min(hi, Math.max(lo, v))
+    // No synchronous setState here (called from the mount effect): dayLoading
+    // already starts true when dated, and a category switch stays on the old
+    // workout until the new one arrives (no loading flash).
+    const qs = `date=${d}${cat ? `&category=${cat}` : ""}`
+    fetch(`/api/timer/day?${qs}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(
+        (
+          data:
+            | (DayFile & { category?: string | null; available?: string[] })
+            | null,
+        ) => {
+          if (!data || !Array.isArray(data.blocks) || data.blocks.length === 0)
+            return
+          const blocks = data.blocks.slice(0, MAX_EXERCISES).map((b) => ({
+            name: typeof b.name === "string" ? b.name : "",
+            video: typeof b.video === "string" ? b.video : "",
+            poster: typeof b.poster === "string" ? b.poster : undefined,
+            work: clamp(Number(b.work) || 30, MIN_WORK_SEC, MAX_WORK_SEC),
+          }))
+          const rounds = clamp(Number(data.rounds) || 1, 1, 20)
+          const total = clamp(blocks.length * rounds, MIN_MINUTES, MAX_MINUTES)
+          setDay({ date: data.date, title: data.title, rounds, blocks })
+          setMinutes(total)
+          setExercises(blocks.length)
+          setExerciseNames(blocks.map((b) => b.name))
+          setCategory(data.category ?? null)
+          setAvailable(Array.isArray(data.available) ? data.available : [])
+          setDayDate(d)
+        },
+      )
+      .catch(() => {
+        /* network/JSON error — keep the manual timer */
+      })
+      .finally(() => setDayLoading(false))
+  }, [])
+
   // --- preset links --------------------------------------------------------
   // /timer?min=20&work=40&names=Swing%20Squat,Figure%208 pre-fills the setup
   // so Felipe can send members a ready-to-start session. Read from
@@ -222,30 +269,8 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
     // date is malformed or the file is missing.
     const date = params.get("date")
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      fetch(`/api/timer/day?date=${date}`, { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: DayFile | null) => {
-          if (!data || !Array.isArray(data.blocks) || data.blocks.length === 0)
-            return
-          const blocks = data.blocks
-            .slice(0, MAX_EXERCISES)
-            .map((b) => ({
-              name: typeof b.name === "string" ? b.name : "",
-              video: typeof b.video === "string" ? b.video : "",
-              poster: typeof b.poster === "string" ? b.poster : undefined,
-              work: clamp(Number(b.work) || 30, MIN_WORK_SEC, MAX_WORK_SEC),
-            }))
-          const rounds = clamp(Number(data.rounds) || 1, 1, 20)
-          const total = clamp(blocks.length * rounds, MIN_MINUTES, MAX_MINUTES)
-          setDay({ ...data, blocks, rounds })
-          setMinutes(total)
-          setExercises(blocks.length)
-          setExerciseNames(blocks.map((b) => b.name))
-        })
-        .catch(() => {
-          /* network/JSON error — keep the manual timer */
-        })
-        .finally(() => setDayLoading(false))
+      const cat = params.get("category")
+      loadDay(date, cat ?? undefined)
       return // a dated workout ignores the manual min/work/names params
     }
 
@@ -271,7 +296,7 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
       setExercises(count)
       setExerciseNames(Array.from({ length: count }, (_, i) => names[i] ?? ""))
     }
-  }, [])
+  }, [loadDay])
 
   // Day mode + its per-minute blocks flattened across rounds (length =
   // minutes). Minute i (0-based) shows dayBlocks[i].
@@ -1148,6 +1173,37 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
             <h2 className="text-2xl font-extrabold tracking-tight">
               {day.title}
             </h2>
+          ) : null}
+          {/* variant picker — same day, different focus (kettlebell / mobility).
+              Appears once the day has 2+ variants; locked once you start. */}
+          {available.length >= 2 ? (
+            <div className="mt-1 inline-flex rounded-full border border-white/15 p-0.5">
+              {available.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={isActive || counting}
+                  onClick={() => {
+                    if (c === category || isActive || counting || !dayDate) return
+                    reset()
+                    loadDay(dayDate, c)
+                    // Keep the URL in sync so the choice is shareable and
+                    // survives a refresh — ?category= is the source of truth.
+                    const url = new URL(window.location.href)
+                    url.searchParams.set("category", c)
+                    window.history.replaceState(null, "", url)
+                  }}
+                  className={cn(
+                    "rounded-full px-4 py-1 text-xs font-semibold capitalize transition-colors disabled:opacity-50",
+                    c === category
+                      ? "bg-[#39FF14] text-black"
+                      : "text-white/60 hover:text-white",
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           ) : null}
         </div>
       ) : null}
