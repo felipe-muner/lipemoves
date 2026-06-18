@@ -73,6 +73,18 @@ export interface BadgeConfig {
 
 /** What to do with one uploaded clip in Compose mode. */
 export interface ClipInput {
+  /** Which uploaded source file this clip comes from (index into the uploaded
+   *  files). Defaults to the clip's own index when omitted (1 file per clip).
+   *  Multiple clips can share one source when cut from a single recording. */
+  sourceIndex?: number
+  /** Local-first: read the source straight from this path on the machine
+   *  running the studio (no upload). When set, takes precedence over
+   *  sourceIndex/uploaded files. */
+  sourcePath?: string
+  /** Segment start within the source, in seconds. Omit to use the whole file. */
+  start?: number
+  /** Segment end within the source, in seconds. Omit to use the whole file. */
+  end?: number
   /** Ken Burns zoom direction, or null for no zoom. */
   zoom: ZoomDir | null
   /** Text labels to burn onto the whole clip (in paint order). */
