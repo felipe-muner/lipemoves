@@ -43,17 +43,27 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const names = await readdir(dir)
+    const entries = await readdir(dir, { withFileTypes: true })
+    // Sub-folders (skip hidden) so the UI can navigate in instead of typing.
+    const dirs = entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+      .map((e) => ({ name: e.name, path: path.join(dir, e.name) }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    // Video files, newest first.
     const files = (
       await Promise.all(
-        names
-          .filter((n) => VIDEO_EXT.has(path.extname(n).toLowerCase()))
-          .map(async (n) => {
-            const full = path.join(dir, n)
+        entries
+          .filter(
+            (e) =>
+              !e.isDirectory() &&
+              VIDEO_EXT.has(path.extname(e.name).toLowerCase()),
+          )
+          .map(async (e) => {
+            const full = path.join(dir, e.name)
             try {
               const s = await stat(full)
               if (!s.isFile()) return null
-              return { name: n, path: full, size: s.size, mtime: s.mtimeMs }
+              return { name: e.name, path: full, size: s.size, mtime: s.mtimeMs }
             } catch {
               return null
             }
@@ -62,7 +72,7 @@ export async function GET(req: NextRequest) {
     )
       .filter((f): f is NonNullable<typeof f> => f !== null)
       .sort((a, b) => b.mtime - a.mtime)
-    return NextResponse.json({ dir, files })
+    return NextResponse.json({ dir, home: homedir(), dirs, files })
   } catch {
     return NextResponse.json({ error: "Could not read that folder" }, { status: 404 })
   }

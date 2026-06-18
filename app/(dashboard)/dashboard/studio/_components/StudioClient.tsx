@@ -4,8 +4,10 @@ import * as React from "react"
 import Image from "next/image"
 import {
   CheckCircle2,
+  ChevronRight,
   Download,
   Film,
+  Folder,
   GripVertical,
   ImageIcon,
   Loader2,
@@ -826,7 +828,12 @@ function ModeOption({
 export function StudioClient() {
   const [files, setFiles] = React.useState<File[]>([])
   // Local-first "cut from a recording" flow (no upload — server reads the Mac):
-  const [folderPath, setFolderPath] = React.useState("~/Downloads")
+  // an in-app folder browser (click through folders instead of typing a path).
+  const [currentDir, setCurrentDir] = React.useState("")
+  const [homeDir, setHomeDir] = React.useState("")
+  const [localDirs, setLocalDirs] = React.useState<
+    { name: string; path: string }[]
+  >([])
   const [localFiles, setLocalFiles] = React.useState<
     { name: string; path: string; size: number }[]
   >([])
@@ -845,8 +852,7 @@ export function StudioClient() {
   } | null>(null)
 
   React.useEffect(() => {
-    const saved = localStorage.getItem("studioFolder")
-    if (saved) setFolderPath(saved)
+    void browse(localStorage.getItem("studioFolder") || "~/Downloads")
   }, [])
   // Playable object URLs for the picked clips, so each cell can preview the
   // real video (with its text/badge overlays) before rendering. Revoked when
@@ -981,26 +987,46 @@ export function StudioClient() {
     })
   }
 
-  // List video files in the chosen local folder (server reads the Mac's disk).
-  async function listFolder() {
+  // Browse a local folder (server reads the Mac's disk): list its sub-folders
+  // to navigate into + its video files to cut. Remembers the last folder.
+  async function browse(target: string) {
     setLocalBusy(true)
     setLocalErr(null)
     try {
-      localStorage.setItem("studioFolder", folderPath)
       const r = await fetch(
-        `/api/studio/local-files?dir=${encodeURIComponent(folderPath)}`,
+        `/api/studio/local-files?dir=${encodeURIComponent(target)}`,
       )
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || "Could not read folder")
+      setCurrentDir(d.dir)
+      setHomeDir(d.home)
+      setLocalDirs(d.dirs)
       setLocalFiles(d.files)
-      if (!d.files.length) setLocalErr("No videos in that folder.")
+      localStorage.setItem("studioFolder", d.dir)
     } catch (e) {
+      setLocalDirs([])
       setLocalFiles([])
       setLocalErr(e instanceof Error ? e.message : "Could not read folder")
     } finally {
       setLocalBusy(false)
     }
   }
+
+  // Breadcrumb trail from the home dir down to the current folder.
+  const crumbs = React.useMemo(() => {
+    if (!currentDir) return [] as { label: string; path: string }[]
+    const rel =
+      homeDir && currentDir.startsWith(homeDir)
+        ? currentDir.slice(homeDir.length)
+        : currentDir
+    const out = [{ label: "~", path: homeDir || currentDir }]
+    let acc = homeDir || ""
+    for (const seg of rel.split("/").filter(Boolean)) {
+      acc = `${acc}/${seg}`
+      out.push({ label: seg, path: acc })
+    }
+    return out
+  }, [currentDir, homeDir])
 
   // Open the cutter on a local recording. No transcode — just probe its length
   // (instant); the cutter pulls frames on demand. The original (HEVC/multi-GB)
@@ -1443,33 +1469,75 @@ export function StudioClient() {
             <Scissors className="size-4 text-emerald-500" /> …or cut clips from a
             recording on your Mac
           </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              value={folderPath}
-              onChange={(e) => setFolderPath(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && listFolder()}
-              placeholder="~/Downloads"
-              className="h-8 max-w-[260px] font-mono text-xs"
-              aria-label="Folder on your Mac"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={listFolder}
-              disabled={localBusy}
-            >
-              {localBusy ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                "List videos"
-              )}
-            </Button>
+          {/* quick roots — jump to a common folder, then click in from there */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                ["~", "Home"],
+                ["~/Downloads", "Downloads"],
+                ["~/Desktop", "Desktop"],
+                ["~/Movies", "Movies"],
+              ] as const
+            ).map(([p, label]) => (
+              <Button
+                key={p}
+                size="sm"
+                variant="outline"
+                className="h-7"
+                onClick={() => browse(p)}
+                disabled={localBusy}
+              >
+                {label}
+              </Button>
+            ))}
+            {localBusy ? (
+              <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+            ) : null}
           </div>
+
+          {/* breadcrumb of the current folder */}
+          {crumbs.length ? (
+            <div className="flex flex-wrap items-center gap-0.5 text-xs">
+              {crumbs.map((c, i) => (
+                <React.Fragment key={c.path}>
+                  {i > 0 ? (
+                    <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => browse(c.path)}
+                    disabled={localBusy}
+                    className="rounded px-1 py-0.5 font-mono text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                  >
+                    {c.label}
+                  </button>
+                </React.Fragment>
+              ))}
+            </div>
+          ) : null}
+
           {localErr ? (
             <p className="text-xs text-amber-600 dark:text-amber-400">{localErr}</p>
           ) : null}
-          {localFiles.length ? (
-            <div className="max-h-48 space-y-1 overflow-y-auto">
+
+          {/* sub-folders (navigate in) then videos (click to cut) */}
+          {localDirs.length || localFiles.length ? (
+            <div className="max-h-60 space-y-1 overflow-y-auto">
+              {localDirs.map((d) => (
+                <button
+                  key={d.path}
+                  type="button"
+                  onClick={() => browse(d.path)}
+                  disabled={localBusy}
+                  className="flex w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition hover:bg-muted disabled:opacity-50"
+                >
+                  <Folder className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {d.name}
+                  </span>
+                  <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                </button>
+              ))}
               {localFiles.map((f) => (
                 <button
                   key={f.path}
@@ -1478,8 +1546,9 @@ export function StudioClient() {
                   disabled={localBusy}
                   className="flex w-full items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition hover:bg-muted disabled:opacity-50"
                 >
-                  <span className="min-w-0 flex-1 truncate font-medium">
-                    {f.name}
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <Film className="size-3.5 shrink-0 text-emerald-500" />
+                    <span className="truncate font-medium">{f.name}</span>
                   </span>
                   <span className="shrink-0 text-muted-foreground">
                     {(f.size / 1e9).toFixed(2)} GB
@@ -1487,6 +1556,10 @@ export function StudioClient() {
                 </button>
               ))}
             </div>
+          ) : !localBusy && currentDir ? (
+            <p className="text-xs text-muted-foreground">
+              No videos or sub-folders here.
+            </p>
           ) : null}
         </div>
 
