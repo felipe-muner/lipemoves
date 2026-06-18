@@ -721,7 +721,7 @@ export function ClipCutter({
         </p>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <Button
           size="sm"
           disabled={ordered.length === 0}
