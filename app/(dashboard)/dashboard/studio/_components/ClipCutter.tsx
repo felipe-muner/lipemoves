@@ -721,13 +721,15 @@ export function ClipCutter({
         </p>
       )}
 
-      <Button
-        className="w-full"
-        disabled={ordered.length === 0}
-        onClick={() => onUse(ordered.map(({ start, end }) => ({ start, end })))}
-      >
-        Use {ordered.length || ""} clip{ordered.length === 1 ? "" : "s"} →
-      </Button>
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          disabled={ordered.length === 0}
+          onClick={() => onUse(ordered.map(({ start, end }) => ({ start, end })))}
+        >
+          Use {ordered.length || ""} clip{ordered.length === 1 ? "" : "s"} →
+        </Button>
+      </div>
 
       <Dialog open={confirmId !== null} onOpenChange={(o) => !o && setConfirmId(null)}>
         <DialogContent className="sm:max-w-sm">
