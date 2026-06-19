@@ -44,7 +44,9 @@ export default async function DashboardLayout({
           image: session.user.image ?? null,
         }}
       />
-      <SidebarInset>
+      {/* min-w-0: let wide content (e.g. the studio clip strip) scroll
+          horizontally instead of growing the inset and overflowing the page */}
+      <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-10 flex min-h-14 shrink-0 items-center gap-2 border-b bg-background px-4 pt-[env(safe-area-inset-top)] md:rounded-tl-xl md:rounded-tr-xl">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
