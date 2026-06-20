@@ -1263,6 +1263,27 @@ export function StudioClient() {
 
   const clipObj = job?.clips.find((c) => c.index === selClip) ?? null
 
+  // Every clip that finished rendering — what "Download all" grabs.
+  const readyClips = job?.clips.filter((c) => c.videoName) ?? []
+
+  // Save every rendered clip in one click. Browsers gate rapid programmatic
+  // downloads behind a one-time "allow multiple?" prompt, so we space them out;
+  // the `download` attribute names each file (clip-1.mov, clip-2.mov, …).
+  async function downloadAllClips() {
+    const ready = [...readyClips].sort((a, b) => a.index - b.index)
+    for (let i = 0; i < ready.length; i++) {
+      const name = ready[i].videoName as string
+      const ext = name.match(/\.[^./]+$/)?.[0] ?? ".mp4"
+      const a = document.createElement("a")
+      a.href = fileUrl(name)
+      a.download = `clip-${ready[i].index + 1}${ext}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      if (i < ready.length - 1) await new Promise((r) => setTimeout(r, 350))
+    }
+  }
+
   async function downloadCover() {
     if (!job || !clipObj || !coverText.trim()) return
     setCoverBusy(true)
@@ -1931,7 +1952,19 @@ export function StudioClient() {
 
       {/* ---- Bottom: full-width progress + results ---- */}
       <Card className="space-y-5 p-5">
-        <Label className="block">4 · Result</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label className="block">4 · Result</Label>
+          {readyClips.length >= 2 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadAllClips}
+              className="h-7 gap-1 text-xs"
+            >
+              <Download className="size-3.5" /> Download all ({readyClips.length})
+            </Button>
+          ) : null}
+        </div>
 
         {!job ? (
           <p className="text-sm text-muted-foreground">
