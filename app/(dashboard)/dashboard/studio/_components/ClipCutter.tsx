@@ -686,9 +686,18 @@ export function ClipCutter({
                 >
                   <Trash2 className="size-3.5" />
                 </button>
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(s.id)
+                    seek(s.start)
+                  }}
+                  className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-semibold transition-colors hover:bg-emerald-500/30"
+                  aria-label={`Jump to clip ${i + 1} start`}
+                  title="Jump to clip start"
+                >
                   {i + 1}
-                </span>
+                </button>
                 {sel ? (
                   <>
                     {edgeControl(s, "start")}
