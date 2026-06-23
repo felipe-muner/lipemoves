@@ -17,6 +17,8 @@ export type CarouselSlide = {
   kicker?: string // short italic line under the title
   body?: string // paragraphs separated by \n\n
   photo?: string // filename inside /public/ebooks/photos
+  focus?: string // CSS object-position for the photo, e.g. "center 60%"
+  photoRatio?: string // pillar photo row height, e.g. "61%" (default 46%)
   swipe?: boolean // show the "swipe →" hint (auto on for cover)
 }
 
@@ -29,7 +31,7 @@ export type CarouselContent = {
 
 export const longevity: CarouselContent = {
   brand: "FELIPE MUNER",
-  handle: "@lipemoves",
+  handle: "lipemoves.com",
   title: "Mobility · Flexibility · Muscle",
 
   slides: [
@@ -37,21 +39,29 @@ export const longevity: CarouselContent = {
     {
       kind: "cover",
       eyebrow: "Longevity",
-      title: "Everyone trains for the mirror.\nAlmost no one trains for 80.",
+      title: "Everyone trains for the mirror.\nAlmost no one trains to move for life.",
       kicker: "Mobility · Flexibility · Muscle",
-      photo: "2SN09046.jpg",
+      photo: "1SN01474.jpg",
     },
 
     // 2 — THE POINT
     {
       kind: "photo",
       eyebrow: "The real goal",
-      title: "What's the point of living to 90\nif you can't get up off the floor?",
-      body: "I don't want to be kept alive. I want to be alive.\n\nTo sit on the floor and get back up without thinking about it. To play with my grandkids and still move like myself. That's what I'm training for.",
-      photo: "2SN09105.jpg",
+      title: "What's the point of muscle\nif you can't move freely?",
+      body: "You can be strong and still stiff. Strong and stuck.\n\nMuscle with zero mobility or flexibility is just for show. I want to sit on the floor, reach overhead, play with my grandkids — and still move like myself, for as long as I live.",
+      photo: "GAB00148.jpg",
     },
 
-    // 3 — BE HONEST WITH YOURSELF
+    // 3 — THE MODERN ENEMY
+    {
+      kind: "text",
+      eyebrow: "The real enemy",
+      title: "Chairs wreck your hips.\nPhones hunch your back.",
+      body: "We were built to squat, hang, walk and climb — not to fold into a chair all day, then curl over a phone all night.\n\nThe damage is everywhere: hips that won't open, and the modern hump — upper back rounded, head drifting forward.\n\nAnd we've been sold it all as normal — comfort marketed as progress, a breaking body passed off as just modern life.\n\nBut none of it is normal. Strength alone won't undo it. Mobility and flexibility will.",
+    },
+
+    // 4 — BE HONEST WITH YOURSELF
     {
       kind: "text",
       eyebrow: "First, be honest",
@@ -59,7 +69,7 @@ export const longevity: CarouselContent = {
       body: "If you want to be huge, that's bodybuilding — heavy, static, mirror work. Nothing wrong with it.\n\nBut most of us want something else: a body that feels good and moves freely. And there's no point in muscle you can't actually use.\n\nIf longevity is the goal, the work is daily. It's finding your own balance between muscle, mobility and flexibility.",
     },
 
-    // 4 — THE THREE THINGS
+    // 5 — THE THREE THINGS
     {
       kind: "text",
       eyebrow: "It comes down to three things",
@@ -68,18 +78,20 @@ export const longevity: CarouselContent = {
         "I rebuilt my body after 30 — mobility first, then flexibility, then muscle. In that order. And this time it actually worked.",
     },
 
-    // 5 — MOBILITY
+    // 6 — MOBILITY
     {
       kind: "pillar",
       index: "01",
       eyebrow: "Pillar one",
       title: "Mobility",
       kicker: "Control through your range.",
-      body: "Strength means nothing if you can't get into the position. Mobility is your body actually owning its joints — squatting deep, reaching overhead, twisting, getting up off the floor with control.\n\nIt was the first thing I rebuilt, and it's the first thing to go if you ignore it.",
-      photo: "2SN07573.jpg",
+      body: "Strength means nothing if you can't get into the position. Mobility is owning your joints — squat deep, reach overhead, get up off the floor.",
+      photo: "GAB00162-2.jpg",
+      focus: "center 53%",
+      photoRatio: "58%",
     },
 
-    // 6 — FLEXIBILITY
+    // 7 — FLEXIBILITY
     {
       kind: "pillar",
       index: "02",
@@ -88,34 +100,28 @@ export const longevity: CarouselContent = {
       kicker: "The range itself.",
       body: "Mobility is control. Flexibility is having the room to move in the first place — hips and shoulders that open instead of locking up.\n\nThis is where yoga comes in. For me it's a 24-hour practice, for life. It keeps the body soft instead of stiff.",
       photo: "z_yoga.jpg",
+      focus: "center 65%",
     },
 
-    // 7 — MUSCLE
+    // 8 — MUSCLE
     {
       kind: "pillar",
       index: "03",
       eyebrow: "Pillar three",
       title: "Muscle",
       kicker: "Strength to own the range.",
-      body: "Now you protect it. Muscle is the armor around your joints and the engine that carries you up the stairs and up off the ground at 80.\n\nNot mirror muscle — real, usable strength, built through full range. The kind that keeps you independent for life.",
-      photo: "1SN03021.jpg",
-    },
-
-    // 8 — WHY THE KETTLEBELL
-    {
-      kind: "photo",
-      eyebrow: "The tool that does all three",
-      title: "Why the kettlebell",
-      body: "The weight sits off to one side and pulls. Your whole body has to answer from the other — bracing, balancing, holding it together on every rep.\n\nThat's the feeling I love: load on one side, my body counterbalancing from the other. Strength, mobility and control in one move. A mace or a club does the same — offset, alive, never static.",
-      photo: "z_kettlebell_rack.jpg",
+      body: "Now you protect it. Muscle is the armor around your joints and the engine that carries you up the stairs and up off the ground, decade after decade.\n\nNot mirror muscle — real, usable strength, built through full range. The kind that keeps you independent for life.",
+      photo: "IMG_7149.jpg",
+      focus: "center 71%",
+      photoRatio: "53%",
     },
 
     // 9 — CTA
     {
       kind: "cta",
-      eyebrow: "Build a body that lasts",
-      title: "Find your balance.",
-      body: "This is my path — you'll find your own. Follow along for daily movement, and grab my free Move Better guide: breath, food, movement and rest, in 20 minutes.\n\nI'm here to help you get there.",
+      eyebrow: "1-on-1 coaching",
+      title: "Train with me.",
+      body: "I coach a small number of people one-on-one — a plan built around your body, your goals and your life. We rebuild it in the right order: mobility, flexibility, then strength.\n\nNo generic programs. Just you, me, and the work that actually lasts.",
       kicker: "lipemoves.com",
     },
   ],
