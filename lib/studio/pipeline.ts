@@ -10,6 +10,7 @@ import {
   type CoverRequest,
   type FlyerRequest,
   type Job,
+  type MosaicConfig,
   type StudioConfig,
 } from "./types"
 import { withBadgeRenderer } from "./badge"
@@ -156,6 +157,34 @@ async function joinClips(
 }
 
 /**
+ * Mosaic mode: tile every clip into ONE 1080x1920 video via scripts/mosaic.sh.
+ * Per-clip edits don't apply — each clip's raw input is a tile. The originals
+ * are still exposed (clip.videoName) so they can be previewed individually.
+ */
+async function runMosaic(
+  job: Job,
+  cfg: MosaicConfig,
+  inputNames: string[],
+  dir: string,
+  clipDir: (i: number) => string,
+): Promise<void> {
+  const inputs: string[] = []
+  for (let i = 0; i < job.clips.length; i++) {
+    const clip = job.clips[i]
+    clip.videoName = `clip${pad2(i)}/${inputNames[i]}`
+    clip.status = "done"
+    inputs.push(path.join(clipDir(i), inputNames[i]))
+  }
+  const out = path.join(dir, "mosaic.mp4")
+  await run(
+    "bash",
+    [path.join(SCRIPTS, "mosaic.sh"), cfg.layout, cfg.audio, out, ...inputs],
+    dir,
+  )
+  job.mosaicName = "mosaic.mp4"
+}
+
+/**
  * Run the batch. Ken Burns is applied to all clips in one alternating pass;
  * then each clip is captioned (if requested) and, if a contact sheet was
  * requested, frames + thumbnails are extracted so a cover can be finished.
@@ -173,6 +202,13 @@ export async function runPipeline(
   const clipDir = (i: number) => path.join(dir, `clip${pad2(i)}`)
 
   try {
+    // Mosaic mode short-circuits the per-clip Compose/Frames pipeline.
+    if (config.mosaic) {
+      await runMosaic(job, config.mosaic, inputNames, dir, clipDir)
+      job.status = "done"
+      return
+    }
+
     // Pre-render every enumerate badge ("✅ 1/5" …) in one browser session.
     // A clip whose badge was cleared in the editor has badge: null — skip it.
     const enumerate = config.enumerate && !config.framepicker
