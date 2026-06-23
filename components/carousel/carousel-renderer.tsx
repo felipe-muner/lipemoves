@@ -29,6 +29,7 @@ const CAROUSEL_CSS = `
   letter-spacing: -1px; white-space: pre-line;
 }
 .carousel-root p { white-space: pre-line; }
+.carousel-root a { color: inherit; text-decoration: none; }
 
 /* Footer brand + handle, present on every slide */
 .carousel-root .foot {
@@ -49,8 +50,8 @@ const CAROUSEL_CSS = `
   position: absolute; left: 90px; right: 90px; bottom: 150px; color: #fff;
 }
 .carousel-root .photo-slide .eyebrow { color: rgba(255,255,255,.78); margin-bottom: 24px; }
-.carousel-root .photo-slide h1 { color: #fff; font-size: 78px; line-height: 1.04; margin-bottom: 26px; }
-.carousel-root .photo-slide h2 { color: #fff; font-size: 70px; line-height: 1.05; margin-bottom: 26px; }
+.carousel-root .photo-slide h1 { color: #fff; font-size: 54px; line-height: 1.12; margin-bottom: 26px; }
+.carousel-root .photo-slide h2 { color: #fff; font-size: 54px; line-height: 1.12; margin-bottom: 26px; }
 .carousel-root .photo-slide .kicker {
   font-family: var(--head); font-size: 30px; letter-spacing: 2px; color: rgba(255,255,255,.92); font-weight: 300;
 }
@@ -72,14 +73,14 @@ const CAROUSEL_CSS = `
 .carousel-root .text-slide p + p { margin-top: 24px; }
 
 /* ---- PILLAR SLIDES (cream, big number) ---- */
-.carousel-root .pillar-slide { display: grid; grid-template-rows: 46% auto; height: 100%; }
+.carousel-root .pillar-slide { display: grid; grid-template-rows: 46% 1fr; }
 .carousel-root .pillar-slide .photo { overflow: hidden; position: relative; }
 .carousel-root .pillar-slide .photo img { object-position: center 35%; }
 .carousel-root .pillar-slide .photo .num {
   position: absolute; right: 44px; bottom: -10px; font-family: var(--head); font-weight: 200;
   font-size: 200px; line-height: 1; color: #fff; opacity: .92; text-shadow: 0 2px 24px rgba(0,0,0,.4);
 }
-.carousel-root .pillar-slide .body { padding: 56px 90px 200px; }
+.carousel-root .pillar-slide .body { padding: 52px 90px 130px; }
 .carousel-root .pillar-slide .eyebrow { margin-bottom: 16px; }
 .carousel-root .pillar-slide h2 { font-size: 78px; line-height: 1; margin-bottom: 10px; }
 .carousel-root .pillar-slide .kicker {
@@ -115,18 +116,20 @@ function photoUrl(file: string) {
 }
 
 function Foot({
-  brand,
-  handle,
+  left,
+  right,
   swipe,
 }: {
-  brand: string
-  handle: string
+  left: string
+  right: string
   swipe?: boolean
 }) {
   return (
     <div className="foot">
-      <span>{brand}</span>
-      {swipe ? <span className="swipe">Swipe →</span> : <span>{handle}</span>}
+      <span>
+        <a href="https://lipemoves.com" target="_blank" rel="noopener noreferrer">{left}</a>
+      </span>
+      {swipe ? <span className="swipe">Swipe →</span> : <span>{right}</span>}
     </div>
   )
 }
@@ -135,7 +138,7 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
   const slides = c.slides.map((s, i) => {
     const key = `slide-${i}`
     const isCover = s.kind === "cover"
-    const swipe = s.swipe ?? isCover
+    const swipe = s.swipe ?? (s.kind !== "cta")
 
     if (s.kind === "cover" || s.kind === "photo") {
       return (
@@ -152,16 +155,27 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
             {s.kicker && <div className="kicker">{s.kicker}</div>}
             {paragraphs(s.body)}
           </div>
-          <Foot brand={c.brand} handle={c.handle} swipe={swipe} />
+          <Foot left={c.handle} right={c.brand} swipe={swipe} />
         </section>
       )
     }
 
     if (s.kind === "pillar") {
       return (
-        <section key={key} className="slide pillar-slide" data-slide={i + 1}>
+        <section
+          key={key}
+          className="slide pillar-slide"
+          data-slide={i + 1}
+          style={s.photoRatio ? { gridTemplateRows: `${s.photoRatio} 1fr` } : undefined}
+        >
           <div className="photo">
-            {s.photo && <img src={photoUrl(s.photo)} alt="" />}
+            {s.photo && (
+              <img
+                src={photoUrl(s.photo)}
+                alt=""
+                style={s.focus ? { objectPosition: s.focus } : undefined}
+              />
+            )}
             {s.index && <span className="num">{s.index}</span>}
           </div>
           <div className="body">
@@ -170,7 +184,7 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
             {s.kicker && <div className="kicker">{s.kicker}</div>}
             {paragraphs(s.body)}
           </div>
-          <Foot brand={c.brand} handle={c.handle} swipe={swipe} />
+          <Foot left={c.handle} right={c.brand} swipe={swipe} />
         </section>
       )
     }
@@ -181,8 +195,12 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
           {s.eyebrow && <div className="eyebrow">{s.eyebrow}</div>}
           <h2>{s.title}</h2>
           {paragraphs(s.body)}
-          {s.kicker && <div className="kicker">{s.kicker}</div>}
-          <Foot brand={c.brand} handle={c.handle} swipe={false} />
+          {s.kicker && (
+            <div className="kicker">
+              <a href="https://lipemoves.com" target="_blank" rel="noopener noreferrer">{s.kicker}</a>
+            </div>
+          )}
+          <Foot left={c.handle} right={c.brand} swipe={swipe} />
         </section>
       )
     }
@@ -194,7 +212,7 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
         <h2>{s.title}</h2>
         {s.kicker && <div className="kicker">{s.kicker}</div>}
         {paragraphs(s.body)}
-        <Foot brand={c.brand} handle={c.handle} swipe={swipe} />
+        <Foot left={c.handle} right={c.brand} swipe={swipe} />
       </section>
     )
   })
