@@ -27,6 +27,32 @@ export interface FramePickerConfig {
   step: number
 }
 
+/** How to tile 2-4 clips into one 1080x1920 frame (the Mosaic mode). The layout
+ *  fixes how many clips it takes: cols2/rows2 = 2, wedge3 = 3, quad = 4. */
+export type MosaicLayout =
+  | "cols2" // 2 clips side by side (each 540x1920 — keeps full bodies)
+  | "rows2" // 2 clips stacked top/bottom (each 1080x960)
+  | "wedge3" // 3 clips as corner triangles meeting at the center
+  | "quad" // 4 clips in a 2x2 grid (each 540x960)
+
+/** Audio for a mosaic: silent (you'll add music) or keep the first clip's track. */
+export type MosaicAudio = "mute" | "first"
+
+/** Number of clips each mosaic layout expects. */
+export const MOSAIC_CLIPS: Record<MosaicLayout, number> = {
+  cols2: 2,
+  rows2: 2,
+  wedge3: 3,
+  quad: 4,
+}
+
+/** Combine 2-4 clips that play AT ONCE into one framed video. Trimmed to the
+ *  shortest clip; HDR preserved when every clip is HLG, faithful SDR otherwise. */
+export interface MosaicConfig {
+  layout: MosaicLayout
+  audio: MosaicAudio
+}
+
 /** A freely-placed text label burned onto a whole clip. A clip can have several
  *  (each with its own font + placement); color/opacity/fade are shared
  *  (TextStyle). Dragged on a poster frame in the studio. */
@@ -111,6 +137,9 @@ export interface StudioConfig {
   framepicker: FramePickerConfig | null
   /** Shared style for the per-clip text labels (Compose mode). */
   text: TextStyle | null
+  /** When set, tile every clip into one framed video (Mosaic mode). Mutually
+   *  exclusive with Compose/Frames — per-clip edits are ignored. */
+  mosaic: MosaicConfig | null
   /** One entry per uploaded file, in upload order. */
   clips: ClipInput[]
 }
@@ -229,6 +258,8 @@ export interface Job {
   joinedName: string | null
   /** Set if joining was requested but failed (per-clip videos still exist). */
   joinError?: string
+  /** Job-dir-relative path to the tiled mosaic video, when in Mosaic mode. */
+  mosaicName: string | null
   /** Absolute working dir — never serialized to the client. */
   dir: string
 }

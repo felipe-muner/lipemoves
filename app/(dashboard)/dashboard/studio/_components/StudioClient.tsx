@@ -42,6 +42,8 @@ import {
   type CoverPosition,
   type FlyerFragment,
   type FlyerPoint,
+  type MosaicAudio,
+  type MosaicLayout,
   type SerializedJob,
   type StudioConfig,
 } from "@/lib/studio/types"
@@ -869,9 +871,17 @@ export function StudioClient() {
   const dragFrom = React.useRef<number | null>(null)
   const [dragOver, setDragOver] = React.useState<number | null>(null)
 
-  const [mode, setMode] = React.useState<"compose" | "frames">("compose")
+  const [mode, setMode] = React.useState<"compose" | "frames" | "mosaic">(
+    "compose",
+  )
   const [join, setJoin] = React.useState(true)
   const [fpStep, setFpStep] = React.useState("0.5")
+  // Mosaic mode: 2-up orientation (3/4 clips pick their layout automatically)
+  // + whether to keep the first clip's audio or render it silent.
+  const [mosaicOrient, setMosaicOrient] = React.useState<"cols2" | "rows2">(
+    "cols2",
+  )
+  const [mosaicAudio, setMosaicAudio] = React.useState<MosaicAudio>("mute")
 
   // Compose mode: per-clip zoom + text/placement, with a shared text style.
   const [composeCfgs, setComposeCfgs] = React.useState<ComposeCfg[]>([])
@@ -1098,6 +1108,25 @@ export function StudioClient() {
     setPlayClip(null)
   }
 
+  // Drop one clip from the sequence (files + configs in lock-step). Used by the
+  // Mosaic strip to trim down to a valid 2-4 clip count.
+  function removeClip(i: number) {
+    setFiles((prev) => prev.filter((_, j) => j !== i))
+    setComposeCfgs((prev) => prev.filter((_, j) => j !== i))
+    setPlayClip(null)
+  }
+
+  // Mosaic layout is fixed by the clip count: 2 → the orientation toggle,
+  // 3 → corner-triangle wedges, 4 → a 2x2 quad. null = not a valid count yet.
+  const mosaicLayout: MosaicLayout | null =
+    composeCfgs.length === 2
+      ? mosaicOrient
+      : composeCfgs.length === 3
+        ? "wedge3"
+        : composeCfgs.length === 4
+          ? "quad"
+          : null
+
   function setCompose(i: number, patch: Partial<ComposeCfg>) {
     setComposeCfgs((prev) =>
       prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
@@ -1175,6 +1204,10 @@ export function StudioClient() {
 
   async function submit() {
     if (files.length === 0 && !localComposeSrc) return
+    if (mode === "mosaic" && !mosaicLayout) {
+      setError("Mosaic needs 2, 3, or 4 clips.")
+      return
+    }
     setError(null)
     setBusy(true)
     setJob(null)
@@ -1191,11 +1224,15 @@ export function StudioClient() {
       return idx
     })
     const config: StudioConfig = {
-      join,
+      join: mode === "mosaic" ? false : join,
       enumerate: mode === "compose" && enumerate,
       badgeStyle: enumStyle,
       badgeOpacity: enumOpacity,
       framepicker: mode === "frames" ? { step: Number(fpStep) || 0.5 } : null,
+      mosaic:
+        mode === "mosaic" && mosaicLayout
+          ? { layout: mosaicLayout, audio: mosaicAudio }
+          : null,
       text:
         mode === "compose"
           ? {
@@ -1392,6 +1429,12 @@ export function StudioClient() {
             onClick={() => setMode("frames")}
             label="Frame contact sheet"
             desc="Extract frames per clip so you can pick + make a cover."
+          />
+          <ModeOption
+            active={mode === "mosaic"}
+            onClick={() => setMode("mosaic")}
+            label="Mosaic"
+            desc="Tile 2-4 clips into one frame — side by side, stacked, 3-up triangles, or quad. They play together, trimmed to the shortest."
           />
           {mode === "frames" ? (
             <div className="flex items-center gap-1.5">
@@ -1930,15 +1973,148 @@ export function StudioClient() {
           </div>
         ) : null}
 
+        {/* Mosaic: pick the 2-up orientation + audio, then reorder the cells.
+            3 clips → corner triangles, 4 clips → quad (chosen automatically). */}
+        {mode === "mosaic" && composeCfgs.length ? (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {composeCfgs.length === 2 ? (
+                <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+                  {(
+                    [
+                      ["cols2", "Side by side"],
+                      ["rows2", "Stacked"],
+                    ] as const
+                  ).map(([val, label]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setMosaicOrient(val)}
+                      className={`rounded px-2 py-1 text-xs font-medium transition ${
+                        mosaicOrient === val
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground">Audio</Label>
+                <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+                  {(
+                    [
+                      ["mute", "Mute"],
+                      ["first", "Clip 1"],
+                    ] as const
+                  ).map(([val, label]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setMosaicAudio(val)}
+                      className={`rounded px-2 py-1 text-xs font-medium transition ${
+                        mosaicAudio === val
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {composeCfgs.map((c, i) => (
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={() => {
+                    dragFrom.current = i
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    if (dragFrom.current !== null) setDragOver(i)
+                  }}
+                  onDrop={() => {
+                    if (dragFrom.current !== null) moveClip(dragFrom.current, i)
+                    dragFrom.current = null
+                    setDragOver(null)
+                  }}
+                  onDragEnd={() => {
+                    dragFrom.current = null
+                    setDragOver(null)
+                  }}
+                  className={`relative w-[78px] shrink-0 cursor-grab overflow-hidden rounded-lg border bg-black active:cursor-grabbing ${
+                    dragOver === i && dragFrom.current !== i
+                      ? "ring-2 ring-emerald-500"
+                      : ""
+                  } ${dragFrom.current === i ? "opacity-50" : ""}`}
+                  style={{ aspectRatio: String(c.aspect || 9 / 16) }}
+                >
+                  {c.poster ? (
+                    <Image
+                      src={c.poster}
+                      alt=""
+                      fill
+                      sizes="78px"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="absolute inset-0 grid place-items-center">
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                  <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 text-xs font-bold leading-tight text-white">
+                    {i + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeClip(i)}
+                    title="Remove"
+                    className="absolute right-0.5 top-0.5 rounded bg-black/60 p-0.5 text-white transition hover:bg-black/80"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {mosaicLayout ? (
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                Clips play together, trimmed to the shortest · drag a tile to
+                reorder the cells · ✕ removes one
+              </p>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Mosaic needs 2, 3, or 4 clips — you have {composeCfgs.length}.
+              </p>
+            )}
+          </div>
+        ) : null}
+
         <Button
           onClick={submit}
           size="sm"
-          disabled={(files.length === 0 && !localComposeSrc) || busy || running}
+          disabled={
+            (files.length === 0 && !localComposeSrc) ||
+            busy ||
+            running ||
+            (mode === "mosaic" && !mosaicLayout)
+          }
           className="h-8 w-fit px-3 text-xs"
         >
           {busy || running ? (
             <>
               <Loader2 className="size-3.5 animate-spin" /> Rendering…
+            </>
+          ) : mode === "mosaic" ? (
+            <>
+              <Film className="size-3.5" /> Render mosaic
             </>
           ) : (
             <>
@@ -1972,6 +2148,29 @@ export function StudioClient() {
           </p>
         ) : (
           <>
+            {/* tiled mosaic video (Mosaic mode) */}
+            {job.mosaicName ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <Film className="size-4" /> Mosaic
+                  </span>
+                  <a
+                    href={fileUrl(job.mosaicName, true)}
+                    className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
+                  >
+                    <Download className="size-3.5" /> Download
+                  </a>
+                </div>
+                <video
+                  src={fileUrl(job.mosaicName)}
+                  controls
+                  className="block w-[180px] rounded-lg bg-black"
+                />
+                <Separator />
+              </div>
+            ) : null}
+
             {/* joined final video (Compose mode) */}
             {job.joinedName ? (
               <div className="space-y-2">

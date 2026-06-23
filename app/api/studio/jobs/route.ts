@@ -14,6 +14,7 @@ import { auth } from "@/lib/auth"
 import { getJob, putJob } from "@/lib/studio/jobs"
 import { runPipeline } from "@/lib/studio/pipeline"
 import {
+  MOSAIC_CLIPS,
   serializeJob,
   type ClipState,
   type Job,
@@ -147,6 +148,20 @@ export async function POST(request: Request) {
   if (!Array.isArray(config.clips) || config.clips.length === 0) {
     return NextResponse.json({ error: "No clips configured" }, { status: 400 })
   }
+  // Mosaic tiles a fixed number of clips per layout — reject a mismatch up front
+  // so ffmpeg never sees the wrong count.
+  if (config.mosaic) {
+    const need = MOSAIC_CLIPS[config.mosaic.layout]
+    if (!need) {
+      return NextResponse.json({ error: "Unknown mosaic layout" }, { status: 400 })
+    }
+    if (config.clips.length !== need) {
+      return NextResponse.json(
+        { error: `That mosaic layout needs ${need} clips` },
+        { status: 400 },
+      )
+    }
+  }
   // A clip's source is either a LOCAL path (read off disk, no upload) or an
   // uploaded file (default: its own index).
   const srcIndexOf = (i: number) => config.clips[i].sourceIndex ?? i
@@ -223,9 +238,10 @@ export async function POST(request: Request) {
     id,
     createdAt: new Date().toISOString(),
     status: "queued",
-    compose: !config.framepicker,
+    compose: !config.framepicker && !config.mosaic,
     clips,
     joinedName: null,
+    mosaicName: null,
     dir,
   }
   putJob(job)
