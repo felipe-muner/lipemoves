@@ -7,11 +7,12 @@ import { moveBetterPt } from "@/content/ebooks/move-better.pt"
 import { moveBetterDe } from "@/content/ebooks/move-better.de"
 import { moveBetterRu } from "@/content/ebooks/move-better.ru"
 import { moveBetterHe } from "@/content/ebooks/move-better.he"
+import { openHips } from "@/content/ebooks/open-hips"
 import type { EbookContent } from "@/content/ebooks/move-better"
 
 export const dynamic = "force-static"
 
-type ContentMap = Record<string, Record<EbookLang, EbookContent>>
+type ContentMap = Record<string, Partial<Record<EbookLang, EbookContent>>>
 
 const CONTENT: ContentMap = {
   "move-better": {
@@ -20,6 +21,10 @@ const CONTENT: ContentMap = {
     de: moveBetterDe,
     he: moveBetterHe,
     ru: moveBetterRu,
+  },
+  // EN-only for now — translations follow once the copy is approved.
+  "open-hips": {
+    en: openHips,
   },
 }
 
