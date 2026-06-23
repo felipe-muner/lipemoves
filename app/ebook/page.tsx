@@ -1,18 +1,14 @@
 import type { Metadata } from "next"
-import Image from "next/image"
 import { redirect } from "next/navigation"
 import { EBOOKS } from "@/lib/ebooks"
-import { EbookClaimForm } from "@/components/ebook/ebook-claim-form"
 
 export const dynamic = "force-static"
 
-// When there's only one ebook in the catalog, /ebook redirects straight
-// into its claim flow. Once a second ebook ships, this turns into a list.
+// /ebook is the lead-capture funnel — it redirects straight into the primary
+// ebook's claim flow. The full multi-title catalog lives at /ebooks (and /books).
+// TODO: turn this into a picker if we ever want each title to have its own funnel.
 export default function EbookIndex() {
-  if (EBOOKS.length === 1) {
-    redirect(`/ebook/${EBOOKS[0].slug}`)
-  }
-  return null
+  redirect(`/ebook/${EBOOKS[0].slug}`)
 }
 
 export const metadata: Metadata = {
