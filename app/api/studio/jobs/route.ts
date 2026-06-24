@@ -4,7 +4,7 @@ export const maxDuration = 600
 
 import { execFile } from "node:child_process"
 import { existsSync } from "node:fs"
-import { copyFile, mkdir, rename, rm, writeFile } from "node:fs/promises"
+import { copyFile, mkdir, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import path from "node:path"
 
@@ -25,9 +25,6 @@ const pad2 = (n: number) => String(n).padStart(2, "0")
 const FFMPEG = existsSync("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
   ? "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
   : "ffmpeg"
-const FFPROBE = existsSync("/opt/homebrew/opt/ffmpeg-full/bin/ffprobe")
-  ? "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe"
-  : "ffprobe"
 
 /** Resolve a local source path (supports ~), restricted to the home tree. */
 function resolveLocal(input: string): string | null {
@@ -49,40 +46,14 @@ function exec(file: string, args: string[]): Promise<string> {
   })
 }
 
-/** Seconds the first video frame sits past t=0. A stream-copy cut anchors its
- *  timestamps on whichever stream rewound furthest — usually the audio — so the
- *  video keyframe can land a few hundredths late, which players show as a brief
- *  BLACK head. Returns 0 when already aligned (or on any probe error). */
-async function videoStartOffset(file: string): Promise<number> {
-  const out = await exec(FFPROBE, [
-    "-v", "error", "-select_streams", "v:0",
-    "-show_entries", "stream=start_time", "-of", "default=nk=1:nw=1", file,
-  ]).catch(() => "")
-  const v = Number.parseFloat(out.trim())
-  return Number.isFinite(v) && v > 0 ? v : 0
-}
-
-/** Whether the file carries an audio stream. */
-async function hasAudioStream(file: string): Promise<boolean> {
-  const out = await exec(FFPROBE, [
-    "-v", "error", "-select_streams", "a",
-    "-show_entries", "stream=index", "-of", "csv=p=0", file,
-  ]).catch(() => "")
-  return out.trim().length > 0
-}
-
 /**
- * Cut one segment out of a recording — WITHOUT the brief black frame every clip
- * used to start with.
- *
- * 1. Stream-copy the segment (near-zero CPU; lands on the nearest keyframe ≤
- *    start, preserving HDR/rotation for the downstream effects).
- * 2. That copy anchors timestamps on the earliest stream (the audio), leaving
- *    the video keyframe a few hundredths of a second late → a black head on
- *    playback. If so, re-mux ONCE more: rebase the video's timestamps to 0 with
- *    the `setts` bitstream filter (still a copy — pixels/HDR untouched), and drop
- *    the matching audio lead-in so the two stay in sync. The audio re-encode is
- *    cheap and never touches the video. A clip already aligned skips this pass.
+ * Cut one segment LOSSLESSLY — a pure stream-copy, so the clip's frames, color
+ * (HDR / 10-bit) and audio are byte-identical to that slice of the original: no
+ * re-encode, no frame-rate change, nothing recompressed. The copy lands on the
+ * nearest keyframe ≤ start, so a clip whose chosen start isn't exactly on a
+ * keyframe may open with a brief (<~0.2s) black head — the unavoidable cost of
+ * staying lossless on long-GOP HEVC. (Removing it would mean re-encoding the
+ * audio to re-sync, which we deliberately don't do here.)
  */
 async function cutSegment(
   src: string,
@@ -90,39 +61,11 @@ async function cutSegment(
   dur: number,
   out: string,
 ): Promise<void> {
-  const tmp = path.join(path.dirname(out), `cut.tmp${path.extname(out)}`)
   await exec(FFMPEG, [
     "-y", "-ss", String(start), "-i", src, "-t", String(dur),
-    "-c", "copy", "-avoid_negative_ts", "make_zero", tmp,
+    "-c", "copy", "-avoid_negative_ts", "make_zero",
+    "-movflags", "+faststart", out,
   ])
-
-  const gap = await videoStartOffset(tmp)
-  if (gap <= 0.002) {
-    await rename(tmp, out) // already aligned — keep the raw cut as-is
-    return
-  }
-
-  const args = [
-    "-y", "-i", tmp,
-    "-map", "0:v:0", "-c:v", "copy",
-    "-bsf:v", "setts=pts=PTS-STARTPTS:dts=DTS-STARTDTS",
-  ]
-  if (await hasAudioStream(tmp)) {
-    args.push(
-      "-map", "0:a:0",
-      "-af", `atrim=start=${gap},asetpts=PTS-STARTPTS`,
-      "-c:a", "aac", "-b:a", "256k",
-    )
-  }
-  args.push("-movflags", "+faststart", out)
-
-  try {
-    await exec(FFMPEG, args)
-    await rm(tmp, { force: true })
-  } catch {
-    // Never fail a render over this cosmetic fix — fall back to the raw cut.
-    await rename(tmp, out)
-  }
 }
 
 export async function POST(request: Request) {
