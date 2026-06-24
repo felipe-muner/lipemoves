@@ -861,7 +861,11 @@ export function StudioClient() {
   // the selection changes or on unmount.
   const [clipUrls, setClipUrls] = React.useState<string[]>([])
   React.useEffect(() => {
-    const urls = files.map((f) => URL.createObjectURL(f))
+    // Defensive: only build object URLs for real File/Blob entries (upload
+    // flow). Guards against a stray non-blob slot ever reaching this effect.
+    const urls = files
+      .filter((f): f is File => f instanceof Blob)
+      .map((f) => URL.createObjectURL(f))
     setClipUrls(urls)
     return () => urls.forEach((u) => URL.revokeObjectURL(u))
   }, [files])
@@ -1098,6 +1102,11 @@ export function StudioClient() {
   function moveClip(from: number, to: number) {
     if (from === to) return
     const reorder = <T,>(arr: T[]): T[] => {
+      // Local-cut clips share one source, so `files` is empty while
+      // `composeCfgs` holds the real entries. Don't shuffle an array that
+      // doesn't have these slots — splicing an empty `files` would inject
+      // `undefined` and break the clipUrls effect (createObjectURL crash).
+      if (from >= arr.length || to >= arr.length) return arr
       const next = [...arr]
       const [moved] = next.splice(from, 1)
       next.splice(to, 0, moved)
