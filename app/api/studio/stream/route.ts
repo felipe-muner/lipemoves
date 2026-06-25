@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic"
 import { createReadStream, existsSync, statSync } from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
-import { Readable } from "node:stream"
 
 import { NextResponse, type NextRequest } from "next/server"
 
@@ -37,6 +36,58 @@ const TYPES: Record<string, string> = {
  * the best possible preview — smooth, instant, frame-accurate. Browsers that
  * can't decode the codec just error, and the cutter falls back to still frames.
  */
+/**
+ * A web ReadableStream over a file slice that SURVIVES the client aborting
+ * mid-download — which a <video> does constantly (seeking, looping, closing the
+ * inline clip previews). It honors backpressure (pause/resume) and guards every
+ * controller call, so writing to an already-closed/cancelled stream can never
+ * throw the uncaught "Controller is already closed" that was crashing dev.
+ */
+function fileToWeb(
+  src: string,
+  opts: { start?: number; end?: number },
+  signal: AbortSignal,
+): ReadableStream<Uint8Array> {
+  const node = createReadStream(src, opts)
+  const onAbort = () => node.destroy()
+  signal.addEventListener("abort", onAbort)
+  node.once("close", () => signal.removeEventListener("abort", onAbort))
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      node.on("data", (chunk: string | Buffer) => {
+        const buf = typeof chunk === "string" ? Buffer.from(chunk) : chunk
+        try {
+          controller.enqueue(new Uint8Array(buf))
+        } catch {
+          node.destroy() // consumer gone — stop reading
+          return
+        }
+        if ((controller.desiredSize ?? 0) <= 0) node.pause()
+      })
+      node.once("end", () => {
+        try {
+          controller.close()
+        } catch {
+          /* already closed by a cancel */
+        }
+      })
+      node.once("error", (err) => {
+        try {
+          controller.error(err)
+        } catch {
+          /* consumer already gone */
+        }
+      })
+    },
+    pull() {
+      node.resume()
+    },
+    cancel() {
+      node.destroy()
+    },
+  })
+}
+
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user) {
@@ -63,32 +114,24 @@ export async function GET(req: NextRequest) {
       })
     }
     end = Math.min(isFinite(end) ? end : size - 1, size - 1)
-    const stream = createReadStream(src, { start, end })
-    return new NextResponse(
-      Readable.toWeb(stream) as unknown as ReadableStream<Uint8Array>,
-      {
-        status: 206,
-        headers: {
-          "Content-Range": `bytes ${start}-${end}/${size}`,
-          "Accept-Ranges": "bytes",
-          "Content-Length": String(end - start + 1),
-          "Content-Type": type,
-          "Cache-Control": "no-store",
-        },
-      },
-    )
-  }
-
-  const stream = createReadStream(src)
-  return new NextResponse(
-    Readable.toWeb(stream) as unknown as ReadableStream<Uint8Array>,
-    {
+    return new NextResponse(fileToWeb(src, { start, end }, req.signal), {
+      status: 206,
       headers: {
-        "Content-Length": String(size),
+        "Content-Range": `bytes ${start}-${end}/${size}`,
         "Accept-Ranges": "bytes",
+        "Content-Length": String(end - start + 1),
         "Content-Type": type,
         "Cache-Control": "no-store",
       },
+    })
+  }
+
+  return new NextResponse(fileToWeb(src, {}, req.signal), {
+    headers: {
+      "Content-Length": String(size),
+      "Accept-Ranges": "bytes",
+      "Content-Type": type,
+      "Cache-Control": "no-store",
     },
-  )
+  })
 }
