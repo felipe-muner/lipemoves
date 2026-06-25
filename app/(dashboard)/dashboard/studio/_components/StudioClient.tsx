@@ -53,7 +53,7 @@ import {
   outfitFontFace,
   type BadgeStyle,
 } from "@/lib/studio/badge-style"
-import { ClipCutter, type CutSegment } from "./ClipCutter"
+import { ClipCutter, type CutResult, type CutSource } from "./ClipCutter"
 import {
   DEFAULT_FONT,
   FONTS,
@@ -161,6 +161,9 @@ interface ComposeCfg {
    *  [start,end]; the server cuts it at render. */
   start?: number
   end?: number
+  /** Local source path this clip was cut from (multi-source cuts each carry
+   *  their own). Set ⇒ the server reads it in place; unset ⇒ an uploaded file. */
+  sourcePath?: string
 }
 
 let textBoxSeq = 0
@@ -841,17 +844,9 @@ export function StudioClient() {
   >([])
   const [localBusy, setLocalBusy] = React.useState(false)
   const [localErr, setLocalErr] = React.useState<string | null>(null)
-  // Cutter open on this local recording (frames pulled on demand — no proxy).
-  const [cutSource, setCutSource] = React.useState<{
-    path: string
-    name: string
-    duration: number
-    aspect: number
-  } | null>(null)
-  // The local source backing the current compose clips (read at render).
-  const [localComposeSrc, setLocalComposeSrc] = React.useState<{
-    path: string
-  } | null>(null)
+  // Sources open in the cutter — one filmstrip each, all feeding one clip list
+  // (frames pulled on demand, no proxy). Empty ⇒ the cutter is closed.
+  const [cutSources, setCutSources] = React.useState<CutSource[]>([])
 
   React.useEffect(() => {
     void browse(localStorage.getItem("studioFolder") || "~/Downloads")
@@ -968,8 +963,7 @@ export function StudioClient() {
   function pickFiles(list: FileList | null) {
     const arr = list ? Array.from(list) : []
     setFiles(arr)
-    setLocalComposeSrc(null) // switching to uploaded clips
-    setCutSource(null)
+    setCutSources([]) // switching to uploaded clips
     labelWidths.current = {}
     // Seed per-clip configs: zoom alternates in/out (the classic Ken Burns
     // look, editable per clip), no text boxes yet (add via "Add text").
@@ -1042,10 +1036,12 @@ export function StudioClient() {
     return out
   }, [currentDir, homeDir])
 
-  // Open the cutter on a local recording. No transcode — just probe its length
-  // (instant); the cutter pulls frames on demand. The original (HEVC/multi-GB)
-  // is never uploaded and is cut full-quality at render.
+  // ADD a local recording to the cutter (stacks a new filmstrip). No transcode —
+  // just probe its length (instant); the cutter pulls frames on demand. The
+  // original (HEVC/multi-GB) is never uploaded and is cut full-quality at render.
+  // Clicking a video already open just re-focuses it (no duplicate strip).
   async function prepareLocal(f: { path: string; name: string }) {
+    if (cutSources.some((s) => s.path === f.path)) return
     setLocalBusy(true)
     setLocalErr(null)
     try {
@@ -1055,12 +1051,16 @@ export function StudioClient() {
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || "Couldn't read that video")
       if (!d.duration) throw new Error("Couldn't read that video's length")
-      setCutSource({
-        path: f.path,
-        name: f.name,
-        duration: d.duration,
-        aspect: d.width && d.height ? d.width / d.height : 9 / 16,
-      })
+      setCutSources((prev) => [
+        ...prev,
+        {
+          id: f.path, // path is unique per source — stable strip id
+          path: f.path,
+          name: f.name,
+          duration: d.duration,
+          aspect: d.width && d.height ? d.width / d.height : 9 / 16,
+        },
+      ])
     } catch (e) {
       setLocalErr(e instanceof Error ? e.message : "Couldn't read that video")
     } finally {
@@ -1068,17 +1068,15 @@ export function StudioClient() {
     }
   }
 
-  // Marked segments → compose clips. They share the local source (read at
-  // render); each clip's poster is a single frame pulled on demand from the
-  // source (no transcode), so this is instant even for a 40-min recording.
-  function applyCutSegments(segments: CutSegment[]) {
-    if (!cutSource) return
-    const { path: srcPath, aspect } = cutSource
+  // Marked clips (possibly across several sources) → compose clips. Each carries
+  // its own sourcePath (read at render); its poster is a single frame pulled on
+  // demand from that source (no transcode), so this is instant for huge files.
+  function applyCutSegments(clips: CutResult[]) {
+    if (!clips.length) return
     labelWidths.current = {}
     setFiles([])
-    setLocalComposeSrc({ path: srcPath })
     setComposeCfgs(
-      segments.map((seg) => ({
+      clips.map((clip) => ({
         zoom: "off" as ZoomMode,
         texts: [],
         badgeX: BADGE_DEFAULT_X,
@@ -1086,13 +1084,14 @@ export function StudioClient() {
         badgeSize: BADGE_DEFAULT_SIZE * 100,
         badgeText: null,
         // A frame at the clip's start, fetched lazily by <Image>.
-        poster: `/api/studio/frame?path=${encodeURIComponent(srcPath)}&t=${seg.start.toFixed(2)}&h=640`,
-        aspect,
-        start: seg.start,
-        end: seg.end,
+        poster: `/api/studio/frame?path=${encodeURIComponent(clip.sourcePath)}&t=${clip.start.toFixed(2)}&h=640`,
+        aspect: clip.aspect,
+        start: clip.start,
+        end: clip.end,
+        sourcePath: clip.sourcePath,
       })),
     )
-    setCutSource(null)
+    setCutSources([])
     setLocalFiles([])
   }
 
@@ -1212,7 +1211,7 @@ export function StudioClient() {
   }, [clipsWithFrames, selClip])
 
   async function submit() {
-    if (files.length === 0 && !localComposeSrc) return
+    if (files.length === 0 && !composeCfgs.some((c) => c.sourcePath)) return
     if (mode === "mosaic" && !mosaicLayout) {
       setError("Mosaic needs 2, 3, or 4 clips.")
       return
@@ -1254,9 +1253,10 @@ export function StudioClient() {
         const badgeText = (
           c?.badgeText ?? `✅ ${i + 1}/${composeCfgs.length}`
         ).trim()
-        // Source: a LOCAL path (no upload) or an uploaded file (deduped).
-        const sourceRef = localComposeSrc
-          ? { sourcePath: localComposeSrc.path }
+        // Source: this clip's own LOCAL path (no upload) or an uploaded file
+        // (deduped). Multi-source cuts each carry their own sourcePath.
+        const sourceRef = c?.sourcePath
+          ? { sourcePath: c.sourcePath }
           : { sourceIndex: sourceIndexOf[i] }
         return {
           ...sourceRef,
@@ -1611,23 +1611,28 @@ export function StudioClient() {
                   <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
                 </button>
               ))}
-              {localFiles.map((f) => (
-                <button
-                  key={f.path}
-                  type="button"
-                  onClick={() => prepareLocal(f)}
-                  disabled={localBusy}
-                  className="flex w-full items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition hover:bg-muted disabled:opacity-50"
-                >
-                  <span className="flex min-w-0 flex-1 items-center gap-2">
-                    <Film className="size-3.5 shrink-0 text-emerald-500" />
-                    <span className="truncate font-medium">{f.name}</span>
-                  </span>
-                  <span className="shrink-0 text-muted-foreground">
-                    {(f.size / 1e9).toFixed(2)} GB
-                  </span>
-                </button>
-              ))}
+              {localFiles.map((f) => {
+                const added = cutSources.some((s) => s.path === f.path)
+                return (
+                  <button
+                    key={f.path}
+                    type="button"
+                    onClick={() => prepareLocal(f)}
+                    disabled={localBusy || added}
+                    className={`flex w-full items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition hover:bg-muted disabled:opacity-60 ${
+                      added ? "border-emerald-400 bg-emerald-500/10" : ""
+                    }`}
+                  >
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <Film className="size-3.5 shrink-0 text-emerald-500" />
+                      <span className="truncate font-medium">{f.name}</span>
+                    </span>
+                    <span className="shrink-0 text-muted-foreground">
+                      {added ? "✓ added" : `${(f.size / 1e9).toFixed(2)} GB`}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           ) : !localBusy && currentDir ? (
             <p className="text-xs text-muted-foreground">
@@ -1636,15 +1641,14 @@ export function StudioClient() {
           ) : null}
         </div>
 
-        {/* Clip cutter — scrub the prepared proxy into several clips. */}
-        {cutSource ? (
+        {/* Clip cutter — one filmstrip per added source; cut from any into one
+            clip list. Click more videos above to stack their strips. */}
+        {cutSources.length ? (
           <div className="rounded-xl border bg-card/40 p-3 sm:p-4">
             <ClipCutter
-              path={cutSource.path}
-              duration={cutSource.duration}
-              title={cutSource.name}
+              sources={cutSources}
               onUse={applyCutSegments}
-              onCancel={() => setCutSource(null)}
+              onCancel={() => setCutSources([])}
             />
           </div>
         ) : null}
@@ -2110,7 +2114,7 @@ export function StudioClient() {
           onClick={submit}
           size="sm"
           disabled={
-            (files.length === 0 && !localComposeSrc) ||
+            (files.length === 0 && !composeCfgs.some((c) => c.sourcePath)) ||
             busy ||
             running ||
             (mode === "mosaic" && !mosaicLayout)
