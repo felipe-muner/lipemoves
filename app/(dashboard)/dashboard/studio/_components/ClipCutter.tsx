@@ -1,7 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { Loader2, Minus, Pause, Play, Plus, Scissors, Trash2, X } from "lucide-react"
+import {
+  Loader2,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  Scissors,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -58,6 +69,8 @@ type DragState =
 const MIN = 0.3 // shortest allowed clip (s) — also the tap-vs-drag threshold
 const STEP = 0.1 // nudge / arrow-key step (s)
 const SCRUB_MAX_SPP = 0.08 // wheel-scrub ceiling (seconds moved per pixel)
+const MINBAND = 26 // min px width of a clip band so short clips stay grabbable
+const CLIP_DEFAULT = 2 // length (s) of a clip dropped by a single click
 
 const fmt = (s: number) => {
   if (!isFinite(s)) return "0:00.0"
@@ -193,6 +206,12 @@ export function ClipCutter({
   const videoRef = React.useRef<HTMLVideoElement | null>(null)
   const [canPlay, setCanPlay] = React.useState(false) // active source decodes
   const [playing, setPlaying] = React.useState(false)
+  const [muted, setMuted] = React.useState(false) // preview-only; export keeps audio
+  // The clip being loop-played from the list (null = free play). Its live bounds
+  // are mirrored in loopRef so the <video> callbacks loop without re-binding.
+  const [loopId, setLoopId] = React.useState<string | null>(null)
+  const loopRef = React.useRef<{ sourceId: string; start: number; end: number } | null>(null)
+  const pendingPlayRef = React.useRef(false) // start playing once the video loads
   const canPlayRef = React.useRef(false)
   const activeIdRef = React.useRef(activeId)
   // Mirror playhead positions so the native wheel listener reads the latest
@@ -207,6 +226,32 @@ export function ClipCutter({
   React.useEffect(() => {
     headsRef.current = heads
   }, [heads])
+  // Preview-only mute, remembered across clips/sessions (export keeps audio).
+  React.useEffect(() => {
+    setMuted(localStorage.getItem("studioCutMuted") === "1")
+  }, [])
+  React.useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted
+  }, [muted])
+  const toggleMute = () =>
+    setMuted((m) => {
+      localStorage.setItem("studioCutMuted", m ? "0" : "1")
+      return !m
+    })
+  // Keep loopRef's bounds in sync with the looping clip (so trimming it while it
+  // plays updates the loop), and drop the loop if that clip is deleted.
+  React.useEffect(() => {
+    if (!loopId) {
+      loopRef.current = null
+      return
+    }
+    const s = segs.find((x) => x.id === loopId)
+    if (s) loopRef.current = { sourceId: s.sourceId, start: s.start, end: s.end }
+    else {
+      loopRef.current = null
+      setLoopId(null)
+    }
+  }, [loopId, segs])
   // Switching sources reloads the <video>; show frames until it's ready again.
   React.useEffect(() => {
     setCanPlay(false)
@@ -219,6 +264,11 @@ export function ClipCutter({
     (sourceId: string, t: number) => {
       const src = sourcesRef.current.find((s) => s.id === sourceId)
       if (!src) return
+      // Any manual move breaks a list-clip loop so you can scrub freely.
+      if (loopRef.current) {
+        loopRef.current = null
+        setLoopId(null)
+      }
       const c = clamp(t, 0, src.duration || 0)
       const wasActive = sourceId === activeIdRef.current
       setActiveId(sourceId)
@@ -238,6 +288,30 @@ export function ClipCutter({
     if (v.paused) void v.play().catch(() => {})
     else v.pause()
   }, [])
+
+  // Play ONE clip from the list, looping within its [start,end] so you can see
+  // it repeat (and where it ends). Clicking the one already looping pauses it.
+  // Needs a decodable source (video mode); in frame mode it just jumps to start.
+  const playClip = (s: Seg) => {
+    const v = videoRef.current
+    if (loopId === s.id && playing && v) {
+      v.pause()
+      return
+    }
+    setSelectedId(s.id)
+    loopRef.current = { sourceId: s.sourceId, start: s.start, end: s.end }
+    setLoopId(s.id)
+    if (s.sourceId === activeIdRef.current && canPlayRef.current && v) {
+      v.currentTime = s.start
+      void v.play().catch(() => {})
+    } else {
+      // Switching source: reload the <video>, then onLoadedData starts the loop.
+      pendingPlayRef.current = true
+      setActiveId(s.sourceId)
+      const src = sourceById(s.sourceId)
+      if (src) showFrame(src.path, s.start)
+    }
+  }
 
   const timeFromX = (clientX: number, sourceId: string) => {
     const r = tracksRef.current[sourceId]
@@ -267,6 +341,38 @@ export function ClipCutter({
     const src = sources.find((s) => s.id === activeId) ?? sources[0]
     if (src && heads[src.id] == null) showFrame(src.path, 0)
   }, [activeId, sources, heads, showFrame])
+
+  // Guard unsaved cuts against an accidental back-navigation — on a Mac a
+  // two-finger trackpad swipe triggers browser Back, which would unmount the
+  // cutter and lose every clip. While clips exist, intercept Back with a confirm
+  // (re-arming if they stay) and warn on reload/close.
+  const hasClips = segs.length > 0
+  React.useEffect(() => {
+    if (!hasClips) return
+    window.history.pushState(null, "", window.location.href)
+    const onPop = () => {
+      if (
+        window.confirm(
+          "Leave the cutter? The clips you've marked here will be lost.",
+        )
+      ) {
+        window.removeEventListener("popstate", onPop)
+        window.history.back()
+      } else {
+        window.history.pushState(null, "", window.location.href)
+      }
+    }
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ""
+    }
+    window.addEventListener("popstate", onPop)
+    window.addEventListener("beforeunload", onBeforeUnload)
+    return () => {
+      window.removeEventListener("popstate", onPop)
+      window.removeEventListener("beforeunload", onBeforeUnload)
+    }
+  }, [hasClips])
 
   // Arrow keys step the ACTIVE source's playhead (shift = 1s).
   React.useEffect(() => {
@@ -365,18 +471,27 @@ export function ClipCutter({
       window.removeEventListener("pointermove", move)
       window.removeEventListener("pointerup", up)
       if (d?.kind === "draw") {
-        const start = Math.min(d.anchor, d.cur)
-        const end = Math.max(d.anchor, d.cur)
+        let start = Math.min(d.anchor, d.cur)
+        let end = Math.max(d.anchor, d.cur)
         setDraft(null)
         if (end - start < MIN) {
-          seek(d.sourceId, start) // a tap → just move the playhead
-          return
+          // single click (no drag) → drop a default-length clip starting here,
+          // clamped to fit inside the source.
+          const dur = sourceById(d.sourceId)?.duration ?? 0
+          start = clamp(start, 0, Math.max(0, dur - CLIP_DEFAULT))
+          end = Math.min(start + CLIP_DEFAULT, dur)
+          if (end - start < MIN) {
+            seek(d.sourceId, start) // source too short for a clip → just seek
+            return
+          }
         }
         const id = uid()
         setSegs((prev) => [...prev, { id, sourceId: d.sourceId, start, end }])
         setSelectedId(id)
+        seek(d.sourceId, start)
       } else if (d?.kind === "move" && !d.moved) {
-        seek(d.sourceId, d.origStart) // a tap on a clip → jump to its start
+        const seg = segs.find((x) => x.id === d.id)
+        if (seg) playClip(seg) // a tap on a clip → loop-play it
       }
     }
     window.addEventListener("pointermove", move)
@@ -532,49 +647,65 @@ export function ClipCutter({
 
             {segsHere.map((s) => {
               const sel = s.id === selectedId
+              // Draw the band with a MINIMUM width so a short clip on a long
+              // video is still a grabbable pill (a 6s clip on a 64-min strip is
+              // ~2px otherwise). Edge-drag still maps the POINTER to real time,
+              // so trimming stays accurate even though the pill is widened.
+              const W = trackW || 1
+              const realLeft = dur ? s.start / dur : 0
+              const realW = dur ? (s.end - s.start) / dur : 0
+              const wPx = Math.max(realW * W, MINBAND)
+              const leftPx = Math.max(
+                0,
+                Math.min((realLeft + realW / 2) * W - wPx / 2, W - wPx),
+              )
               return (
                 <div
                   key={s.id}
                   onPointerDown={(e) => {
                     e.stopPropagation()
-                    if (sel) {
-                      beginDrag({
-                        kind: "move",
-                        sourceId: source.id,
-                        id: s.id,
-                        anchor: clamp(timeFromX(e.clientX, source.id), 0, dur),
-                        origStart: s.start,
-                        len: s.end - s.start,
-                        moved: false,
-                      })
-                    } else {
-                      setSelectedId(s.id)
-                      seek(source.id, s.start)
-                    }
+                    setSelectedId(s.id)
+                    // Tap = loop-play this cut; drag = slide it (handled in up).
+                    beginDrag({
+                      kind: "move",
+                      sourceId: source.id,
+                      id: s.id,
+                      anchor: clamp(timeFromX(e.clientX, source.id), 0, dur),
+                      origStart: s.start,
+                      len: s.end - s.start,
+                      moved: false,
+                    })
                   }}
-                  className={`absolute inset-y-0 flex items-center justify-center border-x-2 ${
+                  className={`absolute inset-y-0 flex items-center justify-center rounded-sm border-x-2 ${
                     sel
-                      ? "z-[5] cursor-grab border-emerald-300 bg-emerald-500/40 ring-2 ring-inset ring-emerald-300 active:cursor-grabbing"
-                      : "cursor-pointer border-emerald-400/70 bg-emerald-500/25"
+                      ? "z-[6] cursor-grab border-emerald-300 bg-emerald-500/45 ring-2 ring-inset ring-emerald-300 active:cursor-grabbing"
+                      : "z-[5] cursor-pointer border-emerald-400/80 bg-emerald-500/30"
                   }`}
-                  style={{ left: pct(s.start, dur), width: pct(s.end - s.start, dur) }}
+                  style={{ left: leftPx, width: wPx }}
+                  title="Tap to loop-play · drag edges to trim before/after · drag to move"
                 >
-                  {sel
-                    ? (["start", "end"] as const).map((edge) => (
-                        <div
-                          key={edge}
-                          onPointerDown={(e) => {
-                            e.stopPropagation()
-                            setSelectedId(s.id)
-                            beginDrag({ kind: "edge", sourceId: source.id, id: s.id, edge })
-                          }}
-                          className="absolute inset-y-0 z-10 w-5 cursor-ew-resize touch-none"
-                          style={edge === "start" ? { left: -10 } : { right: -10 }}
-                        >
-                          <div className="mx-auto h-full w-1.5 rounded bg-emerald-200" />
-                        </div>
-                      ))
-                    : null}
+                  <span className="pointer-events-none grid size-5 place-items-center rounded-full bg-black/45 text-white">
+                    {loopId === s.id && playing ? (
+                      <Pause className="size-3" />
+                    ) : (
+                      <Play className="size-3" />
+                    )}
+                  </span>
+                  {/* trim handles — ALWAYS available (no select-first needed) */}
+                  {(["start", "end"] as const).map((edge) => (
+                    <div
+                      key={edge}
+                      onPointerDown={(e) => {
+                        e.stopPropagation()
+                        setSelectedId(s.id)
+                        beginDrag({ kind: "edge", sourceId: source.id, id: s.id, edge })
+                      }}
+                      className="absolute inset-y-0 z-10 w-4 cursor-ew-resize touch-none"
+                      style={edge === "start" ? { left: -8 } : { right: -8 }}
+                    >
+                      <div className="mx-auto h-full w-1.5 rounded bg-emerald-200" />
+                    </div>
+                  ))}
                 </div>
               )
             })}
@@ -672,6 +803,7 @@ export function ClipCutter({
             src={streamUrl(activeSource.path)}
             playsInline
             preload="metadata"
+            muted={muted}
             className={`absolute inset-0 size-full object-contain ${
               canPlay ? "" : "pointer-events-none opacity-0"
             }`}
@@ -679,12 +811,25 @@ export function ClipCutter({
             onLoadedData={() => {
               setCanPlay(true)
               const v = videoRef.current
-              if (v) v.currentTime = heads[activeId] ?? 0
+              if (!v) return
+              const lp = loopRef.current
+              if (pendingPlayRef.current && lp && lp.sourceId === activeId) {
+                pendingPlayRef.current = false
+                v.currentTime = lp.start
+                void v.play().catch(() => {})
+              } else {
+                v.currentTime = heads[activeId] ?? 0
+              }
             }}
             onError={() => setCanPlay(false)}
             onTimeUpdate={() => {
               const v = videoRef.current
               if (!v) return
+              const lp = loopRef.current
+              if (lp && lp.sourceId === activeId && v.currentTime >= lp.end - 0.02) {
+                v.currentTime = lp.start // loop back to the clip's start
+                return
+              }
               setHeads((h) => ({ ...h, [activeId]: v.currentTime }))
             }}
             onPlay={() => setPlaying(true)}
@@ -698,14 +843,25 @@ export function ClipCutter({
 
       <div className="flex items-center justify-center gap-3">
         {canPlay ? (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggle}
-            aria-label={playing ? "Pause" : "Play"}
-          >
-            {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggle}
+              aria-label={playing ? "Pause" : "Play"}
+            >
+              {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleMute}
+              aria-label={muted ? "Unmute preview" : "Mute preview"}
+              title={muted ? "Unmute preview" : "Mute preview (export keeps audio)"}
+            >
+              {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+            </Button>
+          </>
         ) : null}
         <span className="text-xs tabular-nums text-muted-foreground">
           {activeSource ? (
@@ -723,8 +879,8 @@ export function ClipCutter({
 
       <p className="text-center text-xs text-muted-foreground">
         Drag across any strip to mark a clip. Add more videos from the browser
-        above to stack their strips here. Tap a clip to select it; drag it to
-        slide, its edges to trim, or the playhead to preview any moment. Scroll
+        above to stack their strips here. Tap a clip band to loop-play it, drag
+        its edges to extend before/after, or drag the band to move it. Scroll
         over a strip to scrub; space plays, Backspace deletes the selected clip.
       </p>
 
@@ -749,15 +905,17 @@ export function ClipCutter({
                 >
                   <Trash2 className="size-3.5" />
                 </button>
+                {/* the number loop-plays this cut in the main player above */}
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedId(s.id)
-                    seek(s.sourceId, s.start)
-                  }}
-                  className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-semibold transition-colors hover:bg-emerald-500/30"
-                  aria-label={`Jump to clip ${i + 1} start`}
-                  title="Jump to clip start"
+                  onClick={() => playClip(s)}
+                  className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors ${
+                    loopId === s.id && playing
+                      ? "bg-emerald-500 text-white"
+                      : "bg-muted hover:bg-emerald-500/30"
+                  }`}
+                  aria-label={`Loop-play clip ${i + 1} in the main player`}
+                  title="Loop-play this cut in the player above"
                 >
                   {i + 1}
                 </button>
