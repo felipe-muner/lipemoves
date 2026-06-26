@@ -8,6 +8,7 @@ import {
   Play,
   Plus,
   Scissors,
+  Sparkles,
   Trash2,
   Volume2,
   VolumeX,
@@ -22,6 +23,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover"
 
 /** A source recording available to cut from. Several can be open at once — each
  *  gets its own filmstrip and they all feed ONE unified clip list. */
@@ -144,6 +150,9 @@ export function ClipCutter({
 
   const [segs, setSegs] = React.useState<Seg[]>([])
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
+  // Which clip band has its edit popover open (tap a band on the strip → popover
+  // with the same controls as the clip list row).
+  const [popoverId, setPopoverId] = React.useState<string | null>(null)
   const [draft, setDraft] = React.useState<{
     sourceId: string
     start: number
@@ -160,6 +169,11 @@ export function ClipCutter({
   } | null>(null)
   const [confirmId, setConfirmId] = React.useState<string | null>(null)
   const [trackW, setTrackW] = React.useState(0)
+  // Where the cursor is hovering over a strip → a time tooltip that follows it,
+  // so you can line the mouse up to the exact moment you spotted with playback.
+  const [hover, setHover] = React.useState<{ sourceId: string; t: number } | null>(null)
+  const [suggesting, setSuggesting] = React.useState(false) // AI clip-picking
+  const [suggestErr, setSuggestErr] = React.useState<string | null>(null)
 
   // Keep the active source valid as videos are added/removed.
   React.useEffect(() => {
@@ -310,6 +324,43 @@ export function ClipCutter({
       setActiveId(s.sourceId)
       const src = sourceById(s.sourceId)
       if (src) showFrame(src.path, s.start)
+    }
+  }
+
+  // Ask Gemini for the strongest ~2s moments in the ACTIVE source and drop them
+  // into the clip list (you then trim/approve). Analysis runs on a low-res proxy
+  // — the real cut still comes from the original full-quality file.
+  const suggest = async () => {
+    const src = sourceById(activeId) ?? sources[0]
+    if (!src || suggesting) return
+    setSuggesting(true)
+    setSuggestErr(null)
+    try {
+      const r = await fetch("/api/studio/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: src.path, count: 10 }),
+      })
+      const d = (await r.json()) as { clips?: { start: number; end: number }[]; error?: string }
+      if (!r.ok) throw new Error(d.error || "Couldn't suggest clips")
+      const fresh = (d.clips ?? [])
+        .map((c) => ({
+          id: uid(),
+          sourceId: src.id,
+          start: clamp(c.start, 0, src.duration),
+          end: clamp(c.end, 0, src.duration),
+        }))
+        .filter((c) => c.end - c.start >= MIN)
+      if (!fresh.length) {
+        setSuggestErr("No strong moments found — try another video.")
+        return
+      }
+      setSegs((prev) => [...prev, ...fresh])
+      setSelectedId(fresh[0].id)
+    } catch (e) {
+      setSuggestErr(e instanceof Error ? e.message : "Couldn't suggest clips")
+    } finally {
+      setSuggesting(false)
     }
   }
 
@@ -490,8 +541,10 @@ export function ClipCutter({
         setSelectedId(id)
         seek(d.sourceId, start)
       } else if (d?.kind === "move" && !d.moved) {
-        const seg = segs.find((x) => x.id === d.id)
-        if (seg) playClip(seg) // a tap on a clip → loop-play it
+        // a tap on a clip → open its edit popover (same controls as the list)
+        setSelectedId(d.id)
+        setPopoverId(d.id)
+        seek(d.sourceId, segs.find((x) => x.id === d.id)?.start ?? 0)
       }
     }
     window.addEventListener("pointermove", move)
@@ -579,6 +632,69 @@ export function ClipCutter({
     )
   }
 
+  // The controls for ONE clip — shared by the clip list row and the per-band
+  // popover so both have identical features (delete · loop-play · name · trim).
+  // `forceEdit` always shows the typeable edge fields (the popover wants them);
+  // in the list they only appear once the clip is selected.
+  const clipControls = (s: Seg, i: number, forceEdit: boolean) => {
+    const sel = s.id === selectedId
+    const src = sourceById(s.sourceId)
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setConfirmId(s.id)}
+          className="grid size-7 shrink-0 place-items-center rounded text-muted-foreground hover:text-red-500"
+          aria-label={`Delete clip ${i + 1}`}
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+        {/* the number loop-plays this cut in the main player above */}
+        <button
+          type="button"
+          onClick={() => playClip(s)}
+          className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors ${
+            loopId === s.id && playing
+              ? "bg-emerald-500 text-white"
+              : "bg-muted hover:bg-emerald-500/30"
+          }`}
+          aria-label={`Loop-play clip ${i + 1} in the main player`}
+          title="Loop-play this cut in the player above"
+        >
+          {i + 1}
+        </button>
+        <span
+          className="max-w-[9rem] shrink-0 truncate text-xs text-muted-foreground"
+          title={src?.name}
+        >
+          {src?.name}
+        </span>
+        {forceEdit || sel ? (
+          <>
+            {edgeControl(s, "start")}
+            <span className="text-muted-foreground">–</span>
+            {edgeControl(s, "end")}
+            <span className="shrink-0 tabular-nums text-muted-foreground">
+              ({fmt(s.end - s.start)})
+            </span>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedId(s.id)
+              seek(s.sourceId, s.start)
+            }}
+            className="flex-1 text-left tabular-nums hover:underline"
+          >
+            {fmt(s.start)} – {fmt(s.end)}{" "}
+            <span className="text-muted-foreground">({fmt(s.end - s.start)})</span>
+          </button>
+        )}
+      </>
+    )
+  }
+
   const stripCount = Math.max(8, Math.min(72, Math.round((trackW || 1040) / 52)))
   // Clips in render order: by the order their source was added, then by start.
   const ordered = [...segs].sort(
@@ -626,6 +742,15 @@ export function ClipCutter({
               seek(source.id, t)
               beginDrag({ kind: "draw", sourceId: source.id, anchor: t, cur: t })
             }}
+            onPointerMove={(e) => {
+              // While dragging, the draft/playhead already show the time — don't
+              // double up with the hover tooltip.
+              if (dragRef.current) return
+              setHover({
+                sourceId: source.id,
+                t: clamp(timeFromX(e.clientX, source.id), 0, dur),
+              })
+            }}
           >
             <div className="pointer-events-none absolute inset-0">
               {dur
@@ -659,13 +784,19 @@ export function ClipCutter({
                 0,
                 Math.min((realLeft + realW / 2) * W - wPx / 2, W - wPx),
               )
+              const idx = ordered.findIndex((o) => o.id === s.id)
               return (
-                <div
+                <Popover
                   key={s.id}
+                  open={popoverId === s.id}
+                  onOpenChange={(o) => !o && setPopoverId(null)}
+                >
+                  <PopoverAnchor asChild>
+                <div
                   onPointerDown={(e) => {
                     e.stopPropagation()
                     setSelectedId(s.id)
-                    // Tap = loop-play this cut; drag = slide it (handled in up).
+                    // Tap = open edit popover; drag = slide it (handled in up).
                     beginDrag({
                       kind: "move",
                       sourceId: source.id,
@@ -682,7 +813,7 @@ export function ClipCutter({
                       : "z-[5] cursor-pointer border-emerald-400/80 bg-emerald-500/30"
                   }`}
                   style={{ left: leftPx, width: wPx }}
-                  title="Tap to loop-play · drag edges to trim before/after · drag to move"
+                  title="Tap to edit · drag edges to trim before/after · drag to move"
                 >
                   <span className="pointer-events-none grid size-5 place-items-center rounded-full bg-black/45 text-white">
                     {loopId === s.id && playing ? (
@@ -707,6 +838,22 @@ export function ClipCutter({
                     </div>
                   ))}
                 </div>
+                  </PopoverAnchor>
+                  <PopoverContent
+                    side="top"
+                    align="center"
+                    className="w-auto max-w-[20rem] p-2"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    // Radix portals this to <body>, but React synthetic events
+                    // still bubble up the React tree to the strip's onPointerDown
+                    // — which would draw a NEW clip. Stop them at the popover.
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
+                      {clipControls(s, idx, true)}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               )
             })}
 
@@ -722,13 +869,36 @@ export function ClipCutter({
           </div>
 
           {head != null ? (
+            // Pointer-events-none so the bar/line never block clicks on the strip
+            // behind it — only the green circle below is grabbable to drag.
             <div
-              className="absolute inset-y-0 z-30 w-4 -translate-x-1/2 cursor-ew-resize touch-none"
+              className="pointer-events-none absolute inset-y-0 z-30 w-4 -translate-x-1/2 touch-none"
               style={{ left: pct(head, dur) }}
-              onPointerDown={() => beginDrag({ kind: "scrub", sourceId: source.id })}
             >
-              <div className="pointer-events-none absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-white shadow-[0_0_3px_rgba(0,0,0,0.9)]" />
-              <div className="pointer-events-none absolute left-1/2 top-0 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-500 shadow" />
+              <div className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-white shadow-[0_0_3px_rgba(0,0,0,0.9)]" />
+              {/* only handle: grab the green circle to scrub the playhead */}
+              <div
+                className="pointer-events-auto absolute left-1/2 top-0 size-4 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none rounded-full border-2 border-white bg-emerald-500 shadow"
+                onPointerDown={() => beginDrag({ kind: "scrub", sourceId: source.id })}
+              />
+              {/* the playhead's current time, pinned to the bottom of the strip */}
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow">
+                {fmt(head)}
+              </div>
+            </div>
+          ) : null}
+
+          {/* hover tooltip — the time under the cursor, so you can park the mouse
+              on the exact instant you spotted while playing, then cut there */}
+          {hover && hover.sourceId === source.id ? (
+            <div
+              className="pointer-events-none absolute inset-y-0 z-40"
+              style={{ left: pct(hover.t, dur) }}
+            >
+              <div className="absolute inset-y-0 w-px -translate-x-1/2 bg-white/60" />
+              <div className="absolute top-1 left-0 -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-white shadow">
+                {fmt(hover.t)}
+              </div>
             </div>
           ) : null}
         </div>
@@ -884,12 +1054,39 @@ export function ClipCutter({
         over a strip to scrub; space plays, Backspace deletes the selected clip.
       </p>
 
+      {/* AI clip-picking — Gemini finds the strongest ~2s moments */}
+      <div className="flex flex-col items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={suggesting || !activeSource}
+          onClick={suggest}
+        >
+          {suggesting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Sparkles className="size-4 text-emerald-500" />
+          )}
+          {suggesting
+            ? "Finding the best moments…"
+            : `Suggest clips from ${activeSource?.name ?? "video"}`}
+        </Button>
+        {suggestErr ? (
+          <p className="text-center text-xs text-amber-600 dark:text-amber-400">
+            {suggestErr}
+          </p>
+        ) : (
+          <p className="text-center text-[11px] text-muted-foreground">
+            AI scans this video for scroll-stopping moments and adds them below.
+          </p>
+        )}
+      </div>
+
       {/* unified clip list across ALL sources */}
       {ordered.length ? (
         <div className="w-full space-y-1.5">
           {ordered.map((s, i) => {
             const sel = s.id === selectedId
-            const src = sourceById(s.sourceId)
             return (
               <div
                 key={s.id}
@@ -897,56 +1094,7 @@ export function ClipCutter({
                   sel ? "border-emerald-400 bg-emerald-500/10" : ""
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() => setConfirmId(s.id)}
-                  className="grid size-7 shrink-0 place-items-center rounded text-muted-foreground hover:text-red-500"
-                  aria-label={`Delete clip ${i + 1}`}
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
-                {/* the number loop-plays this cut in the main player above */}
-                <button
-                  type="button"
-                  onClick={() => playClip(s)}
-                  className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors ${
-                    loopId === s.id && playing
-                      ? "bg-emerald-500 text-white"
-                      : "bg-muted hover:bg-emerald-500/30"
-                  }`}
-                  aria-label={`Loop-play clip ${i + 1} in the main player`}
-                  title="Loop-play this cut in the player above"
-                >
-                  {i + 1}
-                </button>
-                <span
-                  className="max-w-[9rem] shrink-0 truncate text-xs text-muted-foreground"
-                  title={src?.name}
-                >
-                  {src?.name}
-                </span>
-                {sel ? (
-                  <>
-                    {edgeControl(s, "start")}
-                    <span className="text-muted-foreground">–</span>
-                    {edgeControl(s, "end")}
-                    <span className="shrink-0 tabular-nums text-muted-foreground">
-                      ({fmt(s.end - s.start)})
-                    </span>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedId(s.id)
-                      seek(s.sourceId, s.start)
-                    }}
-                    className="flex-1 text-left tabular-nums hover:underline"
-                  >
-                    {fmt(s.start)} – {fmt(s.end)}{" "}
-                    <span className="text-muted-foreground">({fmt(s.end - s.start)})</span>
-                  </button>
-                )}
+                {clipControls(s, i, false)}
               </div>
             )
           })}
