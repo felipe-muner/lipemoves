@@ -1,18 +1,15 @@
 import type { Metadata } from "next"
-import { Suspense } from "react"
 import PricingContent from "./pricing-content"
 
-export const dynamic = "force-dynamic"
-
 export const metadata: Metadata = {
-  title: "Membership — Lipe Moves",
+  title: "1-on-1 Coaching — Lipe Moves",
   description:
-    "Every class, every pillar. $35/month or $250/year — save 40%. No equipment. Cancel anytime.",
+    "Personal 1-on-1 coaching with Felipe — programming, live form feedback and direct access. A few clients at a time. Message for pricing.",
   alternates: { canonical: "https://lipemoves.com/pricing" },
   openGraph: {
-    title: "Membership — Lipe Moves",
+    title: "1-on-1 Coaching — Lipe Moves",
     description:
-      "Every class, every pillar. $35/month or $250/year — save 40%. No equipment. Cancel anytime.",
+      "Personal 1-on-1 coaching with Felipe — programming, live form feedback and direct access. A few clients at a time. Message for pricing.",
     images: [{ url: "/og/pricing.jpg", width: 1200, height: 630 }],
   },
   twitter: {
@@ -22,9 +19,5 @@ export const metadata: Metadata = {
 }
 
 export default function PricingPage() {
-  return (
-    <Suspense>
-      <PricingContent />
-    </Suspense>
-  )
+  return <PricingContent />
 }

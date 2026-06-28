@@ -1,10 +1,8 @@
-import Link from "next/link"
 import Image from "next/image"
 import heroImg from "@/public/ebooks/photos/1SN01213.jpg"
 import yogaImg from "@/public/ebooks/photos/z_yoga.jpg"
 import felipeImg from "@/public/ebooks/photos/1SN03111.jpg"
 import coachingImg from "@/public/ebooks/photos/z_kettlebell_rack.jpg"
-import { Check, ArrowRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { LandingNav, type NavItem } from "@/components/landing/LandingNav"
 import { Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal"
@@ -21,7 +19,6 @@ const NAV: NavItem[] = [
   { label: "The Program", id: "program" },
   { label: "Who's It For", id: "who" },
   { label: "Felipe", id: "felipe" },
-  { label: "Pricing", id: "pricing" },
   { label: "Inner Circle", id: "inner-circle" },
   { label: "FAQ", id: "faq" },
 ]
@@ -108,22 +105,6 @@ const FAQ = [
   },
 ]
 
-const MONTHLY_FEATURES = [
-  "Personalized adaptive daily practice",
-  "Full movement library — yoga, mobility, kettlebell, breath",
-  "Strength, mobility, control & longevity tracks",
-  "Community access + challenges",
-  "New classes every week",
-]
-
-const ANNUAL_FEATURES = [
-  "Everything in Monthly, plus:",
-  "Save 40% vs monthly billing",
-  "Priority access to new drops",
-  "Early access to new programs",
-  "Annual member perks & content",
-]
-
 const WA_INNER =
   "https://wa.me/5521984852802?text=Hi%20Felipe%2C%20I%27m%20interested%20in%201%3A1%20coaching"
 
@@ -174,7 +155,7 @@ export default async function HomePage() {
 
           <RevealItem className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Button asChild variant="lime" size="pill">
-              <a href="#pricing">Start practicing</a>
+              <a href="#inner-circle">Work with me</a>
             </Button>
             <Button asChild variant="glass" size="pill">
               <a href="#program">See the program</a>
@@ -348,82 +329,6 @@ export default async function HomePage() {
               className="object-cover"
             />
           </Reveal>
-        </div>
-      </section>
-
-      {/* ===== Pricing ===== */}
-      <section id="pricing" className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32">
-        <div className="mx-auto max-w-4xl">
-          <Reveal className="text-center">
-            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
-              Pricing
-            </p>
-            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
-              Choose your membership.
-            </h2>
-            <p className="mt-4 text-white/55">
-              Every class, every pillar. No equipment. Cancel anytime.
-            </p>
-          </Reveal>
-
-          <RevealGroup className="mt-14 grid items-start gap-6 sm:grid-cols-2">
-            {/* Annual */}
-            <RevealItem className="relative rounded-3xl bg-[#39FF14] p-8 text-black">
-              <span className="absolute right-8 top-8 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
-                Best value
-              </span>
-              <p className="text-base text-black/70">Annual</p>
-              <p className="mt-4 flex items-end gap-2">
-                <span className="text-6xl font-extrabold leading-none">$250</span>
-                <span className="pb-1 text-base text-black/50">/ year</span>
-              </p>
-              <span className="mt-5 inline-block rounded-full bg-black/15 px-3 py-1 text-xs font-bold">
-                Save 40% · Billed yearly
-              </span>
-              <ul className="mt-6 space-y-4 text-sm">
-                {ANNUAL_FEATURES.map((feature, i) => (
-                  <li key={feature} className="flex items-start gap-3 text-black/80">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-black" strokeWidth={3} />
-                    <span className={i === 0 ? "font-bold text-black" : undefined}>
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <Button asChild variant="ink" size="pill-lg" className="mt-9 w-full">
-                <Link href="/register">
-                  Begin Annual <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <p className="mt-4 text-center text-sm text-black/50">Cancel anytime</p>
-            </RevealItem>
-
-            {/* Monthly */}
-            <RevealItem className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
-              <p className="text-base text-white/70">Monthly</p>
-              <p className="mt-4 flex items-end gap-2">
-                <span className="text-6xl font-extrabold leading-none">$35</span>
-                <span className="pb-1 text-base text-white/40">/ month</span>
-              </p>
-              <ul className="mt-8 space-y-4 text-sm">
-                {MONTHLY_FEATURES.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-white/80">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#39FF14]" strokeWidth={3} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Button asChild variant="white" size="pill-lg" className="mt-9 w-full">
-                <Link href="/register">
-                  Begin Monthly <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <p className="mt-4 text-center text-sm text-white/40">Cancel anytime</p>
-            </RevealItem>
-          </RevealGroup>
-          <p className="mt-8 text-center text-sm text-white/40">
-            No equipment · Cancel any time
-          </p>
         </div>
       </section>
 

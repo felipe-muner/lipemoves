@@ -93,7 +93,7 @@ export function LandingNav({
             </Link>
           )}
           <Button asChild variant="lime" size="pill-sm">
-            <a href="#pricing">Find Your Program</a>
+            <a href="#inner-circle">Work With Me</a>
           </Button>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -146,7 +146,7 @@ export function LandingNav({
                 )}
                 <SheetClose asChild>
                   <Button asChild variant="lime" size="pill-sm">
-                    <a href="#pricing">Find Your Program</a>
+                    <a href="#inner-circle">Work With Me</a>
                   </Button>
                 </SheetClose>
               </div>
