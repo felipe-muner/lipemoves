@@ -960,6 +960,39 @@ export function StudioClient() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
+  // Guard the studio's working set against an accidental back-navigation — on a
+  // Mac a two-finger trackpad swipe fires browser Back, which would unmount the
+  // studio and throw away every cut clip and rendered result. While there's work
+  // (clips arranged in Compose, or a rendered job) intercept Back with a confirm
+  // (re-arming if they stay) and warn on reload/close.
+  const hasWork = composeCfgs.length > 0 || job != null
+  React.useEffect(() => {
+    if (!hasWork) return
+    window.history.pushState(null, "", window.location.href)
+    const onPop = () => {
+      if (
+        window.confirm(
+          "Leave the studio? Your cut clips and rendered result here will be lost.",
+        )
+      ) {
+        window.removeEventListener("popstate", onPop)
+        window.history.back()
+      } else {
+        window.history.pushState(null, "", window.location.href)
+      }
+    }
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ""
+    }
+    window.addEventListener("popstate", onPop)
+    window.addEventListener("beforeunload", onBeforeUnload)
+    return () => {
+      window.removeEventListener("popstate", onPop)
+      window.removeEventListener("beforeunload", onBeforeUnload)
+    }
+  }, [hasWork])
+
   function pickFiles(list: FileList | null) {
     const arr = list ? Array.from(list) : []
     setFiles(arr)
