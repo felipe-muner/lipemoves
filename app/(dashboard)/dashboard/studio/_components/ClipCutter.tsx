@@ -174,6 +174,14 @@ export function ClipCutter({
   const [hover, setHover] = React.useState<{ sourceId: string; t: number } | null>(null)
   const [suggesting, setSuggesting] = React.useState(false) // AI clip-picking
   const [suggestErr, setSuggestErr] = React.useState<string | null>(null)
+  // Live "mark clip" at the playing head: press C (or the Mark button) once to
+  // drop the clip's start where it's playing, keep watching, press again to
+  // close it. Lets you cut on the fly without dragging the strip precisely.
+  const [mark, setMark] = React.useState<{ sourceId: string; start: number } | null>(null)
+  const markRef = React.useRef(mark)
+  React.useEffect(() => {
+    markRef.current = mark
+  }, [mark])
 
   // Keep the active source valid as videos are added/removed.
   React.useEffect(() => {
@@ -302,6 +310,30 @@ export function ClipCutter({
     if (v.paused) void v.play().catch(() => {})
     else v.pause()
   }, [])
+
+  // Drop / close a clip mark at the ACTIVE source's live playhead. The first
+  // call sets the clip's start (in point); the next closes it into a clip. Works
+  // while the preview is playing, so you can mark a move exactly as you watch it
+  // — no precise strip-dragging needed.
+  const toggleMark = React.useCallback(() => {
+    const sid = activeIdRef.current
+    const src = sourcesRef.current.find((s) => s.id === sid)
+    if (!src) return
+    const t = clamp(headsRef.current[sid] ?? 0, 0, src.duration)
+    const m = markRef.current
+    if (!m || m.sourceId !== sid) {
+      setMark({ sourceId: sid, start: t }) // set the in point here
+      return
+    }
+    const start = Math.min(m.start, t)
+    const end = Math.max(m.start, t)
+    setMark(null)
+    if (end - start < MIN) return // too short to be a clip — just clear the mark
+    const id = uid()
+    setSegs((prev) => [...prev, { id, sourceId: sid, start, end }])
+    setSelectedId(id)
+  }, [])
+  const cancelMark = React.useCallback(() => setMark(null), [])
 
   // Play ONE clip from the list, looping within its [start,end] so you can see
   // it repeat (and where it ends). Clicking the one already looping pauses it.
@@ -435,6 +467,16 @@ export function ClipCutter({
         toggle() // play/pause the active source
         return
       }
+      if (e.key === "c" || e.key === "C") {
+        e.preventDefault()
+        toggleMark() // mark the clip's start, then close it, at the live head
+        return
+      }
+      if (e.key === "Escape" && markRef.current) {
+        e.preventDefault()
+        cancelMark() // abandon a half-marked clip
+        return
+      }
       if ((e.key === "Backspace" || e.key === "Delete") && selectedId) {
         e.preventDefault()
         setConfirmId(selectedId) // same confirm dialog as the trash can
@@ -447,7 +489,7 @@ export function ClipCutter({
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [activeId, heads, seek, toggle, selectedId])
+  }, [activeId, heads, seek, toggle, toggleMark, cancelMark, selectedId])
 
   // Wheel / trackpad scrub (QuickTime-style): scrolling over a strip moves its
   // playhead — 1:1 with the strip, so it tracks like dragging. A native,
@@ -866,6 +908,24 @@ export function ClipCutter({
                 }}
               />
             ) : null}
+
+            {/* live mark band — grows from the in point to the playing head as
+                you watch, so you see the clip forming. Press C again to close it. */}
+            {mark && mark.sourceId === source.id ? (
+              <>
+                <div
+                  className="pointer-events-none absolute inset-y-0 z-[4] animate-pulse bg-emerald-400/25"
+                  style={{
+                    left: pct(Math.min(mark.start, head ?? mark.start), dur),
+                    width: pct(Math.abs((head ?? mark.start) - mark.start), dur),
+                  }}
+                />
+                <div
+                  className="pointer-events-none absolute inset-y-0 z-[4] w-0.5 -translate-x-1/2 bg-emerald-400 shadow-[0_0_3px_rgba(0,0,0,0.7)]"
+                  style={{ left: pct(mark.start, dur) }}
+                />
+              </>
+            ) : null}
           </div>
 
           {head != null ? (
@@ -1033,6 +1093,27 @@ export function ClipCutter({
             </Button>
           </>
         ) : null}
+        {activeSource ? (
+          <Button
+            size="sm"
+            variant={mark && mark.sourceId === activeId ? "default" : "outline"}
+            onClick={toggleMark}
+            className={
+              mark && mark.sourceId === activeId
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : ""
+            }
+            aria-label={
+              mark && mark.sourceId === activeId ? "Mark clip end" : "Mark clip start"
+            }
+            title="C — drop the clip start at the playhead, then press again to end it (keep watching in between)"
+          >
+            <Scissors className="size-4" />
+            {mark && mark.sourceId === activeId
+              ? `End clip (${fmt(Math.abs(activeHead - mark.start))})`
+              : "Mark clip"}
+          </Button>
+        ) : null}
         <span className="text-xs tabular-nums text-muted-foreground">
           {activeSource ? (
             <>
@@ -1048,10 +1129,15 @@ export function ClipCutter({
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        Drag across any strip to mark a clip. Add more videos from the browser
-        above to stack their strips here. Tap a clip band to loop-play it, drag
-        its edges to extend before/after, or drag the band to move it. Scroll
-        over a strip to scrub; space plays, Backspace deletes the selected clip.
+        Press <kbd className="rounded border px-1 font-mono text-[10px]">space</kbd>{" "}
+        to play, then{" "}
+        <kbd className="rounded border px-1 font-mono text-[10px]">C</kbd> to mark
+        the clip&apos;s start and{" "}
+        <kbd className="rounded border px-1 font-mono text-[10px]">C</kbd> again to
+        end it — cut on the fly while you watch. Or drag across any strip to mark a
+        clip by hand. Tap a clip band to loop-play it, drag its edges to trim, or
+        drag the band to move it. Scroll over a strip to scrub; Backspace deletes
+        the selected clip.
       </p>
 
       {/* AI clip-picking — Gemini finds the strongest ~2s moments */}
