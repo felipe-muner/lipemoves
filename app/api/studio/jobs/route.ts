@@ -25,6 +25,9 @@ const pad2 = (n: number) => String(n).padStart(2, "0")
 const FFMPEG = existsSync("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
   ? "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
   : "ffmpeg"
+const FFPROBE = existsSync("/opt/homebrew/opt/ffmpeg-full/bin/ffprobe")
+  ? "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe"
+  : "ffprobe"
 
 /** Resolve a local source path (supports ~), restricted to the home tree. */
 function resolveLocal(input: string): string | null {
@@ -46,26 +49,94 @@ function exec(file: string, args: string[]): Promise<string> {
   })
 }
 
+/** One ffprobe field for the first video/audio stream ("" on failure). */
+async function probe(src: string, stream: string, entries: string): Promise<string> {
+  try {
+    const out = await exec(FFPROBE, [
+      "-v", "error", "-select_streams", stream,
+      "-show_entries", entries, "-of", "default=nw=1:nk=1", src,
+    ])
+    return out.trim()
+  } catch {
+    return ""
+  }
+}
+
 /**
- * Cut one segment LOSSLESSLY — a pure stream-copy, so the clip's frames, color
- * (HDR / 10-bit) and audio are byte-identical to that slice of the original: no
- * re-encode, no frame-rate change, nothing recompressed. The copy lands on the
- * nearest keyframe ≤ start, so a clip whose chosen start isn't exactly on a
- * keyframe may open with a brief (<~0.2s) black head — the unavoidable cost of
- * staying lossless on long-GOP HEVC. (Removing it would mean re-encoding the
- * audio to re-sync, which we deliberately don't do here.)
+ * Cut one segment with an ACCURATE seek so the clip opens ON the exact frame you
+ * marked — no black head. A lossless stream-copy can only start on the nearest
+ * keyframe, which leaves the video stream starting later than the audio (a
+ * ~0.1s black gap at the top of every clip); the only way to fill that gap is to
+ * decode from the preceding keyframe and re-encode. So we do a precise re-encode
+ * and reset both streams' timestamps to 0, keeping color EXACTLY as the source —
+ * HDR (HLG/PQ, BT.2020, 10-bit) is detected and tagged through end-to-end, so
+ * nothing shifts. (The pipeline re-encodes clips downstream anyway; this just
+ * moves that one encode to the cut so the head is clean.)
  */
+/** Build the ffmpeg args for a cut using either the Mac hardware HEVC encoder
+ *  (fast) or software x265 (portable fallback). Both reset timestamps to 0 and
+ *  carry the source's color through unchanged. */
+function cutArgs(
+  src: string,
+  start: number,
+  dur: number,
+  out: string,
+  o: { hdr: boolean; trc: string; hasAudio: boolean; hw: boolean },
+): string[] {
+  const args = [
+    "-y", "-hide_banner", "-loglevel", "error",
+    "-ss", String(start), "-i", src, "-t", String(dur),
+    "-map", "0:v:0", "-map", "0:a:0?",
+    // Reset the video to start at 0 so it opens together with the audio.
+    "-vf", "setpts=PTS-STARTPTS",
+  ]
+  if (o.hasAudio) args.push("-af", "aresample=async=1,asetpts=PTS-STARTPTS")
+
+  if (o.hw) {
+    // Apple hardware HEVC: GPU-fast, keeps 10-bit HDR when the color flags below
+    // are set. q:v is a 0–100 quality (higher = better); 60 ≈ visually lossless.
+    args.push("-c:v", "hevc_videotoolbox", "-q:v", "60", "-tag:v", "hvc1")
+  } else {
+    args.push("-c:v", "libx265", "-preset", "veryfast", "-crf", "18", "-tag:v", "hvc1")
+    if (o.hdr) {
+      args.push(
+        "-x265-params",
+        `colorprim=bt2020:transfer=${o.trc}:colormatrix=bt2020nc:range=limited`,
+      )
+    }
+  }
+
+  if (o.hdr) {
+    args.push(
+      "-color_primaries", "bt2020", "-colorspace", "bt2020nc",
+      "-color_trc", o.trc, "-color_range", "tv",
+    )
+  } else {
+    args.push("-pix_fmt", "yuv420p")
+  }
+  if (o.hasAudio) args.push("-c:a", "aac", "-b:a", "128k")
+  else args.push("-an")
+  args.push("-movflags", "+faststart", out)
+  return args
+}
+
 async function cutSegment(
   src: string,
   start: number,
   dur: number,
   out: string,
 ): Promise<void> {
-  await exec(FFMPEG, [
-    "-y", "-ss", String(start), "-i", src, "-t", String(dur),
-    "-c", "copy", "-avoid_negative_ts", "make_zero",
-    "-movflags", "+faststart", out,
-  ])
+  const trc = await probe(src, "v:0", "stream=color_transfer")
+  const hdr = trc === "arib-std-b67" || trc === "smpte2084"
+  const hasAudio = !!(await probe(src, "a:0", "stream=index"))
+  const opts = { hdr, trc, hasAudio }
+  // Prefer the Mac hardware encoder (≈3× faster); fall back to software x265 if
+  // it isn't available (e.g. a Linux worker) or the hardware encode fails.
+  try {
+    await exec(FFMPEG, cutArgs(src, start, dur, out, { ...opts, hw: true }))
+  } catch {
+    await exec(FFMPEG, cutArgs(src, start, dur, out, { ...opts, hw: false }))
+  }
 }
 
 export async function POST(request: Request) {
@@ -136,9 +207,12 @@ export async function POST(request: Request) {
   }
 
   // Build each clip's input: cut its segment (if any) from its source, else
-  // copy the whole source.
+  // copy the whole source. First validate + prepare every clip (order matters),
+  // then run the cuts CONCURRENTLY — each cut is now a re-encode (to drop the
+  // black head), so doing them one-by-one made a multi-clip job crawl.
   const inputNames: string[] = []
   const clips: ClipState[] = []
+  const cutTasks: Array<() => Promise<void>> = []
   for (let i = 0; i < config.clips.length; i++) {
     const ci = config.clips[i]
     // Local path (read in place) or an uploaded source.
@@ -159,11 +233,11 @@ export async function POST(request: Request) {
       typeof ci.start === "number" &&
       typeof ci.end === "number" &&
       ci.end > ci.start
-    if (hasSegment) {
-      await cutSegment(src, ci.start!, ci.end! - ci.start!, out)
-    } else {
-      await copyFile(src, out)
-    }
+    cutTasks.push(
+      hasSegment
+        ? () => cutSegment(src, ci.start!, ci.end! - ci.start!, out)
+        : () => copyFile(src, out),
+    )
     inputNames.push(inputName)
     clips.push({
       index: i,
@@ -176,6 +250,20 @@ export async function POST(request: Request) {
       coverName: null,
     })
   }
+
+  // Cut all clips concurrently, bounded so we don't oversubscribe the CPU (each
+  // x265 encode is already multi-threaded). Fail the whole request if any cut
+  // errors, so a broken clip surfaces instead of silently missing.
+  const CUT_CONCURRENCY = 3
+  let nextCut = 0
+  await Promise.all(
+    Array.from({ length: Math.min(CUT_CONCURRENCY, cutTasks.length) }, async () => {
+      while (nextCut < cutTasks.length) {
+        const t = cutTasks[nextCut++]
+        await t()
+      }
+    }),
+  )
 
   const job: Job = {
     id,
