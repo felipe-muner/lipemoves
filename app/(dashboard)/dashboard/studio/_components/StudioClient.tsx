@@ -922,6 +922,11 @@ export function StudioClient() {
   const [burnedUrl, setBurnedUrl] = React.useState<string | null>(null)
   const [coverBusy, setCoverBusy] = React.useState(false)
   const [coverErr, setCoverErr] = React.useState<string | null>(null)
+  // "Download all" progress: null = idle, else how many of N have been written
+  // into the chosen folder (only shown on the folder-picker path).
+  const [saveAll, setSaveAll] = React.useState<{ done: number; total: number } | null>(
+    null,
+  )
 
   // Flyer covers (separate feature): branded YT+IG pair from the selected
   // frame, rendered by cover-flyer.sh — no free drag, fixed flyer layout.
@@ -1345,17 +1350,64 @@ export function StudioClient() {
   // Every clip that finished rendering — what "Download all" grabs.
   const readyClips = job?.clips.filter((c) => c.videoName) ?? []
 
-  // Save every rendered clip in one click. Browsers gate rapid programmatic
-  // downloads behind a one-time "allow multiple?" prompt, so we space them out;
-  // the `download` attribute names each file (clip-1.mov, clip-2.mov, …).
+  // Save every rendered clip in one click.
+  //
+  // Best path (Chrome/Edge): the File System Access API lets you pick a folder
+  // ONCE, then we write every clip straight into it — no per-file prompts, all
+  // neatly in one folder. Fallback (Safari/Firefox): individual downloads spaced
+  // out past the browser's "allow multiple?" gate (accept it once and it sticks
+  // for the site); the `download` attribute names each file (clip-1.mov, …).
   async function downloadAllClips() {
     const ready = [...readyClips].sort((a, b) => a.index - b.index)
+    if (!ready.length) return
+    const nameFor = (index: number, videoName: string) =>
+      `clip-${index + 1}${videoName.match(/\.[^./]+$/)?.[0] ?? ".mp4"}`
+
+    const picker = (
+      window as unknown as {
+        showDirectoryPicker?: (opts?: {
+          mode?: "read" | "readwrite"
+          id?: string
+        }) => Promise<FileSystemDirectoryHandle>
+      }
+    ).showDirectoryPicker
+
+    if (picker) {
+      let dir: FileSystemDirectoryHandle
+      try {
+        dir = await picker({ mode: "readwrite", id: "lipemoves-clips" })
+      } catch {
+        return // user dismissed the folder picker → do nothing
+      }
+      setSaveAll({ done: 0, total: ready.length })
+      try {
+        for (let i = 0; i < ready.length; i++) {
+          const clip = ready[i]
+          const res = await fetch(fileUrl(clip.videoName as string))
+          if (!res.ok) throw new Error(`Couldn't fetch clip ${clip.index + 1}`)
+          const blob = await res.blob()
+          const fh = await dir.getFileHandle(
+            nameFor(clip.index, clip.videoName as string),
+            { create: true },
+          )
+          const w = await fh.createWritable()
+          await w.write(blob)
+          await w.close()
+          setSaveAll({ done: i + 1, total: ready.length })
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Couldn't save all clips")
+      } finally {
+        setSaveAll(null)
+      }
+      return
+    }
+
+    // Fallback: one download per clip, spaced past the multi-download prompt.
     for (let i = 0; i < ready.length; i++) {
-      const name = ready[i].videoName as string
-      const ext = name.match(/\.[^./]+$/)?.[0] ?? ".mp4"
       const a = document.createElement("a")
-      a.href = fileUrl(name)
-      a.download = `clip-${ready[i].index + 1}${ext}`
+      a.href = fileUrl(ready[i].videoName as string)
+      a.download = nameFor(ready[i].index, ready[i].videoName as string)
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -1903,6 +1955,7 @@ export function StudioClient() {
                             </span>
                             <a
                               href={fileUrl(rendered.videoName, true)}
+                              download
                               title="Download clip"
                               className="shrink-0 text-emerald-600 hover:underline dark:text-emerald-400"
                             >
@@ -2181,9 +2234,13 @@ export function StudioClient() {
               variant="outline"
               size="sm"
               onClick={downloadAllClips}
+              disabled={saveAll !== null}
               className="h-7 gap-1 text-xs"
             >
-              <Download className="size-3.5" /> Download all ({readyClips.length})
+              <Download className="size-3.5" />
+              {saveAll
+                ? `Saving ${saveAll.done}/${saveAll.total}…`
+                : `Download all (${readyClips.length})`}
             </Button>
           ) : null}
         </div>
@@ -2203,6 +2260,7 @@ export function StudioClient() {
                   </span>
                   <a
                     href={fileUrl(job.mosaicName, true)}
+                    download
                     className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
                   >
                     <Download className="size-3.5" /> Download
@@ -2226,6 +2284,7 @@ export function StudioClient() {
                   </span>
                   <a
                     href={fileUrl(job.joinedName, true)}
+                    download
                     className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
                   >
                     <Download className="size-3.5" /> Download
@@ -2271,6 +2330,7 @@ export function StudioClient() {
                     {c.videoName && job.compose ? (
                       <a
                         href={fileUrl(c.videoName, true)}
+                        download
                         title="Download"
                         className="shrink-0 text-emerald-600 hover:underline dark:text-emerald-400"
                       >
@@ -2596,6 +2656,7 @@ export function StudioClient() {
                         {flyOut ? (
                           <a
                             href={`${fileUrl(flyOut.yt, true)}&t=${flyOut.t}`}
+                            download
                             className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
                           >
                             <Download className="size-3.5" /> YouTube (1280×720)
@@ -2642,6 +2703,7 @@ export function StudioClient() {
                         {flyOut ? (
                           <a
                             href={`${fileUrl(flyOut.ig, true)}&t=${flyOut.t}`}
+                            download
                             className="flex items-center gap-1 text-xs text-emerald-600 hover:underline dark:text-emerald-400"
                           >
                             <Download className="size-3.5" /> Instagram (1080×1920)
