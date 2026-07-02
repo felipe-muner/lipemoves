@@ -38,7 +38,13 @@ export const openHips: CarouselContent = {
       kind: "text",
       eyebrow: "How it happened",
       title: "School chair.\nOffice chair.\nCar. Couch.",
-      body: "Nobody decided to ruin your hips. The system did it quietly, one chair at a time.\n\n~15,000 hours of sitting before you're even an adult. 80,000 more in a desk career. A third of your waking life folded into the same ninety-degree shape.\n\nSold to you as comfort.\nMarketed as progress.\nIt's neither.",
+      photoStrip: [
+        "stock/sit-school.png",
+        "stock/sit-office.png",
+        "stock/sit-car.png",
+        "stock/sit-couch.png",
+      ],
+      body: "Nobody decided to ruin your hips. Western society did it quietly, one chair at a time.\n\n~15,000 hours of sitting before you're even an adult. 80,000 more in a desk career. A third of your waking life folded into the same ninety-degree shape.\n\nSold to you as comfort.\nMarketed as progress.\nIt's neither.",
     },
 
     // 4 — IT'S NOT AGE
@@ -93,11 +99,11 @@ export const openHips: CarouselContent = {
 
     // 9 — CTA
     {
-      kind: "cta",
+      kind: "photo",
+      swipe: false,
       eyebrow: "1-on-1 coaching",
-      title: "Let's open them together.",
-      body: "I coach a few people at a time, one-on-one. We build a single plan around your body — mobility, strength, breath and rest — and I track it with you every day until your hips feel like yours again.\n\nNo templates. No app left on read. Just me, in your corner.",
-      kicker: "Message me at lipemoves.com",
+      title: "Work with me.",
+      body: "I coach a few people at a time, one-on-one. We build one plan around your body — mobility, strength, breath and rest — and track it together until your hips feel like yours again.\n\n💬  WhatsApp · +55 21 98485-2802\n\n📸  Instagram · @felipeenjoylife\n\n✉️  felipe.muner@gmail.com",
     },
   ],
 }

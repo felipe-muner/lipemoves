@@ -21,6 +21,7 @@ export type CarouselSlide = {
   photoRatio?: string // pillar photo row height, e.g. "61%" (default 46%)
   swipe?: boolean // show the "swipe →" hint (auto on for cover)
   titleSize?: string // override the title font-size on cover/photo slides, e.g. "76px"
+  photoStrip?: string[] // text slides: a top row of equal-width images (e.g. 4 across)
 }
 
 export type CarouselContent = {

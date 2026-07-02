@@ -40,6 +40,14 @@ const CAROUSEL_CSS = `
 .carousel-root .swipe { display: flex; align-items: center; gap: 10px; }
 
 /* ---- PHOTO-BACKED SLIDES (cover, photo) ---- */
+/* No-photo photo slide = closing/CTA card: dark, bigger type */
+.carousel-root .photo-slide.no-photo { background: #141414; }
+.carousel-root .photo-slide.no-photo .content { top: 50%; bottom: auto; transform: translateY(-50%); }
+.carousel-root .photo-slide.no-photo h2 { font-size: 74px; line-height: 1.08; }
+.carousel-root .photo-slide.no-photo p { font-size: 39px; line-height: 1.5; }
+.carousel-root .photo-slide.no-photo p + p { margin-top: 30px; }
+/* extra gap between the description (1st paragraph) and the contact block */
+.carousel-root .photo-slide.no-photo .content p:nth-of-type(2) { margin-top: 200px; }
 .carousel-root .photo-slide .bg { position: absolute; inset: 0; }
 .carousel-root .photo-slide .bg img { object-position: center top; }
 .carousel-root .photo-slide .scrim {
@@ -71,6 +79,22 @@ const CAROUSEL_CSS = `
 }
 .carousel-root .text-slide p { font-size: 33px; line-height: 1.58; color: var(--text); max-width: 92%; }
 .carousel-root .text-slide p + p { margin-top: 24px; }
+
+/* text slide with an image strip — title first, then images, then body */
+.carousel-root .text-slide.has-strip { justify-content: flex-start; padding: 68px 0 0; }
+.carousel-root .text-slide.has-strip .strip-head { padding: 0 90px 34px; }
+.carousel-root .text-slide.has-strip .strip-head h2 { font-size: 72px; }
+.carousel-root .text-slide.has-strip .strip {
+  display: flex; width: 100%; height: 250px; background: #1a1a1a;
+}
+.carousel-root .text-slide.has-strip .strip .cell {
+  flex: 1 1 0; min-width: 0; position: relative; overflow: hidden;
+}
+.carousel-root .text-slide.has-strip .strip .cell + .cell { border-left: 3px solid var(--bg); }
+.carousel-root .text-slide.has-strip .strip img { object-position: center 30%; }
+.carousel-root .text-slide.has-strip .strip-body { padding: 36px 90px 0; }
+.carousel-root .text-slide.has-strip .strip-body p { font-size: 30px; line-height: 1.44; }
+.carousel-root .text-slide.has-strip .strip-body p + p { margin-top: 16px; }
 
 /* ---- PILLAR SLIDES (cream, big number) ---- */
 .carousel-root .pillar-slide { display: grid; grid-template-rows: 46% 1fr; }
@@ -142,13 +166,17 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
 
     if (s.kind === "cover" || s.kind === "photo") {
       return (
-        <section key={key} className="slide photo-slide" data-slide={i + 1}>
+        <section
+          key={key}
+          className={`slide photo-slide${s.photo ? "" : " no-photo"}`}
+          data-slide={i + 1}
+        >
           {s.photo && (
             <div className="bg">
               <img src={photoUrl(s.photo)} alt="" />
             </div>
           )}
-          <div className="scrim" />
+          {s.photo && <div className="scrim" />}
           <div className="content">
             {s.eyebrow && <div className="eyebrow">{s.eyebrow}</div>}
             {isCover ? (
@@ -208,6 +236,34 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
               <a href="https://lipemoves.com" target="_blank" rel="noopener noreferrer">{s.kicker}</a>
             </div>
           )}
+          <Foot left={c.handle} right={c.brand} swipe={swipe} />
+        </section>
+      )
+    }
+
+    // text with a top image strip
+    if (s.photoStrip && s.photoStrip.length) {
+      return (
+        <section
+          key={key}
+          className="slide text-slide has-strip"
+          data-slide={i + 1}
+        >
+          <div className="strip-head">
+            {s.eyebrow && <div className="eyebrow">{s.eyebrow}</div>}
+            <h2>{s.title}</h2>
+          </div>
+          <div className="strip">
+            {s.photoStrip.map((p, j) => (
+              <div className="cell" key={j}>
+                <img src={photoUrl(p)} alt="" />
+              </div>
+            ))}
+          </div>
+          <div className="strip-body">
+            {s.kicker && <div className="kicker">{s.kicker}</div>}
+            {paragraphs(s.body)}
+          </div>
           <Foot left={c.handle} right={c.brand} swipe={swipe} />
         </section>
       )
