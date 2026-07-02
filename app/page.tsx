@@ -1,4 +1,6 @@
 import Image from "next/image"
+import Link from "next/link"
+import { GUIDES } from "@/lib/carousels"
 import heroImg from "@/public/ebooks/photos/1SN01213.jpg"
 import yogaImg from "@/public/ebooks/photos/z_yoga.jpg"
 import felipeImg from "@/public/ebooks/photos/1SN03111.jpg"
@@ -19,6 +21,7 @@ const NAV: NavItem[] = [
   { label: "The Program", id: "program" },
   { label: "Who's It For", id: "who" },
   { label: "Felipe", id: "felipe" },
+  { label: "Guides", id: "guides" },
   { label: "Inner Circle", id: "inner-circle" },
   { label: "FAQ", id: "faq" },
 ]
@@ -413,6 +416,56 @@ export default async function HomePage() {
               </Reveal>
             ))}
           </Accordion>
+        </div>
+      </section>
+
+      {/* ===== Guides ===== */}
+      <section
+        id="guides"
+        className="border-t border-white/10 scroll-mt-20 px-6 py-24 md:py-32"
+      >
+        <div className="mx-auto max-w-6xl">
+          <Reveal>
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Free guides
+            </p>
+            <h2 className="mt-5 text-4xl font-extrabold uppercase tracking-tight md:text-5xl">
+              Read the guides
+            </h2>
+            <p className="mt-4 max-w-2xl text-white/55">
+              Short, visual guides on mobility, flexibility and moving well for
+              life — read them right here, free.
+            </p>
+          </Reveal>
+
+          <RevealGroup className="mt-12 grid gap-6 sm:grid-cols-2">
+            {GUIDES.map((g) => (
+              <RevealItem key={g.slug}>
+                <Link
+                  href={g.href ?? `/guides/${g.slug}`}
+                  className="group relative block overflow-hidden rounded-2xl border border-white/10 transition hover:border-white/25"
+                >
+                  <div className="relative aspect-[4/5] w-full">
+                    <Image
+                      src={g.cover}
+                      alt={g.title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 50vw"
+                      style={{ objectFit: "cover", objectPosition: g.focus }}
+                      className="transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-6">
+                      <h3 className="text-2xl font-bold leading-tight text-white">
+                        {g.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-white/75">{g.subtitle}</p>
+                    </div>
+                  </div>
+                </Link>
+              </RevealItem>
+            ))}
+          </RevealGroup>
         </div>
       </section>
 
