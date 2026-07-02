@@ -31,6 +31,10 @@ async function main() {
   const url = `${BASE}/carousel/${SLUG}`
   process.stdout.write(`→ ${url}\n`)
   await page.goto(url, { waitUntil: "networkidle", timeout: 60000 })
+  // Hide the Next.js dev indicator/toolbar so it never lands in a slide.
+  await page.addStyleTag({
+    content: "nextjs-portal,#__next-build-watcher{display:none!important}",
+  })
   await page.waitForTimeout(800) // let images settle
 
   const slides = page.locator(".carousel-root .slide")
