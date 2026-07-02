@@ -17,19 +17,20 @@ export const openHips: CarouselContent = {
       kind: "cover",
       eyebrow: "Open Hips",
       title: "Modern life stole\nyour hips.",
+      titleSize: "72px",
       kicker: "And nobody told you it was happening.",
-      photo: "GAB00148.jpg",
-      focus: "center 40%",
+      photo: "stock/anatomy-cover.png",
+      focus: "center 35%",
     },
 
     // 2 — THE POINT
     {
       kind: "photo",
       eyebrow: "The biggest joint you have",
-      title: "Built to squat, climb\nand move — for life.",
+      title: "Built to squat, climb and move — for life.",
       body: "The hip is the largest joint in your body, made for a huge range of motion.\n\nWe taught it to do almost nothing — and the whole body pays for it: stiff backs, weak legs, a body that can't get down to the floor and back up.",
-      photo: "IMG_7149.jpg",
-      focus: "center 55%",
+      photo: "stock/anatomy-hip.png",
+      focus: "center 35%",
     },
 
     // 3 — THE MODERN ENEMY
@@ -37,14 +38,14 @@ export const openHips: CarouselContent = {
       kind: "text",
       eyebrow: "How it happened",
       title: "School chair.\nOffice chair.\nCar. Couch.",
-      body: "Nobody decided to ruin your hips. The system did it quietly, one chair at a time.\n\n~15,000 hours of sitting before you're even an adult. 80,000 more in a desk career. A third of your waking life folded into the same ninety-degree shape.\n\nSold to you as comfort. Marketed as progress. It's neither.",
+      body: "Nobody decided to ruin your hips. The system did it quietly, one chair at a time.\n\n~15,000 hours of sitting before you're even an adult. 80,000 more in a desk career. A third of your waking life folded into the same ninety-degree shape.\n\nSold to you as comfort.\nMarketed as progress.\nIt's neither.",
     },
 
     // 4 — IT'S NOT AGE
     {
       kind: "text",
       eyebrow: "Be honest",
-      title: "That stiffness\nisn't age.",
+      title: "That stiffness isn't age.",
       body: "You try to sit on the floor and can't get comfortable. You squat and your heels lift, your back rounds, your knees complain.\n\nThat's not getting old. It's a lifetime of training the hip to be stiff — and the body did exactly what you asked.\n\nThe good news: it learns the opposite just as fast.",
     },
 
@@ -52,56 +53,51 @@ export const openHips: CarouselContent = {
     {
       kind: "text",
       eyebrow: "This is longevity work",
-      title: "How well you age\nlives in your hips.",
+      title: "How well you age lives in your hips.",
       kicker:
         "The best predictor of how well you'll age isn't how much you can lift. It's whether you can still get down to the ground and back up on your own.",
     },
 
     // 6 — FLOOR
     {
-      kind: "pillar",
-      index: "01",
+      kind: "photo",
       eyebrow: "Step one",
       title: "Sit on the floor",
       kicker: "The cheapest fix there is.",
-      body: "Half the world still eats and rests on the floor — and keeps their hips into old age without a single drill. Make the floor your default. Switch positions when you stiffen. The chair undid your hips; the floor undoes the chair.",
-      photo: "z_yoga.jpg",
-      focus: "center 65%",
+      body: "Half the world still eats and rests on the floor — and keeps their hips into old age without a single drill. Make the floor your default. Switch positions when you stiffen.",
+      photo: "stock/anatomy-sit.png",
+      focus: "center top",
     },
 
     // 7 — SQUAT
     {
-      kind: "pillar",
-      index: "02",
+      kind: "photo",
       eyebrow: "Step two",
       title: "The deep squat",
       kicker: "A resting position, not an exercise.",
-      body: "Heels down, hips low, calm at the bottom — the position humans were built to rest in. Babies do it perfectly; most of us lost it to a desk. It's even how the body was built to empty itself, without straining. A minute a day and it comes back.",
-      photo: "GAB00162-2.jpg",
-      focus: "center 53%",
-      photoRatio: "58%",
+      body: "Heels down, hips low, calm at the bottom — the position humans were built to rest in. Babies do it perfectly; most of us lost it to a desk. A minute a day and it comes back.",
+      photo: "stock/anatomy-squat.png",
+      focus: "center top",
     },
 
     // 8 — EXPRESSION
     {
-      kind: "pillar",
-      index: "03",
+      kind: "photo",
       eyebrow: "Step three",
       title: "Open & express",
       kicker: "Expression lives in the hips.",
-      body: "Every culture that moves with joy moves from the hips. Lock them and that expression locks too — a stiff hip doesn't just walk stiffly, it lives stiffly. Free them and you sway, you flow, you dance. You get more than range. You get yourself back.",
-      photo: "1SN01474.jpg",
-      focus: "center 35%",
-      photoRatio: "53%",
+      body: "Every culture that moves with joy moves from the hips. Free yours and you sway, you flow, you dance. You get more than range — you get yourself back. You forgot it was ever gone, and when it returns it feels like a superpower.",
+      photo: "stock/anatomy-dance.png",
+      focus: "center top",
     },
 
     // 9 — CTA
     {
       kind: "cta",
-      eyebrow: "Free ebook",
-      title: "Open your hips.",
-      body: "I wrote the whole method down — 10 short chapters on undoing a lifetime of sitting: floor sitting, the deep squat, hip openers, loaded mobility, and moving like yourself again.\n\nRead it free. Then, if you want, we do it together one-on-one.",
-      kicker: "lipemoves.com/books",
+      eyebrow: "1-on-1 coaching",
+      title: "Let's open them together.",
+      body: "I coach a few people at a time, one-on-one. We build a single plan around your body — mobility, strength, breath and rest — and I track it with you every day until your hips feel like yours again.\n\nNo templates. No app left on read. Just me, in your corner.",
+      kicker: "Message me at lipemoves.com",
     },
   ],
 }

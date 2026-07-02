@@ -151,7 +151,15 @@ export function CarouselRenderer({ content: c }: { content: CarouselContent }) {
           <div className="scrim" />
           <div className="content">
             {s.eyebrow && <div className="eyebrow">{s.eyebrow}</div>}
-            {isCover ? <h1>{s.title}</h1> : <h2>{s.title}</h2>}
+            {isCover ? (
+              <h1 style={s.titleSize ? { fontSize: s.titleSize } : undefined}>
+                {s.title}
+              </h1>
+            ) : (
+              <h2 style={s.titleSize ? { fontSize: s.titleSize } : undefined}>
+                {s.title}
+              </h2>
+            )}
             {s.kicker && <div className="kicker">{s.kicker}</div>}
             {paragraphs(s.body)}
           </div>

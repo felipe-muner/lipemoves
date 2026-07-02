@@ -20,6 +20,7 @@ export type CarouselSlide = {
   focus?: string // CSS object-position for the photo, e.g. "center 60%"
   photoRatio?: string // pillar photo row height, e.g. "61%" (default 46%)
   swipe?: boolean // show the "swipe →" hint (auto on for cover)
+  titleSize?: string // override the title font-size on cover/photo slides, e.g. "76px"
 }
 
 export type CarouselContent = {
