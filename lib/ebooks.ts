@@ -62,32 +62,6 @@ export const EBOOKS: Ebook[] = [
         sizeMb: 11,
         publishedOn: "2026-05-27",
       },
-      {
-        lang: "pt",
-        available: true,
-        file: "/ebooks/move-better-pt.pdf",
-        readPath: "/ebook/move-better/read/pt",
-        pages: 15,
-        sizeMb: 11,
-        publishedOn: "2026-05-27",
-      },
-    ],
-  },
-  {
-    slug: "open-hips",
-    title: "Open Hips",
-    subtitle: "Undo a lifetime of sitting",
-    description:
-      "School to office, thousands of hours in a chair — the modern world quietly closed the biggest joint you have. Here's how I opened mine back up, and how you can too.",
-    cover: "/ebooks/move-better-en-cover-v2.jpg",
-    editions: [
-      {
-        lang: "en",
-        available: true,
-        readPath: "/ebook/open-hips/read/en",
-        pages: 15,
-        publishedOn: "2026-06-23",
-      },
     ],
   },
 ]

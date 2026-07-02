@@ -3,11 +3,6 @@ import { notFound } from "next/navigation"
 import { getEbook, type EbookLang } from "@/lib/ebooks"
 import { EbookRenderer } from "@/components/ebook/ebook-renderer"
 import { moveBetter } from "@/content/ebooks/move-better"
-import { moveBetterPt } from "@/content/ebooks/move-better.pt"
-import { moveBetterDe } from "@/content/ebooks/move-better.de"
-import { moveBetterRu } from "@/content/ebooks/move-better.ru"
-import { moveBetterHe } from "@/content/ebooks/move-better.he"
-import { openHips } from "@/content/ebooks/open-hips"
 import type { EbookContent } from "@/content/ebooks/move-better"
 
 export const dynamic = "force-static"
@@ -15,16 +10,9 @@ export const dynamic = "force-static"
 type ContentMap = Record<string, Partial<Record<EbookLang, EbookContent>>>
 
 const CONTENT: ContentMap = {
+  // English only for now — translations return once the copy is finalised.
   "move-better": {
     en: moveBetter,
-    pt: moveBetterPt,
-    de: moveBetterDe,
-    he: moveBetterHe,
-    ru: moveBetterRu,
-  },
-  // EN-only for now — translations follow once the copy is approved.
-  "open-hips": {
-    en: openHips,
   },
 }
 
