@@ -438,7 +438,7 @@ export default async function HomePage() {
             </p>
           </Reveal>
 
-          <RevealGroup className="mt-12 grid gap-6 sm:grid-cols-2">
+          <RevealGroup className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {GUIDES.map((g) => (
               <RevealItem key={g.slug}>
                 <Link
@@ -450,7 +450,7 @@ export default async function HomePage() {
                       src={g.cover}
                       alt={g.title}
                       fill
-                      sizes="(max-width: 640px) 100vw, 50vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       style={{ objectFit: "cover", objectPosition: g.focus }}
                       className="transition duration-500 group-hover:scale-105"
                     />
