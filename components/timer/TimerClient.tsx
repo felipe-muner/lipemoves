@@ -159,6 +159,10 @@ function TickDigit({ value, reduce }: { value: string; reduce: boolean }) {
 export function TimerClient({ dated = false }: { dated?: boolean }) {
   const [minutes, setMinutes] = useState(30)
   const [workSec, setWorkSec] = useState(30) // rest is always 60 − work
+  // In-progress text for the work/rest inputs so the user can erase and
+  // retype freely; null means "not editing — show the committed value".
+  const [workDraft, setWorkDraft] = useState<string | null>(null)
+  const [restDraft, setRestDraft] = useState<string | null>(null)
   const [exercises, setExercises] = useState(3)
   const [exerciseNames, setExerciseNames] = useState<string[]>(["", "", ""])
   const [status, setStatus] = useState<Status>("idle")
@@ -653,17 +657,32 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
   }
 
   function handleWorkInput(value: string) {
-    if (value === "") return
+    setWorkDraft(value)
     const parsed = parseInt(value, 10)
-    if (Number.isNaN(parsed)) return
-    setWorkClamped(parsed)
+    if (parsed >= MIN_WORK_SEC && parsed <= MAX_WORK_SEC) setWorkSec(parsed)
   }
 
   function handleRestInput(value: string) {
-    if (value === "") return
+    setRestDraft(value)
     const parsed = parseInt(value, 10)
-    if (Number.isNaN(parsed)) return
-    setWorkClamped(60 - parsed)
+    if (60 - parsed >= MIN_WORK_SEC && 60 - parsed <= MAX_WORK_SEC)
+      setWorkSec(60 - parsed)
+  }
+
+  function commitWorkDraft() {
+    if (workDraft !== null) {
+      const parsed = parseInt(workDraft, 10)
+      if (!Number.isNaN(parsed)) setWorkClamped(parsed)
+    }
+    setWorkDraft(null)
+  }
+
+  function commitRestDraft() {
+    if (restDraft !== null) {
+      const parsed = parseInt(restDraft, 10)
+      if (!Number.isNaN(parsed)) setWorkClamped(60 - parsed)
+    }
+    setRestDraft(null)
   }
 
   const isActive = status === "running" || status === "paused"
@@ -1338,8 +1357,10 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
                 min={MIN_WORK_SEC}
                 max={MAX_WORK_SEC}
                 step={5}
-                value={workSec}
+                value={workDraft ?? workSec}
                 onChange={(e) => handleWorkInput(e.target.value)}
+                onBlur={commitWorkDraft}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                 disabled={isActive}
                 aria-label="Work seconds per minute"
                 className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums text-emerald-600 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:text-emerald-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -1351,8 +1372,10 @@ export function TimerClient({ dated = false }: { dated?: boolean }) {
                 min={60 - MAX_WORK_SEC}
                 max={60 - MIN_WORK_SEC}
                 step={5}
-                value={60 - workSec}
+                value={restDraft ?? 60 - workSec}
                 onChange={(e) => handleRestInput(e.target.value)}
+                onBlur={commitRestDraft}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                 disabled={isActive}
                 aria-label="Rest seconds per minute"
                 className="h-9 w-14 rounded-md border border-input bg-transparent text-center text-sm font-semibold tabular-nums outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
