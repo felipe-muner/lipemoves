@@ -12,6 +12,8 @@ import {
   Film,
   ListChecks,
   Timer,
+  Wallet,
+  Activity,
   ChevronUp,
 } from "lucide-react"
 import Link from "next/link"
@@ -56,6 +58,11 @@ const NAV: NavLeaf[] = [
   { href: "/dashboard/studio", label: "Studio", icon: Clapperboard },
   { href: "/dashboard/captions", label: "Captions", icon: Hash },
   { href: "/dashboard/timer", label: "Timer", icon: Timer },
+]
+
+const PERSONAL_NAV: NavLeaf[] = [
+  { href: "/dashboard/personal/movement", label: "Movement", icon: Activity },
+  { href: "/dashboard/personal/expenses", label: "Expenses", icon: Wallet },
 ]
 
 function isActiveLeaf(pathname: string, href: string): boolean {
@@ -104,6 +111,27 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActiveLeaf(pathname, item.href)}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Personal</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {PERSONAL_NAV.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild

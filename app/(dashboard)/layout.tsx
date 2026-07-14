@@ -22,17 +22,8 @@ export default async function DashboardLayout({
 
   const role = session.user.role
   if (!role) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-6 text-center">
-        <div>
-          <h1 className="font-heading text-2xl">No dashboard access</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your account doesn&apos;t have a role yet. Ask the admin to grant
-            access.
-          </p>
-        </div>
-      </div>
-    )
+    // Customers (signed in, no admin role) get their own movement tracker.
+    redirect("/me")
   }
 
   return (

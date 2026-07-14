@@ -16,6 +16,8 @@ import {
   Inbox,
   Clapperboard,
   Timer,
+  Activity,
+  Wallet,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -115,6 +117,23 @@ const NAV_GROUPS: Group[] = [
         href: "/dashboard/timer",
         icon: Timer,
         keywords: "emom interval beep minute countdown workout stopwatch",
+      },
+    ],
+  },
+  {
+    heading: "Personal",
+    items: [
+      {
+        label: "Movement",
+        href: "/dashboard/personal/movement",
+        icon: Activity,
+        keywords: "training log yoga kettlebell mobility sessions exercise hours",
+      },
+      {
+        label: "Expenses",
+        href: "/dashboard/personal/expenses",
+        icon: Wallet,
+        keywords: "spending money thb budget personal daily cost",
       },
     ],
   },

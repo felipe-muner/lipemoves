@@ -19,7 +19,9 @@ export async function requireDashboardSession(): Promise<DashboardSession> {
 
   const role = session.user.role
   if (!role) {
-    redirect("/")
+    // Signed-in customers don't have a dashboard role — send them to their
+    // own movement tracker instead of the admin CRM.
+    redirect("/me")
   }
 
   return {

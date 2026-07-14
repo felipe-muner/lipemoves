@@ -55,6 +55,9 @@ export function UserDropdown({
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem asChild>
+          <Link href="/me">My movement</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/account">Account</Link>
         </DropdownMenuItem>
         <DropdownMenuItem
