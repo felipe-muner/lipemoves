@@ -81,55 +81,61 @@ export default async function HomePage() {
       <LenisScroll />
       <LandingNav items={NAV} user={user} />
 
-      {/* ===== Hero — type-forward, centered; movement as atmosphere ===== */}
-      <section className="relative flex h-[100svh] min-h-[640px] items-center justify-center overflow-hidden text-center">
-        <video
-          src="/landing/hero.mp4"
-          poster="/landing/hero.jpg"
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover opacity-35"
-        />
-        {/* Dim the footage hard so the type leads; vignette focuses the center */}
-        <div className="absolute inset-0 bg-[#0a0a0a]/60" />
-        <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_50%,transparent_30%,#0a0a0a_92%)]" />
+      {/* ===== Hero — split: type on one side, the vertical clip in a tall column ===== */}
+      <section className="relative grid min-h-[100svh] grid-rows-[42svh_1fr] overflow-hidden lg:grid-cols-2 lg:grid-rows-1">
+        {/* Video side — a tall portrait-ish column barely crops the vertical footage */}
+        <div className="relative order-first overflow-hidden lg:order-last lg:h-full">
+          <video
+            src="/landing/hero.mp4"
+            poster="/landing/hero.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {/* Fade the footage into the type side: bottom on mobile, left on desktop */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/10 to-transparent lg:bg-gradient-to-l lg:from-[#0a0a0a] lg:via-transparent" />
+          <div className="absolute inset-0 bg-[#0a0a0a]/15" />
+        </div>
 
-        <div className="relative mx-auto w-full max-w-5xl px-6">
-          <RevealGroup>
-            <RevealItem>
-              <p className="text-xs uppercase tracking-[0.5em] text-[#39FF14] sm:text-sm">
-                Movement · Mobility · Breath
-              </p>
-            </RevealItem>
-            <RevealItem>
-              <h1 className={`${anton.className} mt-6 text-[3.5rem] uppercase leading-[0.82] tracking-tight sm:text-8xl lg:text-[9.5rem]`}>
-                A body built
-                <br />
-                for <span className="text-[#39FF14]">life.</span>
-              </h1>
-            </RevealItem>
-            <RevealItem>
-              <p className={`${anton.className} mx-auto mt-5 max-w-2xl text-xl uppercase tracking-tight text-white/85 sm:text-3xl`}>
-                Train for life — not the mirror.
-              </p>
-            </RevealItem>
-            <RevealItem>
-              <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-white/60">
-                Daily yoga, mobility, kettlebell and breath — years in motion,
-                distilled into one practice you can do anywhere.
-              </p>
-            </RevealItem>
-            <RevealItem className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild variant="lime" size="pill">
-                <a href={WA_INNER} target="_blank" rel="noopener noreferrer">Work with me</a>
-              </Button>
-              <Button asChild variant="glass" size="pill">
-                <a href="#in-motion">See the practice</a>
-              </Button>
-            </RevealItem>
-          </RevealGroup>
+        {/* Type side */}
+        <div className="relative flex items-center px-6 py-12 text-center lg:px-14 lg:text-left">
+          <div className="mx-auto w-full max-w-xl lg:mx-0">
+            <RevealGroup>
+              <RevealItem>
+                <p className="text-xs uppercase tracking-[0.5em] text-[#39FF14] sm:text-sm">
+                  Movement · Mobility · Breath
+                </p>
+              </RevealItem>
+              <RevealItem>
+                <h1 className={`${anton.className} mt-6 text-[3.5rem] uppercase leading-[0.82] tracking-tight sm:text-8xl lg:text-[7.5rem]`}>
+                  A body built
+                  <br />
+                  for <span className="text-[#39FF14]">life.</span>
+                </h1>
+              </RevealItem>
+              <RevealItem>
+                <p className={`${anton.className} mx-auto mt-5 max-w-2xl text-xl uppercase tracking-tight text-white/85 sm:text-3xl lg:mx-0`}>
+                  Train for life — not the mirror.
+                </p>
+              </RevealItem>
+              <RevealItem>
+                <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-white/60 lg:mx-0">
+                  Daily yoga, mobility, kettlebell and breath — years in motion,
+                  distilled into one practice you can do anywhere.
+                </p>
+              </RevealItem>
+              <RevealItem className="mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+                <Button asChild variant="lime" size="pill">
+                  <a href={WA_INNER} target="_blank" rel="noopener noreferrer">Work with me</a>
+                </Button>
+                <Button asChild variant="glass" size="pill">
+                  <a href="#in-motion">See the practice</a>
+                </Button>
+              </RevealItem>
+            </RevealGroup>
+          </div>
         </div>
       </section>
 
@@ -383,11 +389,20 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative overflow-hidden">
           <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] bg-[radial-gradient(60%_120%_at_50%_115%,rgba(57,255,20,0.28),transparent_70%)]" />
-          <h2 aria-label="Lipe Moves" className={`${anton.className} -mb-[0.14em] block select-none whitespace-nowrap bg-gradient-to-b from-[#39FF14]/0 via-[#39FF14]/25 to-[#39FF14] bg-clip-text text-center text-[17vw] uppercase leading-none tracking-tight text-transparent`}>
-            Lipe Moves
-          </h2>
+          <h2 aria-label="Lipe Moves" className="sr-only">Lipe Moves</h2>
+          <div aria-hidden className="-mb-[0.14em] flex w-max animate-marquee select-none">
+            {[0, 1].map((dup) => (
+              <span
+                key={dup}
+                className={`${anton.className} flex shrink-0 items-end whitespace-nowrap bg-gradient-to-b from-[#39FF14]/0 via-[#39FF14]/25 to-[#39FF14] bg-clip-text text-[17vw] uppercase leading-none tracking-tight text-transparent`}
+              >
+                <span className="px-[0.15em]">Lipe Moves</span>
+                <span className="px-[0.15em] text-[#39FF14]">✦</span>
+              </span>
+            ))}
+          </div>
         </div>
       </footer>
     </main>
