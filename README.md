@@ -20,8 +20,8 @@ Remotion · deployed on Vercel.
 ## Why this exists
 
 Most of us in the West have spent our whole lives in a chair: kindergarten, school,
-university, then the office. Decades of sitting quietly take the whole body out of service, hips first, then the
-spine, the shoulders, the feet, and that shows up as a smaller life, not just stiffness. Movement is
+university, then the office. Decades of sitting quietly take the whole body out of service, hips, spine, shoulders,
+feet, all at once and bit by bit, and that shows up as a smaller life, not just stiffness. Movement is
 how a human being expresses itself, and when the hips don't open, play, dance, squatting on
 the floor with your kids, even sitting comfortably, all slip away.
 
