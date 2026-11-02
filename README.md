@@ -27,8 +27,10 @@ cause: doctors, many of them without a movement practice of their own, hand out 
 and the body stays broken because only the symptom was fixed.
 
 I was lucky to get consistent with mobility and yoga practice at 30, when my body was at
-its worst. Today, at 36, I can do the splits, and I have the best body of my life. That
-journey is what Lipe Moves is built on.
+its worst. Today, at 36, I can do the splits, and I have the best body of my life. People don't
+believe my age, and I hear all the time that I have a model's body and that I inspire them.
+All of it is the fruit of consistency and habit change, not only to look better but to
+work better. That journey is what Lipe Moves is built on.
 
 It is becoming a complete glossary of movement: everything we should know to have a better
 life experience in our body, build a stronger one, and stop damaging it while working,
