@@ -13,6 +13,9 @@ overview. Items are roughly in priority order.
 
 ## Product (member-facing)
 
+- [ ] Movement glossary: a browsable reference of everything we should know to have a
+      better life experience in our body: terms, positions, drills, daily habits, breath,
+      rest, cross-linked from programs and classes.
 - [ ] Finish the 4-week program experience: progress tracking per day, completion
       state, and reminders by email.
 - [ ] Program and class search / filtering in the video library.

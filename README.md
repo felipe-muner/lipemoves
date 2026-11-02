@@ -19,16 +19,16 @@ Remotion · deployed on Vercel.
 
 ## Why this exists
 
-Most of us in the West have spent our whole lives in a chair: kindergarten, school,
-university, then the office. Decades of sitting quietly take the whole body out of service, hips, spine, shoulders,
-feet, all at once and bit by bit, and that shows up as a smaller life, not just stiffness. Movement is
-how a human being expresses itself, and when the hips don't open, play, dance, squatting on
-the floor with your kids, even sitting comfortably, all slip away.
+Lipe Moves is becoming a complete glossary of movement: everything we should know to
+have a better life experience in our body, build a stronger one, and stop damaging it
+while working, studying or sitting all day. Most of us have spent our whole lives in a chair, and decades of sitting quietly take
+the whole body out of service, hips, spine, shoulders, feet, all at once and bit by bit.
+Movement is how a human being expresses itself, and the sooner someone understands this,
+the fewer hours it takes to reclaim what a child does for free.
 
-The good news I see with every student: the sooner someone understands this, the fewer
-hours it takes to reclaim what a child does for free. That is what Lipe Moves is built
-around. Short, consistent practice (the programs, the timer, the streamed classes) to get
-the body back to being an instrument of expression, not a thing you carry to a desk.
+The platform is built around that: short, consistent practice (programs, the timer, the
+streamed classes) plus the knowledge to keep the body an instrument of expression, not
+a thing you carry to a desk.
 
 **Status:** solo project, in production since March 2026 with paying subscribers.
 Planned work is in [ROADMAP.md](./ROADMAP.md).
