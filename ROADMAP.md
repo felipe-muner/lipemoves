@@ -1,6 +1,6 @@
 # Roadmap
 
-Planned work on Lipe Moves. Issues on GitHub track the individual items; this file is the
+Planned work on Lipe Moves. GitHub issues #1–#13 track the individual items; this file is the
 overview. Items are roughly in priority order.
 
 ## Reliability and quality
@@ -17,11 +17,12 @@ overview. Items are roughly in priority order.
       state, and reminders by email.
 - [ ] Program and class search / filtering in the video library.
 - [ ] Mobile layout pass on the timer, player and program pages.
-- [ ] Localised public pages (PT / EN) to match the multilingual ebooks.
 - [ ] Member movement tracker: weekly summary view and export.
 
 ## Admin dashboard and content studio
 
+- [ ] Studio: edit uploaded videos in the browser before posting (cover frame picker,
+      trim, caption/label, preview), and improve cover generation.
 - [ ] Move the studio render jobs off the local filesystem to a queue + Bunny upload so
       they can run on Vercel instead of only on my laptop.
 - [ ] Turn `app/ebook` into a picker so each ebook title gets its own funnel.
