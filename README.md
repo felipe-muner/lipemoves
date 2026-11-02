@@ -19,16 +19,22 @@ Remotion · deployed on Vercel.
 
 ## Why this exists
 
-Lipe Moves is becoming a complete glossary of movement: everything we should know to
-have a better life experience in our body, build a stronger one, and stop damaging it
-while working, studying or sitting all day. Most of us have spent our whole lives in a chair, and decades of sitting quietly take
-the whole body out of service, hips, spine, shoulders, feet, all at once and bit by bit.
-Movement is how a human being expresses itself, and the sooner someone understands this,
-the fewer hours it takes to reclaim what a child does for free.
+At 30 my body was dysfunctional. Like most people raised in Western society I had been in a
+chair since kindergarten: school, university, then the office. Sitting destroys our body
+functions slowly, day by day, and by the time we notice we are in real pain with zero idea
+how to revert it. Too often the answer is to treat the consequence instead of the root
+cause: doctors, many of them without a movement practice of their own, hand out a surgery,
+and the body stays broken because only the symptom was fixed.
 
-The platform is built around that: short, consistent practice (programs, the timer, the
-streamed classes) plus the knowledge to keep the body an instrument of expression, not
-a thing you carry to a desk.
+I was lucky to get consistent with mobility and yoga practice at 30, when my body was at
+its worst. Today, at 36, I can do the splits, and I have the best body of my life. That
+journey is what Lipe Moves is built on.
+
+It is becoming a complete glossary of movement: everything we should know to have a better
+life experience in our body, build a stronger one, and stop damaging it while working,
+studying or sitting all day. Short, consistent practice (programs, the timer, the streamed
+classes) plus the knowledge to keep the body an instrument of expression, not a thing you
+carry to a desk.
 
 **Status:** solo project, in production since March 2026 with paying subscribers.
 Planned work is in [ROADMAP.md](./ROADMAP.md).
