@@ -1,8 +1,24 @@
 # Lipe Moves
 
-Yoga, acrobatics, and movement video subscription platform.
+**Live:** https://lipemoves.com · **Code:** https://github.com/felipe-muner/lipemoves
 
-**Tech stack:** Next.js 16 + React 19 + Tailwind v4 + shadcn/ui + NextAuth v5 + Stripe + Bunny.net + Drizzle ORM + PostgreSQL
+Lipe Moves is the website and back office for my one-person movement coaching business
+(yoga, acrobatics, mobility). It is the platform I actually run the business on:
+students sign up, subscribe (Stripe), watch streamed classes (Bunny.net), and follow
+printable programs; I use the admin dashboard to manage members and payments, track my own
+training, and produce Instagram content (reels, carousels, ebooks) with Remotion and
+ffmpeg-based scripts.
+
+**Who it's for:** my students and subscribers (public pages), and me as the sole admin
+(dashboard + content studio). It is also a reference for anyone building a small
+creator-run subscription site on this stack.
+
+**Tech stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · shadcn/ui ·
+NextAuth v5 · Stripe · Bunny.net Stream · Resend · Drizzle ORM · PostgreSQL (Neon) ·
+Remotion · deployed on Vercel.
+
+**Status:** solo project, in production since March 2026 with paying subscribers.
+Planned work is in [ROADMAP.md](./ROADMAP.md).
 
 ---
 
@@ -143,3 +159,32 @@ The webhook at `/api/stripe/webhook` handles:
 - `checkout.session.completed` — creates subscription record
 - `customer.subscription.updated` — updates status/period
 - `customer.subscription.deleted` — marks as canceled
+
+---
+
+## Project map
+
+| Area | Where |
+|---|---|
+| Public site (landing, pricing, start, timer, ebooks, programs, guides, carousels) | `app/(marketing)`, `app/start`, `app/ebooks`, `app/program`, `app/guides`, `app/carousel` |
+| Auth (login, register, password reset) | `app/(auth)`, `lib/auth` |
+| Member area (video library, player, account, personal tracker) | `app/(protected)`, `app/me` |
+| Admin dashboard (members, payments, finance, subscribers, videos, content studio) | `app/(dashboard)/dashboard`, `lib/actions` |
+| API routes (Stripe, Bunny webhooks, studio jobs, newsletter) | `app/api` |
+| Database schema + migrations | `lib/db/schema.ts`, `drizzle/` |
+| Video / reel rendering | `remotion/`, `scripts/*.sh` |
+| Email templates | `lib/email` |
+
+## Testing
+
+There is no automated test suite yet (see the roadmap). Manual smoke scripts live in
+`scripts/test-checkout.ts` and `scripts/test-video-playback.ts`.
+
+## License
+
+Code is released under the [MIT License](./LICENSE).
+
+Media assets in `public/` (photos, ebook PDFs, rendered videos) are my own work and are
+provided for running the site; the background music tracks in
+`public/presentation/music/library` are royalty-free third-party tracks and keep their
+original licenses.
