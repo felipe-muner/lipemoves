@@ -19,7 +19,7 @@ Remotion · deployed on Vercel.
 
 ## Why this exists
 
-At 30 my body was dysfunctional. Like most people raised in Western society I had been in a
+At 30 my body was dysfunctional, hips, shoulders, spine, feet, all of it. Like most people raised in Western society I had been in a
 chair since kindergarten: school, university, then the office. Sitting destroys our body
 functions slowly, day by day, and by the time we notice we are in real pain with zero idea
 how to revert it. Too often the answer is to treat the consequence instead of the root
