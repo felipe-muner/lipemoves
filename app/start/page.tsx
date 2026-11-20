@@ -60,11 +60,32 @@ export default function StartPage() {
           </RevealItem>
         </RevealGroup>
 
-        {/* ===== Primary: Free guide (email capture) ===== */}
+        {/* ===== Primary: Open Hips (the offer) ===== */}
         <Reveal className="mt-12" delay={0.05}>
           <div className="rounded-3xl border border-[#39FF14]/30 bg-[#39FF14]/[0.04] p-7">
             <p className="text-xs uppercase tracking-[0.35em] text-[#39FF14]">
-              Start here · Free
+              4-week coached program · Limited spots
+            </p>
+            <h2 className="mt-3 text-2xl font-extrabold uppercase leading-tight tracking-tight">
+              Open your hips in 4 weeks
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/60">
+              Three short sessions a week, a clear progression, and me checking
+              your form on video every week.
+            </p>
+            <Button asChild variant="lime" size="pill" className="mt-7 w-full">
+              <Link href="/hips">
+                See the program <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </Reveal>
+
+        {/* ===== Free guide (email capture) ===== */}
+        <Reveal className="mt-6" delay={0.08}>
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-7">
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Free guide
             </p>
             <h2 className="mt-3 text-2xl font-extrabold uppercase leading-tight tracking-tight">
               The 5 foundations
@@ -96,7 +117,7 @@ export default function StartPage() {
                 </li>
               ))}
             </ul>
-            <Button asChild variant="lime" size="pill" className="mt-7 w-full">
+            <Button asChild variant="glass" size="pill" className="mt-7 w-full">
               <Link href="/pricing">
                 See membership <ArrowRight className="h-4 w-4" />
               </Link>

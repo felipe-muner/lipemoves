@@ -128,7 +128,7 @@ export default async function HomePage() {
               </RevealItem>
               <RevealItem className="mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
                 <Button asChild variant="lime" size="pill">
-                  <a href={WA_INNER} target="_blank" rel="noopener noreferrer">Work with me</a>
+                  <Link href="/hips">Open your hips in 4 weeks</Link>
                 </Button>
                 <Button asChild variant="glass" size="pill">
                   <a href="#in-motion">See the practice</a>
