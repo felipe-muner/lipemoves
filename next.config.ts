@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // The studio routes read files by a runtime path, so file tracing
+  // pulled the whole repo (public/ is ~250 MB of video) into its function
+  // and Vercel rejected it for going over the 250 MB function limit.
+  // It never needs those files at runtime.
+  outputFileTracingExcludes: {
+    "/api/studio/local-files": ["./public/**/*", "./assets/**/*"],
+    "/api/studio/stream": ["./public/**/*", "./assets/**/*"],
+  },
   // Friendly public URL: /books is the shareable entry point for the
   // move-better ebook catalog, which lives at /ebooks (keeps the existing
   // download routes and dashboard share links intact).
