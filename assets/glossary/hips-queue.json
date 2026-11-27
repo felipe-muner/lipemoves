@@ -48,7 +48,8 @@
     "2026-11-27 ~09:45: 'You're out of videos for now', back Nov 27 at 12:51 PM, after 2 videos this run (donkey-kicks ok and live, figure-four-stretch wrong attempt 1, reworded).",
     "2026-11-27 ~10:06: skipped, quota not back until 12:51 PM (one-shot at 12:57 will retry figure-four-stretch, then flat-back-hamstring-stretch).",
     "2026-11-27 ~13:25: Gemini 'out of videos', back Nov 27 at 5:51 PM, after figure-four (wrong final) and flat-back (wrong attempt 1). Continuing in Google Flow (Omni 1.2 Flash).",
-    "2026-11-27 ~13:40: run done (3 videos: figure-four wrong final, flat-back wrong in Gemini, flat-back wrong final in Flow). Flow credits left about 192."
+    "2026-11-27 ~13:40: run done (3 videos: figure-four wrong final, flat-back wrong in Gemini, flat-back wrong final in Flow). Flow credits left about 192.",
+    "2026-11-27 16:06-16:35 (Flow, Gemini out until 17:51): pancake-stretch ok (attempt 1); pigeon-good-morning wrong twice (Omni turns pigeon into kneeling), final. 72 Flow credits used, ~120 left."
   ],
   "template": "A smooth beige 3D anatomy mannequin, male, faceless with no eyes and no mouth, visible ball joints at shoulders, elbows, wrists, knees and ankles, athletic build, wearing only black shorts, white crew socks and white sneakers. Dark gym, black rubber floor, neon green rim light from the right, nobody else in the room. {view}, static camera that never moves, entire body in frame, no tripod or camera equipment anywhere in the room. He starts already in this position: {start} He does only one movement: {motion} Exactly 3 slow repetitions, then he holds still in the starting position. He never changes position and never does any other movement. Working muscles: {glow}. They light up as glowing neon green anatomical muscle fibers drawn as a graphic overlay on top of the body and on top of the black shorts, so wherever a working muscle is under the shorts its glow shows on the shorts too, with visible fiber strands in the real shape of each muscle, brightest while the muscle works and dimmer when it rests. No red or skinless muscle anywhere: outside the green glow the body stays smooth plain beige. No cuts, no text. Portrait 9:16.",
   "clips": [
@@ -342,13 +343,15 @@
       "week": 2,
       "slug": "pigeon-good-morning",
       "name": "Pigeon Good Morning",
-      "view": "Three-quarter front view",
-      "start": "pigeon pose on the floor, right shin folded across in front of the hips, left leg extended straight back, torso upright, hands behind the head.",
-      "motion": "he hinges forward over the front shin with a flat back, pauses, then lifts back upright.",
+      "view": "Side view from his right",
+      "start": "classic yoga pigeon pose low on the floor: his right shin lies flat on the floor across the front of his body with the right knee bent out to the side and the right heel near his left hip; his left leg is stretched straight back behind him with the left knee and the top of the left foot flat on the floor; hips sink low toward the floor; torso upright, fingertips on the floor beside the hips.",
+      "motion": "he folds his torso forward over the front shin with a long flat back until his forearms rest on the floor in front of the shin, pauses, then pushes back up to upright.",
       "glow": "the right glute and right outer hip",
-      "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "status": "wrong",
+      "attempts": 2,
+      "source": "Google Flow · Omni 1.2 Flash",
+      "chat": "https://flow.google.com/project/52156d34-cea7-4927-a6dd-92e02c90b3ce",
+      "note": "2026-11-27 ~16:20 wrong (attempt 1, Flow Omni 1.2 Flash): not pigeon; he kneels on both knees with hands behind the head and leans back and forth, and the fold leaves the frame. Glow on the glute/outer hip and over the shorts was right. Reworded for the retry: side view, pigeon pose spelled out, hands on the floor. | 2026-11-27 ~16:30 wrong (attempt 2, final, Flow Omni 1.2 Flash): side view, but he kneels on both knees again instead of pigeon, the head leaves the frame on the fold, one rep turns into a backbend, and the glow sits on the front of the thigh, not the glute."
     },
     {
       "n": 21,
