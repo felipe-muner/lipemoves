@@ -10,7 +10,8 @@ import type { Exercise, WorkoutDay } from "@/content/programs/hips"
 import { HIPS_CLIPS, exerciseSlug } from "@/content/programs/hips-clips"
 import { HIPS_DETAILS } from "@/content/programs/hips-details"
 import { HIPS_COOKIE, hasHipsAccess } from "@/lib/hips-access"
-import { ClipPlayer } from "@/components/program/clip-player"
+import { DualClip } from "@/components/program/dual-clip"
+import { COACH_CLIPS } from "@/content/programs/coach-clips"
 import { Button } from "@/components/ui/button"
 import { unlockHips } from "./actions"
 
@@ -69,6 +70,7 @@ function Stat({ value, unit, label }: { value: string; unit?: string; label: str
 function ExerciseCard({ ex, total }: { ex: Exercise; total: number }) {
   const slug = exerciseSlug(ex.name)
   const clip = HIPS_CLIPS[slug]
+  const coach = COACH_CLIPS.hips?.[slug]
   const detail = HIPS_DETAILS[slug]
   const d = dose(ex)
 
@@ -134,8 +136,8 @@ function ExerciseCard({ ex, total }: { ex: Exercise; total: number }) {
           the column if the text side is taller. */}
       <div className="relative w-[42%] shrink-0 self-stretch bg-black sm:w-[40%]">
         <div className="aspect-[9/16] w-full" aria-hidden="true" />
-        {clip ? (
-          <ClipPlayer src={clip} label={ex.name} />
+        {clip || coach ? (
+          <DualClip coach={coach} muscles={clip} label={ex.name} />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[radial-gradient(ellipse_at_bottom_right,rgba(57,255,20,0.10),transparent_60%)] px-4 text-center">
             <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white/35">

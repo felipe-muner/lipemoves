@@ -46,6 +46,18 @@ read this section, then `assets/glossary/CLIPS_TABLE.md`, and carry on.
   can install a launchd job (every 3 h, same "auto" permission mode); Felipe has
   not approved installing it yet.
 
+## Felipe's own videos (coach clips)
+
+Each exercise card can show two demos with a "Felipe | Muscles" switch
+(`components/program/dual-clip.tsx`): Felipe's own video first, the mannequin
+muscle map second. When Felipe sends his videos (AirDrop to ~/Downloads, named
+by exercise slug as on `/program/shot-list`):
+1. Encode each to `public/programs/<program>/coach/<slug>.mp4`:
+   `ffmpeg -i in.mov -an -vf "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280" -c:v libx264 -crf 24 -preset slow -pix_fmt yuv420p -movflags +faststart out.mp4`
+   (trim to the reps if he left long pauses; check orientation first).
+2. Add the line to `content/programs/coach-clips.ts` under the program.
+3. Commit only those files.
+
 ## Open decisions for Felipe
 
 - Clips that failed twice: accept as is, film himself, or skip (see the "wrong"

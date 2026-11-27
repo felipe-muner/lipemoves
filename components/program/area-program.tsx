@@ -5,7 +5,8 @@ import type { Exercise, WorkoutDay } from "@/content/programs/hips"
 import type { AreaProgram } from "@/content/programs/areas"
 import { exerciseSlug } from "@/content/programs/hips-clips"
 import { PROGRAM_CLIPS } from "@/content/programs/program-clips"
-import { ClipPlayer } from "@/components/program/clip-player"
+import { DualClip } from "@/components/program/dual-clip"
+import { COACH_CLIPS } from "@/content/programs/coach-clips"
 import { Button } from "@/components/ui/button"
 
 // Public preview of a body-area program (everything except Open Hips).
@@ -55,6 +56,7 @@ function Stat({ value, unit, label }: { value: string; unit?: string; label: str
 function ExerciseCard({ ex, total, area }: { ex: Exercise; total: number; area: AreaProgram }) {
   const slug = exerciseSlug(ex.name)
   const clip = PROGRAM_CLIPS[area.program.slug]?.[slug]
+  const coach = COACH_CLIPS[area.program.slug]?.[slug]
   const detail = area.details[slug]
   const d = dose(ex)
 
@@ -101,8 +103,8 @@ function ExerciseCard({ ex, total, area }: { ex: Exercise; total: number; area: 
 
       <div className="relative w-[42%] shrink-0 self-stretch bg-black sm:w-[40%]">
         <div className="aspect-[9/16] w-full" aria-hidden="true" />
-        {clip ? (
-          <ClipPlayer src={clip} label={ex.name} />
+        {clip || coach ? (
+          <DualClip coach={coach} muscles={clip} label={ex.name} />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[radial-gradient(ellipse_at_bottom_right,rgba(57,255,20,0.10),transparent_60%)] px-4 text-center">
             <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white/35">

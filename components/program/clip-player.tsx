@@ -8,7 +8,15 @@ import { Pause, Play } from "lucide-react"
  * on screen and pauses when scrolled away; a tap toggles it. People who ask
  * their device for reduced motion get a still frame until they press play.
  */
-export function ClipPlayer({ src, label }: { src: string; label: string }) {
+export function ClipPlayer({
+  src,
+  label,
+  badge = "Demo",
+}: {
+  src: string
+  label: string
+  badge?: string | null // null hides the corner label (e.g. when a switcher sits there)
+}) {
   const ref = React.useRef<HTMLVideoElement>(null)
   const userPaused = React.useRef(false)
   const [playing, setPlaying] = React.useState(false)
@@ -63,9 +71,11 @@ export function ClipPlayer({ src, label }: { src: string; label: string }) {
         onPause={() => setPlaying(false)}
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur">
-        Demo
-      </span>
+      {badge ? (
+        <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur">
+          {badge}
+        </span>
+      ) : null}
       <span
         className={`absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur transition-opacity ${
           playing ? "opacity-0 group-hover/clip:opacity-100 group-focus-visible/clip:opacity-100" : "opacity-100"
