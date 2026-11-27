@@ -13,6 +13,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 G = os.path.join(ROOT, "assets", "glossary")
 
 
+def coach_slugs(program):
+    """Exercise slugs that have Felipe's own video in coach-clips.ts."""
+    text = open(os.path.join(ROOT, "content/programs/coach-clips.ts")).read()
+    m = re.search(rf"^\s*{program}:\s*\{{(.*?)\}}", text, re.S | re.M)
+    return set(re.findall(r'"([a-z0-9-]+)":', m.group(1))) if m else set()
+
+
 def live_slugs(program):
     """Exercise slugs that have a clip line in the site's clip maps."""
     if program == "hips":
@@ -32,28 +39,34 @@ out = [
     "(or Felipe's own filmed clips), using the Source column to find the odd ones out.",
     "",
 ]
-totals = {"live": 0, "all": 0}
+totals = {"live": 0, "all": 0, "coach": 0}
+summary = ["| Program | Clips | AI clip live | Felipe video |", "|---|---|---|---|"]
 for prog in order:
     path = os.path.join(G, f"{prog}-queue.json")
     if not os.path.exists(path):
         continue
     q = json.load(open(path))
     live = live_slugs(prog)
+    coach = coach_slugs(prog)
     clips = q["clips"]
     n_live = sum(1 for c in clips if c["slug"] in live)
+    n_coach = sum(1 for c in clips if c["slug"] in coach)
     totals["live"] += n_live
+    totals["coach"] += n_coach
     totals["all"] += len(clips)
-    out += [f"## {prog} ({n_live}/{len(clips)} live)", "",
-            "| # | Exercise | Status | On site | Tries | Source / model |",
-            "|---|---|---|---|---|---|"]
+    summary.append(f"| {prog} | {len(clips)} | {n_live} | {n_coach} |")
+    out += [f"## {prog} (AI {n_live}/{len(clips)} · Felipe {n_coach}/{len(clips)})", "",
+            "| # | Exercise | AI status | AI on site | Tries | AI source / model | Felipe video |",
+            "|---|---|---|---|---|---|---|"]
     for c in clips:
         check = "with Felipe" if "check with felipe" in (c.get("note") or "").lower() else ""
         status = c["status"] + (f" ({check})" if check else "")
         out.append(
             f"| {c['n']} | {c['name']} | {status} | {'yes' if c['slug'] in live else ''} | "
-            f"{c.get('attempts', 0)} | {c.get('source') or ''} |"
+            f"{c.get('attempts', 0)} | {c.get('source') or ''} | {'yes' if c['slug'] in coach else ''} |"
         )
     out.append("")
-out.insert(4, f"**{totals['live']} of {totals['all']} clips live.**\n")
+summary.append(f"| **Total** | **{totals['all']}** | **{totals['live']}** | **{totals['coach']}** |")
+out[4:4] = [f"**{totals['all']} exercises: {totals['live']} AI clips live, {totals['coach']} Felipe videos.**", ""] + summary + [""]
 open(os.path.join(G, "CLIPS_TABLE.md"), "w").write("\n".join(out) + "\n")
-print(f"wrote assets/glossary/CLIPS_TABLE.md ({totals['live']}/{totals['all']} live)")
+print(f"wrote assets/glossary/CLIPS_TABLE.md (AI {totals['live']}/{totals['all']}, Felipe {totals['coach']}/{totals['all']})")
