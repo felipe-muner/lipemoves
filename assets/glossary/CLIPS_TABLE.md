@@ -43,8 +43,8 @@ Mission 1: every exercise has a clip. Mission 2: remake them all with one model
 | 18 | Flat Back Hamstring Stretch | wrong (with Felipe) |  | 2 | Google Flow · Omni 1.2 Flash |  |
 | 19 | Pancake Stretch | ok | yes | 1 | Google Flow · Omni 1.2 Flash |  |
 | 20 | Pigeon Good Morning | wrong |  | 2 | Google Flow · Omni 1.2 Flash |  |
-| 21 | 90/90 Iso | pending |  | 0 |  |  |
-| 22 | Frog Stretch | pending |  | 0 |  |  |
+| 21 | 90/90 Iso | wrong |  | 2 | Gemini app |  |
+| 22 | Frog Stretch | pending |  | 1 | Google Flow · Omni 1.2 Flash |  |
 | 23 | Lunge Quad Stretch | pending |  | 0 |  |  |
 | 24 | Standing Pancake | pending |  | 0 |  |  |
 | 25 | Wall Deep Squat | pending |  | 0 |  |  |

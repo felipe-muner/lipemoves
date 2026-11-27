@@ -49,7 +49,8 @@
     "2026-11-27 ~10:06: skipped, quota not back until 12:51 PM (one-shot at 12:57 will retry figure-four-stretch, then flat-back-hamstring-stretch).",
     "2026-11-27 ~13:25: Gemini 'out of videos', back Nov 27 at 5:51 PM, after figure-four (wrong final) and flat-back (wrong attempt 1). Continuing in Google Flow (Omni 1.2 Flash).",
     "2026-11-27 ~13:40: run done (3 videos: figure-four wrong final, flat-back wrong in Gemini, flat-back wrong final in Flow). Flow credits left about 192.",
-    "2026-11-27 16:06-16:35 (Flow, Gemini out until 17:51): pancake-stretch ok (attempt 1); pigeon-good-morning wrong twice (Omni turns pigeon into kneeling), final. 72 Flow credits used, ~120 left."
+    "2026-11-27 16:06-16:35 (Flow, Gemini out until 17:51): pancake-stretch ok (attempt 1); pigeon-good-morning wrong twice (Omni turns pigeon into kneeling), final. 72 Flow credits used, ~120 left.",
+    "2026-11-27 19:06-19:25: 90-90-iso wrong twice in Gemini (kneels instead of sitting in 90/90; glow on the front thigh), final. Gemini 'Create video' greyed out after those 2. frog-stretch attempt 1 in Flow wrong (hands not forearms, glow on front thighs, red muscle at rest), reworded, retry pending. Chrome tabs kept vanishing, so the run stopped before the retry. Flow balance read 120 before, so 96 left now. A misclick in Gemini sent one of Gemini's own suggestion chips ('interactive quiz'); stopped, chat 'Exam Prep Quiz' left in Felipe's history."
   ],
   "template": "A smooth beige 3D anatomy mannequin, male, faceless with no eyes and no mouth, visible ball joints at shoulders, elbows, wrists, knees and ankles, athletic build, wearing only black shorts, white crew socks and white sneakers. Dark gym, black rubber floor, neon green rim light from the right, nobody else in the room. {view}, static camera that never moves, entire body in frame, no tripod or camera equipment anywhere in the room. He starts already in this position: {start} He does only one movement: {motion} Exactly 3 slow repetitions, then he holds still in the starting position. He never changes position and never does any other movement. Working muscles: {glow}. They light up as glowing neon green anatomical muscle fibers drawn as a graphic overlay on top of the body and on top of the black shorts, so wherever a working muscle is under the shorts its glow shows on the shorts too, with visible fiber strands in the real shape of each muscle, brightest while the muscle works and dimmer when it rests. No red or skinless muscle anywhere: outside the green glow the body stays smooth plain beige. No cuts, no text. Portrait 9:16.",
   "clips": [
@@ -358,13 +359,15 @@
       "week": 3,
       "slug": "90-90-iso",
       "name": "90/90 Iso",
-      "view": "Three-quarter front view",
-      "start": "seated on the floor in a 90/90 position, right leg bent 90 degrees in front, left leg bent 90 degrees to the side and behind, torso leaning slightly forward over the front shin, hands on the floor either side of it.",
-      "motion": "he presses the front knee and ankle hard down into the floor and holds the tension, then relaxes.",
-      "glow": "the right outer hip and right glute",
-      "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "view": "Front view",
+      "start": "sitting on his buttocks on the floor, not kneeling: feet planted wide apart, much wider than his hips, both knees bent 90 degrees and both knees lowered to the floor on his right side, so the right shin lies across the floor in front of him and the left shin points back on his left side, torso upright and leaning slightly forward, hands on the floor beside the hips.",
+      "motion": "he presses the right knee and right ankle down into the floor and squeezes his right buttock, holds the tension, then relaxes; his legs and hips never move.",
+      "glow": "the right buttock and the side of the right hip (gluteus maximus and gluteus medius), glowing on the right side of the black shorts",
+      "status": "wrong",
+      "attempts": 2,
+      "source": "Gemini app",
+      "chat": "https://gemini.google.com/app/851ad708b7df8431",
+      "note": "2026-11-27 ~19:10 wrong (attempt 1, Gemini, chat c504f79f80f051bc): 10 s, one mannequin, but he is in a half-kneeling lunge, not seated in 90/90, and the glow is on the front of the back thigh, not the glute. Reworded for the retry with the 90-90-switch wording that got the seated position (sitting on the buttocks, feet wide, both knees down to one side), front view, glow named as the right buttock. | 2026-11-27 ~19:20 wrong (attempt 2, final, Gemini, chat 851ad708b7df8431): 10 s, front view, one mannequin, but he kneels on both knees (no 90/90), and the glow is on the front of the left thigh, not the right glute. Gemini cannot do the seated 90/90 (same as 90-90-extension). Good one for Felipe to film himself."
     },
     {
       "n": 22,
@@ -372,12 +375,14 @@
       "slug": "frog-stretch",
       "name": "Frog Stretch",
       "view": "Three-quarter front view",
-      "start": "on all fours with the knees spread very wide apart, shins parallel, feet turned out, forearms on the floor, hips pushed back level with the knees.",
+      "start": "frog stretch on the floor: knees spread far out to the sides, much wider than his shoulders, inner thighs low and nearly parallel to the floor, knees bent 90 degrees with the shins pointing straight back and the feet turned out, both forearms flat on the floor in front of him, hips pushed back level with the knees.",
       "motion": "he sinks his hips a little lower and further back, pauses, then eases off slightly.",
-      "glow": "both inner thighs",
+      "glow": "the inside of both thighs (the adductor muscles from the inner knee up to the groin), glowing on the inside of each thigh and up onto the black shorts at the groin; the front of the thighs stays plain beige",
       "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "attempts": 1,
+      "source": "Google Flow · Omni 1.2 Flash",
+      "chat": "https://flow.google.com/project/52156d34-cea7-4927-a6dd-92e02c90b3ce",
+      "note": "2026-11-27 ~19:17 wrong (attempt 1, Flow Omni 1.2 Flash, 8 s): one mannequin on all fours, 3 small rocks back, but on his hands (not forearms), knees only moderately wide, the glow is on the FRONT of both thighs and stops at the shorts' edge, and at rest the thighs show red skinless muscle. Reworded for the retry: frog position spelled out (knees far out to the sides, inner thighs low to the floor, forearms down), glow named as the inside of each thigh up to the groin, thighs beige at rest."
     },
     {
       "n": 23,
