@@ -1,13 +1,15 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getProgram, PROGRAMS } from "@/content/programs"
+import { AREA_PROGRAMS } from "@/content/programs/areas"
 import { ProgramRenderer } from "@/components/program/program-renderer"
 import { PrintButton } from "@/components/program/print-button"
+import { AreaProgramPage } from "@/components/program/area-program"
 
 export const dynamic = "force-static"
 
 export function generateStaticParams() {
-  return PROGRAMS.map((p) => ({ slug: p.slug }))
+  return [...PROGRAMS.map((p) => ({ slug: p.slug })), ...Object.keys(AREA_PROGRAMS).map((slug) => ({ slug }))]
 }
 
 export async function generateMetadata({
@@ -16,6 +18,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
+  const area = AREA_PROGRAMS[slug]
+  if (area) {
+    return {
+      title: `${area.program.title} — 4-week ${area.area.toLowerCase()} program | Lipe Moves`,
+      description: area.promise,
+    }
+  }
   const program = getProgram(slug)
   if (!program) return { title: "Not found" }
   const title = `${program.title} — 4-week program by Felipe Muner`
@@ -28,6 +37,10 @@ export default async function ProgramPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
+
+  const area = AREA_PROGRAMS[slug]
+  if (area) return <AreaProgramPage area={area} />
+
   const program = getProgram(slug)
   if (!program) notFound()
 

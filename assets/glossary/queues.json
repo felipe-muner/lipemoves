@@ -1,0 +1,4 @@
+{
+  "about": "Clip queues in priority order. A scheduled run (see RUN_CLIPS.md) works on the first program that still has pending clips.",
+  "order": ["hips", "shoulders", "wrists", "core", "back", "legs", "knees", "ankles"]
+}
