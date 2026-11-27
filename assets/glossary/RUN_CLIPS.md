@@ -52,6 +52,10 @@ to the next program in queues.json within the same run.
      `content/programs/hips-clips.ts`.
    - Other programs: out = `public/programs/<program>/clips/<slug>.mp4`, add
      the line under the program in `content/programs/program-clips.ts`.
+   Branch: commit on whatever branch is checked out. While the
+   `programs-body-map` branch is not merged, push that branch (Vercel preview
+   only); its clips reach lipemoves.com when Felipe says to go live and the
+   branch is merged into `main`.
    Then `git add` only that mp4 and that clips file, commit
    ("Add <Exercise> demo clip to <Program>", ending with the Co-Authored-By
    line), `git push origin main`, and check the clip URL returns 200 on
