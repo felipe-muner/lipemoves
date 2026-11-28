@@ -45,7 +45,8 @@ to the next program in queues.json within the same run.
    "pending" only if attempts < max_attempts and you reword it for the retry.
 6. For each ok clip (download_approved is true): click Gemini's
    "Download video" button, check the file in ~/Downloads with ffprobe
-   (~10 s, 720x1280), copy it to `assets/glossary/<exercise-slug>-raw.mp4`,
+   (~10 s, 720x1280; Chrome may save it as a hidden
+   `~/Downloads/.com.google.Chrome.*` file, so look with `ls -la`), copy it to `assets/glossary/<exercise-slug>-raw.mp4`,
    encode with
    `ffmpeg -i raw -an -c:v libx264 -crf 24 -preset slow -pix_fmt yuv420p -movflags +faststart <out>`
    - Open Hips: out = `public/programs/hips/clips/<slug>.mp4`, add the line to
