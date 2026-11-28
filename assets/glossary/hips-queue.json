@@ -52,7 +52,8 @@
     "2026-11-27 16:06-16:35 (Flow, Gemini out until 17:51): pancake-stretch ok (attempt 1); pigeon-good-morning wrong twice (Omni turns pigeon into kneeling), final. 72 Flow credits used, ~120 left.",
     "2026-11-27 19:06-19:25: 90-90-iso wrong twice in Gemini (kneels instead of sitting in 90/90; glow on the front thigh), final. Gemini 'Create video' greyed out after those 2. frog-stretch attempt 1 in Flow wrong (hands not forearms, glow on front thighs, red muscle at rest), reworded, retry pending. Chrome tabs kept vanishing, so the run stopped before the retry. Flow balance read 120 before, so 96 left now. A misclick in Gemini sent one of Gemini's own suggestion chips ('interactive quiz'); stopped, chat 'Exam Prep Quiz' left in Felipe's history.",
     "2026-11-27 22:14 to 2026-11-28 04:20 (Gemini back): frog-stretch retry wrong (hands not forearms, glow over whole thigh, skinless muscle at rest), final. lunge-quad-stretch typed but never sent: the Chrome extension disconnected twice (also 'auto mode classifier gave no verdict' on clicks). Still pending, attempts 0. No Flow credits used (96 left).",
-    "2026-11-28 07:07-10:11: lunge-quad-stretch sent in Gemini (chat 9b8ea59757c29a2a), unchecked because no Chrome browser was connected at 10:10. Check that chat first next run."
+    "2026-11-28 07:07-10:11: lunge-quad-stretch sent in Gemini (chat 9b8ea59757c29a2a), unchecked because no Chrome browser was connected at 10:10. Check that chat first next run.",
+    "2026-11-28 16:06-16:30 run: Chrome connected again. Lunge Quad Stretch (07:10 attempt) checked ok, trim to 0-8.0 s (glitch after 8.1 s), but NOT downloaded: Chrome saved nothing to ~/Downloads (Gemini Download video fetched the file, 3 tries, plus a blob save; no file). Standing Pancake 2 tries, both wrong (final). Gemini then said out of videos until 18:51. Flow not used (96 credits)."
   ],
   "template": "A smooth beige 3D anatomy mannequin, male, faceless with no eyes and no mouth, visible ball joints at shoulders, elbows, wrists, knees and ankles, athletic build, wearing only black shorts, white crew socks and white sneakers. Dark gym, black rubber floor, neon green rim light from the right, nobody else in the room. {view}, static camera that never moves, entire body in frame, no tripod or camera equipment anywhere in the room. He starts already in this position: {start} He does only one movement: {motion} Exactly 3 slow repetitions, then he holds still in the starting position. He never changes position and never does any other movement. Working muscles: {glow}. They light up as glowing neon green anatomical muscle fibers drawn as a graphic overlay on top of the body and on top of the black shorts, so wherever a working muscle is under the shorts its glow shows on the shorts too, with visible fiber strands in the real shape of each muscle, brightest while the muscle works and dimmer when it rests. No red or skinless muscle anywhere: outside the green glow the body stays smooth plain beige. No cuts, no text. Portrait 9:16.",
   "clips": [
@@ -395,11 +396,11 @@
       "start": "a low kneeling lunge, right foot flat in front, left knee on the floor behind the hips, torso upright, left hand reaching back to hold the left foot.",
       "motion": "he draws the left heel toward the left glute while pushing the hips forward, pauses, then lets the foot move away again without letting go.",
       "glow": "the left thigh and the front of the left hip",
-      "status": "pending",
+      "status": "ok",
       "attempts": 1,
       "source": "Gemini app",
       "chat": "https://gemini.google.com/app/9b8ea59757c29a2a",
-      "note": "2026-11-28 ~07:10 attempt 1 sent in Gemini (chat 9b8ea59757c29a2a, original wording), result NOT checked yet: the Chrome extension disconnected before the render finished. Next run: open this chat first and check its video (contact sheet) before generating anything new."
+      "note": "2026-11-28 16:10 checked attempt 1 (chat 9b8ea59757c29a2a): side view, one mannequin, low kneeling lunge, 3 reps of reaching back, holding the left foot and pulling the heel to the glute (he lets go of the foot between reps). Green glow on the whole left quad and hip flexor, visible on the shorts, body beige at rest. Last 2 s glitch (from ~8.1 s: extra legs/shoes appear and the glow jumps to the front thigh), so the site version is trimmed to 0-8.0 s. NOT DOWNLOADED YET: on 2026-11-28 16:15 Chrome saved nothing to ~/Downloads (Gemini's Download video button fetched the file but no file landed, 3 tries). Next run: download from this chat, trim with ffmpeg -t 8.0, encode, add to hips-clips.ts."
     },
     {
       "n": 24,
@@ -407,12 +408,14 @@
       "slug": "standing-pancake",
       "name": "Standing Pancake",
       "view": "Front view",
-      "start": "standing with the feet very wide apart, legs straight, folded forward at the hips with both hands on the floor.",
-      "motion": "he walks his hands back between his feet and lowers his chest further toward the floor, pauses, then walks the hands forward to the start.",
-      "glow": "both hamstrings and inner thighs",
-      "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "start": "already folded deep forward in a very wide straddle stance, feet about twice shoulder width apart, legs straight, both palms flat on the floor between his feet, head hanging below his hips.",
+      "motion": "keeping both palms on the floor, he slowly bends his elbows to lower his chest further down between his legs, pauses, then straightens his arms again. His head stays below his hips the whole time and he never stands up.",
+      "glow": "both inner thighs and the backs of both thighs, glowing brightly",
+      "status": "wrong",
+      "attempts": 2,
+      "source": "Gemini app",
+      "chat": "https://gemini.google.com/app/9f1ccc16068a1520",
+      "note": "2026-11-28 16:20 attempt 1 (Gemini, original wording) wrong: 10 s, one mannequin, but he starts standing upright, feet only medium-wide, and does 3 forward folds that come halfway up every rep (no hand walk); glow faint on the inner thighs. Retry wording: already folded, head below hips the whole time, elbows bend to lower the chest, brighter glow. | 2026-11-28 16:27 attempt 2 (Gemini, reworded) wrong, final: wide straddle fold with palms on the floor is right, but the elbow bend is barely visible (looks like a still hold), he stands halfway up from ~8.4 s, and from the front the glow shows on the outer thighs while the inner thighs are hidden behind the torso. Candidate for Felipe to film."
     },
     {
       "n": 25,
