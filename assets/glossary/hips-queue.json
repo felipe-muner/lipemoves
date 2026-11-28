@@ -53,7 +53,8 @@
     "2026-11-27 19:06-19:25: 90-90-iso wrong twice in Gemini (kneels instead of sitting in 90/90; glow on the front thigh), final. Gemini 'Create video' greyed out after those 2. frog-stretch attempt 1 in Flow wrong (hands not forearms, glow on front thighs, red muscle at rest), reworded, retry pending. Chrome tabs kept vanishing, so the run stopped before the retry. Flow balance read 120 before, so 96 left now. A misclick in Gemini sent one of Gemini's own suggestion chips ('interactive quiz'); stopped, chat 'Exam Prep Quiz' left in Felipe's history.",
     "2026-11-27 22:14 to 2026-11-28 04:20 (Gemini back): frog-stretch retry wrong (hands not forearms, glow over whole thigh, skinless muscle at rest), final. lunge-quad-stretch typed but never sent: the Chrome extension disconnected twice (also 'auto mode classifier gave no verdict' on clicks). Still pending, attempts 0. No Flow credits used (96 left).",
     "2026-11-28 07:07-10:11: lunge-quad-stretch sent in Gemini (chat 9b8ea59757c29a2a), unchecked because no Chrome browser was connected at 10:10. Check that chat first next run.",
-    "2026-11-28 16:06-16:30 run: Chrome connected again. Lunge Quad Stretch (07:10 attempt) checked ok, trim to 0-8.0 s (glitch after 8.1 s), but NOT downloaded: Chrome saved nothing to ~/Downloads (Gemini Download video fetched the file, 3 tries, plus a blob save; no file). Standing Pancake 2 tries, both wrong (final). Gemini then said out of videos until 18:51. Flow not used (96 credits)."
+    "2026-11-28 16:06-16:30 run: Chrome connected again. Lunge Quad Stretch (07:10 attempt) checked ok, trim to 0-8.0 s (glitch after 8.1 s), but NOT downloaded: Chrome saved nothing to ~/Downloads (Gemini Download video fetched the file, 3 tries, plus a blob save; no file). Standing Pancake 2 tries, both wrong (final). Gemini then said out of videos until 18:51. Flow not used (96 credits).",
+    "2026-11-28 19:06-19:45 run: Lunge Quad Stretch download retried, Chrome still saves nothing. Elevated Pigeon 2 tries, both wrong (final: try 1 glow on the back leg, try 2 kneeling instead of pigeon). Gemini then out of videos until 23:51. Flow not used (96 credits)."
   ],
   "template": "A smooth beige 3D anatomy mannequin, male, faceless with no eyes and no mouth, visible ball joints at shoulders, elbows, wrists, knees and ankles, athletic build, wearing only black shorts, white crew socks and white sneakers. Dark gym, black rubber floor, neon green rim light from the right, nobody else in the room. {view}, static camera that never moves, entire body in frame, no tripod or camera equipment anywhere in the room. He starts already in this position: {start} He does only one movement: {motion} Exactly 3 slow repetitions, then he holds still in the starting position. He never changes position and never does any other movement. Working muscles: {glow}. They light up as glowing neon green anatomical muscle fibers drawn as a graphic overlay on top of the body and on top of the black shorts, so wherever a working muscle is under the shorts its glow shows on the shorts too, with visible fiber strands in the real shape of each muscle, brightest while the muscle works and dimmer when it rests. No red or skinless muscle anywhere: outside the green glow the body stays smooth plain beige. No cuts, no text. Portrait 9:16.",
   "clips": [
@@ -436,13 +437,15 @@
       "week": 4,
       "slug": "elevated-pigeon",
       "name": "Elevated Pigeon",
-      "view": "Three-quarter front view",
-      "start": "standing behind a low wooden box with the right shin laid flat across the top of the box in a pigeon position, left leg straight back with the toes on the floor, hands on the box, torso upright.",
+      "view": "Side view from his right side, so the right hip faces the camera",
+      "start": "standing behind a plain unmarked wooden box about knee height, the right shin laid flat across the top of the box in a pigeon position with the right knee out to the right, left leg straight back with the toes on the floor, hands on the box, torso upright.",
       "motion": "he folds his torso forward over the right shin, pauses, then comes back upright.",
-      "glow": "the right outer hip and right glute",
-      "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "glow": "only the right buttock and the right outer hip of the leg lying on the box (gluteus maximus and gluteus medius), on the right side of the shorts; the back left leg stays plain beige",
+      "status": "wrong",
+      "attempts": 2,
+      "source": "Gemini app",
+      "chat": "https://gemini.google.com/app/407093baaa42dac2",
+      "note": "2026-11-28 19:20 attempt 1 (Gemini, original wording) wrong: 10 s, one mannequin, right shin across a wooden box, left leg back, 3 clean folds forward and back up (movement right), but the glow is on the BACK (left) thigh/hip instead of the right glute, and the box has brand-like lettering. Retry: side view from his right, glow only on the box leg, plain box. | 2026-11-28 19:40 attempt 2 (Gemini, side view from the right) wrong, final: glow now correct (right glute on the shorts, back leg beige), plain box, 3 folds, but the right leg kneels on the box with the shin pointing back (hip-flexor lean, not a pigeon with the shin across), and the head leaves the frame on each fold. Candidate for Felipe to film."
     },
     {
       "n": 27,

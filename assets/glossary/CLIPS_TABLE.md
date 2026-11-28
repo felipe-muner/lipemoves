@@ -48,7 +48,7 @@ Mission 1: every exercise has a clip. Mission 2: remake them all with one model
 | 23 | Lunge Quad Stretch | ok |  | 1 | Gemini app |  |
 | 24 | Standing Pancake | wrong |  | 2 | Gemini app |  |
 | 25 | Wall Deep Squat | pending |  | 0 |  |  |
-| 26 | Elevated Pigeon | pending |  | 0 |  |  |
+| 26 | Elevated Pigeon | wrong |  | 2 | Gemini app |  |
 | 27 | Middle Split Negatives | pending |  | 0 |  |  |
 | 28 | Seated Pancake Reach | pending |  | 0 |  |  |
 
