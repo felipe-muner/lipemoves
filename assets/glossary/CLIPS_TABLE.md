@@ -45,7 +45,7 @@ Mission 1: every exercise has a clip. Mission 2: remake them all with one model
 | 20 | Pigeon Good Morning | wrong |  | 2 | Google Flow · Omni 1.2 Flash |  |
 | 21 | 90/90 Iso | wrong |  | 2 | Gemini app |  |
 | 22 | Frog Stretch | wrong |  | 2 | Google Flow · Omni 1.2 Flash |  |
-| 23 | Lunge Quad Stretch | pending |  | 0 |  |  |
+| 23 | Lunge Quad Stretch | pending |  | 1 | Gemini app |  |
 | 24 | Standing Pancake | pending |  | 0 |  |  |
 | 25 | Wall Deep Squat | pending |  | 0 |  |  |
 | 26 | Elevated Pigeon | pending |  | 0 |  |  |

@@ -51,7 +51,8 @@
     "2026-11-27 ~13:40: run done (3 videos: figure-four wrong final, flat-back wrong in Gemini, flat-back wrong final in Flow). Flow credits left about 192.",
     "2026-11-27 16:06-16:35 (Flow, Gemini out until 17:51): pancake-stretch ok (attempt 1); pigeon-good-morning wrong twice (Omni turns pigeon into kneeling), final. 72 Flow credits used, ~120 left.",
     "2026-11-27 19:06-19:25: 90-90-iso wrong twice in Gemini (kneels instead of sitting in 90/90; glow on the front thigh), final. Gemini 'Create video' greyed out after those 2. frog-stretch attempt 1 in Flow wrong (hands not forearms, glow on front thighs, red muscle at rest), reworded, retry pending. Chrome tabs kept vanishing, so the run stopped before the retry. Flow balance read 120 before, so 96 left now. A misclick in Gemini sent one of Gemini's own suggestion chips ('interactive quiz'); stopped, chat 'Exam Prep Quiz' left in Felipe's history.",
-    "2026-11-27 22:14 to 2026-11-28 04:20 (Gemini back): frog-stretch retry wrong (hands not forearms, glow over whole thigh, skinless muscle at rest), final. lunge-quad-stretch typed but never sent: the Chrome extension disconnected twice (also 'auto mode classifier gave no verdict' on clicks). Still pending, attempts 0. No Flow credits used (96 left)."
+    "2026-11-27 22:14 to 2026-11-28 04:20 (Gemini back): frog-stretch retry wrong (hands not forearms, glow over whole thigh, skinless muscle at rest), final. lunge-quad-stretch typed but never sent: the Chrome extension disconnected twice (also 'auto mode classifier gave no verdict' on clicks). Still pending, attempts 0. No Flow credits used (96 left).",
+    "2026-11-28 07:07-10:11: lunge-quad-stretch sent in Gemini (chat 9b8ea59757c29a2a), unchecked because no Chrome browser was connected at 10:10. Check that chat first next run."
   ],
   "template": "A smooth beige 3D anatomy mannequin, male, faceless with no eyes and no mouth, visible ball joints at shoulders, elbows, wrists, knees and ankles, athletic build, wearing only black shorts, white crew socks and white sneakers. Dark gym, black rubber floor, neon green rim light from the right, nobody else in the room. {view}, static camera that never moves, entire body in frame, no tripod or camera equipment anywhere in the room. He starts already in this position: {start} He does only one movement: {motion} Exactly 3 slow repetitions, then he holds still in the starting position. He never changes position and never does any other movement. Working muscles: {glow}. They light up as glowing neon green anatomical muscle fibers drawn as a graphic overlay on top of the body and on top of the black shorts, so wherever a working muscle is under the shorts its glow shows on the shorts too, with visible fiber strands in the real shape of each muscle, brightest while the muscle works and dimmer when it rests. No red or skinless muscle anywhere: outside the green glow the body stays smooth plain beige. No cuts, no text. Portrait 9:16.",
   "clips": [
@@ -395,8 +396,10 @@
       "motion": "he draws the left heel toward the left glute while pushing the hips forward, pauses, then lets the foot move away again without letting go.",
       "glow": "the left thigh and the front of the left hip",
       "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "attempts": 1,
+      "source": "Gemini app",
+      "chat": "https://gemini.google.com/app/9b8ea59757c29a2a",
+      "note": "2026-11-28 ~07:10 attempt 1 sent in Gemini (chat 9b8ea59757c29a2a, original wording), result NOT checked yet: the Chrome extension disconnected before the render finished. Next run: open this chat first and check its video (contact sheet) before generating anything new."
     },
     {
       "n": 24,
