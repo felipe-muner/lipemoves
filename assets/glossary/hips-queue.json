@@ -55,7 +55,8 @@
     "2026-11-28 07:07-10:11: lunge-quad-stretch sent in Gemini (chat 9b8ea59757c29a2a), unchecked because no Chrome browser was connected at 10:10. Check that chat first next run.",
     "2026-11-28 16:06-16:30 run: Chrome connected again. Lunge Quad Stretch (07:10 attempt) checked ok, trim to 0-8.0 s (glitch after 8.1 s), but NOT downloaded: Chrome saved nothing to ~/Downloads (Gemini Download video fetched the file, 3 tries, plus a blob save; no file). Standing Pancake 2 tries, both wrong (final). Gemini then said out of videos until 18:51. Flow not used (96 credits).",
     "2026-11-28 19:06-19:45 run: Lunge Quad Stretch download retried, Chrome still saves nothing. Elevated Pigeon 2 tries, both wrong (final: try 1 glow on the back leg, try 2 kneeling instead of pigeon). Gemini then out of videos until 23:51. Flow not used (96 credits).",
-    "2026-11-28 22:06 run: found the Lunge Quad Stretch downloads as hidden ~/Downloads/.com.google.Chrome.* files (Gemini downloads land there too, like Flow's; check with ls -la). Trimmed to 8.0 s, encoded, added to hips-clips.ts. Gemini still out of videos until 23:51, so no new clips."
+    "2026-11-28 22:06 run: found the Lunge Quad Stretch downloads as hidden ~/Downloads/.com.google.Chrome.* files (Gemini downloads land there too, like Flow's; check with ls -la). Trimmed to 8.0 s, encoded, added to hips-clips.ts. Gemini still out of videos until 23:51, so no new clips.",
+    "2026-11-29 01:06-01:20 run: Middle Split Negatives attempt 1 wrong (starts standing, steps out, hands never on floor), reworded, back to pending. Seated Pancake Reach ok, downloaded and added. Gemini then out of videos until 04:51."
   ],
   "template": "A smooth beige 3D anatomy mannequin, male, faceless with no eyes and no mouth, visible ball joints at shoulders, elbows, wrists, knees and ankles, athletic build, wearing only black shorts, white crew socks and white sneakers. Dark gym, black rubber floor, neon green rim light from the right, nobody else in the room. {view}, static camera that never moves, entire body in frame, no tripod or camera equipment anywhere in the room. He starts already in this position: {start} He does only one movement: {motion} Exactly 3 slow repetitions, then he holds still in the starting position. He never changes position and never does any other movement. Working muscles: {glow}. They light up as glowing neon green anatomical muscle fibers drawn as a graphic overlay on top of the body and on top of the black shorts, so wherever a working muscle is under the shorts its glow shows on the shorts too, with visible fiber strands in the real shape of each muscle, brightest while the muscle works and dimmer when it rests. No red or skinless muscle anywhere: outside the green glow the body stays smooth plain beige. No cuts, no text. Portrait 9:16.",
   "clips": [
@@ -454,12 +455,14 @@
       "slug": "middle-split-negatives",
       "name": "Middle Split Negatives",
       "view": "Front view",
-      "start": "standing with the feet wide apart, legs straight, toes pointing forward, torso leaning forward with both hands on the floor in front of him.",
-      "motion": "he very slowly lets both feet slide further apart, lowering toward a middle split, pauses at his lowest point, then pulls the legs back in to the start.",
-      "glow": "both inner thighs",
+      "start": "already in a very wide straddle stance, feet about twice shoulder width apart, both legs straight, torso folded forward with both palms flat on the floor between his feet, his weight on his hands. He is in this position from the very first frame.",
+      "motion": "keeping his palms flat on the floor, he slowly slides both feet a little further out to the sides so his hips sink lower toward the floor, pauses at his lowest point, then slowly slides his feet back in to the starting width.",
+      "glow": "both inner thighs (adductors), from the groin to the inner knee, glowing on the inner part of the shorts too",
       "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "attempts": 1,
+      "source": "Gemini app",
+      "chat": "https://gemini.google.com/app/5eb24b5d814f2a5a",
+      "note": "2026-11-29 01:15 attempt 1 (Gemini, original wording) wrong: 10 s, one mannequin, front view, but he starts standing upright with feet together, bends and steps out into a wide stance (changes position), hands never reach the floor, about one rep, glow on the outer/lower thighs near the knees, not the inner thighs. Reworded start/motion/glow for the retry."
     },
     {
       "n": 28,
@@ -470,9 +473,11 @@
       "start": "seated on the floor with both legs straight and spread wide apart, toes pointing up, torso upright, both arms reaching straight forward at shoulder height.",
       "motion": "he reaches both arms forward and down toward the floor, folding from the hips with a long spine, pauses, then sits back upright.",
       "glow": "both inner thighs and hamstrings",
-      "status": "pending",
-      "attempts": 0,
-      "source": ""
+      "status": "ok",
+      "attempts": 1,
+      "source": "Gemini app",
+      "chat": "https://gemini.google.com/app/996828ab907843e1",
+      "note": "2026-11-29 01:12 ok (attempt 1, Gemini, original wording): 10 s, one mannequin, front view, seated wide straddle the whole time, arms forward, 3 forward folds toward the floor and back upright, ends upright. Minor: glow sits on the upper inner thighs just above the knees (little on the shorts), thighs look slightly translucent at rest, blurry sign on the back wall. Downloaded (hidden ~/Downloads/.com.google.Chrome.* file), encoded full 10 s, added to hips-clips.ts."
     }
   ],
   "download_note": "Felipe asked on 2026-11-18 for the clips to be added to the program page as they are made ('i can follow day by day it going to fill all till the end').",

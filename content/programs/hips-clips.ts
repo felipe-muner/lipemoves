@@ -16,6 +16,7 @@ export const HIPS_CLIPS: Record<string, string> = {
   "donkey-kicks": "/programs/hips/clips/donkey-kicks.mp4",
   "pancake-stretch": "/programs/hips/clips/pancake-stretch.mp4",
   "lunge-quad-stretch": "/programs/hips/clips/lunge-quad-stretch.mp4",
+  "seated-pancake-reach": "/programs/hips/clips/seated-pancake-reach.mp4",
 }
 
 export function exerciseSlug(name: string): string {
